@@ -1,5 +1,5 @@
 // src/app/api/v1/ecosystem/support/route.ts
-import { withAuth, ok, err } from '../../_lib/handler'
+import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient }    from '@/lib/supabase/admin'
 import { ECOSYSTEM_TIERS }   from '@/lib/constants/game'
 
