@@ -1,90 +1,37 @@
-// src/features/leaderboard/hooks.ts
+// src/features/hooks.ts
+// Zentrale Export-Datei für alle Feature-Hooks
 'use client'
-import { useEffect, useCallback } from 'react'
-import { useQuery }               from '@tanstack/react-query'
-import { useAuthStore }           from '@/stores/useAuthStore'
-import { useLeaderboardStore }    from '@/stores/useLeaderboardStore'
-import type { LeagueTier }        from '@/types/game'
 
-export function useLeaderboard(league: LeagueTier | null = null) {
-  const token = useAuthStore(s => s.accessToken)
-  const store = useLeaderboardStore()
+// ── Leaderboard ────────────────────────────────────────────
+export { useLeaderboard } from '@/features/leaderboard/hooks'
 
-  // Reset when league filter changes
-  useEffect(() => {
-    store.reset()
-    store.setLeague(league)
-  }, [league]) // eslint-disable-line
-
-  const { isLoading, refetch } = useQuery({
-    queryKey:  ['leaderboard', 'season', league, store.page],
-    enabled:   !!token,
-    staleTime: 5 * 60_000,
-    queryFn:   async () => {
-      store.setLoading(true)
-      const params = new URLSearchParams({ page: String(store.page), limit: '50' })
-      if (league) params.set('league', league)
-
-      const res  = await fetch(`/api/v1/leaderboard/season?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const json = await res.json()
-      if (!json.success) throw new Error(json.error)
-
-      const { entries, userRank, userEntry, refreshedAt } = json.data
-      const { total, hasMore } = json.meta ?? {}
-
-      if (store.page === 1) {
-        store.setEntries(entries, { total: total ?? 0, hasMore: hasMore ?? false, refreshedAt })
-      } else {
-        store.appendEntries(entries)
-      }
-      store.setUserRank(userRank ?? null, userEntry ?? null)
-      return json.data
-    },
-  })
-
-  const loadMore = useCallback(() => {
-    if (store.hasMore && !isLoading) store.setPage(store.page + 1)
-  }, [store.hasMore, isLoading, store.page]) // eslint-disable-line
-
-  return {
-    entries:     store.entries,
-    userRank:    store.userRank,
-    userEntry:   store.userEntry,
-    isLoading,
-    hasMore:     store.hasMore,
-    refreshedAt: store.refreshedAt,
-    loadMore,
-    refetch,
-  }
-}
-
-// src/features/energy/hooks.ts
-// Runs the 15-min optimistic tick and exposes current energy state
-import { useEffect, useRef }    from 'react'
-import { useEnergyStore }       from '@/stores/useEnergyStore'
-import { useUIStore }           from '@/stores/useUIStore'
-import { GAME_CONSTANTS }       from '@/lib/constants/game'
-import { formatDuration }       from '@/lib/utils'
+// ── Energy ─────────────────────────────────────────────────
+import { useEffect, useRef } from 'react'
+import { useEnergyStore }    from '@/stores/useEnergyStore'
+import { useUIStore }        from '@/stores/useUIStore'
+import { GAME_CONSTANTS }    from '@/lib/constants/game'
+import { formatDuration }    from '@/lib/utils'
 
 export function useEnergyTicker() {
   const { tick, current, isHydrated } = useEnergyStore()
-  const { addNotification } = useUIStore()
-  const wasFullRef = useRef(false)
+  const { addNotification }           = useUIStore()
+  const wasFullRef                    = useRef(false)
 
   useEffect(() => {
     if (!isHydrated) return
-    tick() // immediate tick on mount
-    const interval = setInterval(tick, 10_000) // every 10s for accurate countdown
+    tick()
+    const interval = setInterval(tick, 10_000)
     return () => clearInterval(interval)
   }, [isHydrated]) // eslint-disable-line
 
-  // Notify when energy reaches full
   useEffect(() => {
     if (current >= GAME_CONSTANTS.MAX_ENERGY && !wasFullRef.current) {
       wasFullRef.current = true
-      addNotification({ type: 'energy_full', title: 'Energy Full ⚡', message: 'Your energy is fully restored!' })
+      addNotification({
+        type:    'energy_full',
+        title:   'Energie voll ⚡',
+        message: 'Deine Energie ist vollständig aufgeladen!',
+      })
     } else if (current < GAME_CONSTANTS.MAX_ENERGY) {
       wasFullRef.current = false
     }
@@ -109,25 +56,22 @@ export function useEnergy() {
   }
 }
 
-// src/features/streaks/hooks.ts
+// ── Streak ─────────────────────────────────────────────────
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
-import { useUIStore }     from '@/stores/useUIStore'
 import { todayUTC }       from '@/lib/utils'
 
 export function useStreak() {
-  const token        = useAuthStore(s => s.accessToken)
-  const profile      = useUserStore(s => s.profile)
-  const { patchProfile } = useUserStore()
+  const token               = useAuthStore(s => s.accessToken)
+  const profile             = useUserStore(s => s.profile)
+  const { patchProfile }    = useUserStore()
   const { showXPGain, toast, haptic } = useUIStore()
-  const qc           = useQueryClient()
+  const qc                  = useQueryClient()
 
-  const today        = todayUTC()
-  const lastClaim    = profile?.streakLastActiveDate
-  const claimedToday = lastClaim === today
-
-  const canClaim     = !claimedToday && !!profile
+  const today      = todayUTC()
+  const claimedToday = profile?.streakLastActiveDate === today
+  const canClaim   = !claimedToday && !!profile
 
   const { mutate: claimStreak, isPending } = useMutation({
     mutationFn: async () => {
@@ -137,21 +81,29 @@ export function useStreak() {
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error)
-      return json.data as { streakCurrent: number; streakLongest: number; xpGranted: number; missUsed: boolean }
+      return json.data as {
+        streakCurrent: number
+        streakLongest: number
+        xpGranted:     number
+        missUsed:      boolean
+      }
     },
     onSuccess: (data) => {
       patchProfile({
-        streakCurrent: data.streakCurrent,
-        streakLongest: data.streakLongest,
-        streakLastActiveDate: today,
+        streakCurrent:       data.streakCurrent,
+        streakLongest:       data.streakLongest,
+        streakLastActiveDate:today,
       })
       showXPGain(data.xpGranted)
       haptic('success')
-      if (data.missUsed) toast('info', '🛡️ Miss protection used — streak saved!')
-      toast('success', `🔥 Day ${data.streakCurrent} streak!`)
+      if (data.missUsed) toast('info', '🛡️ Fehltagschutz verwendet — Streak gerettet!')
+      toast('success', `🔥 Tag ${data.streakCurrent} Streak!`)
       qc.invalidateQueries({ queryKey: ['user', 'profile'] })
     },
-    onError: (e: Error) => { toast('error', e.message); haptic('error') },
+    onError: (e: Error) => {
+      toast('error', e.message)
+      haptic('error')
+    },
   })
 
   return {
