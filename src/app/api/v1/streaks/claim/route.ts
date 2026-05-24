@@ -1,5 +1,5 @@
 // src/app/api/v1/streaks/claim/route.ts
-import { withAuth, ok, err } from '../../_lib/handler'
+import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { todayUTC } from '@/lib/utils'
 import { XP_REWARDS, GAME_CONSTANTS } from '@/lib/constants/game'
