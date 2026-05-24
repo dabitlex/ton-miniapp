@@ -2,7 +2,7 @@
 import { NextRequest } from 'next/server'
 import { validateTelegramInitData, parseTelegramInitData } from '@/lib/telegram/initData'
 import { getAdminClient } from '@/lib/supabase/admin'
-import { ok, err } from '../_lib/handler'
+import { ok, err } from '@/app/api/v1/_lib/handler'
 import { todayUTC } from '@/lib/utils'
 
 export const runtime = 'nodejs'
