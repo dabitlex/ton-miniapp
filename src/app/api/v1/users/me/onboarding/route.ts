@@ -1,5 +1,5 @@
 // src/app/api/v1/users/me/onboarding/route.ts
-import { withAuth, ok } from '../../../_lib/handler'
+import { withAuth, ok } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
