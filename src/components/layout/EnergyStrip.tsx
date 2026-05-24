@@ -5,7 +5,7 @@ import { cn }          from '@/lib/utils'
 import { Zap }         from 'lucide-react'
 
 export function EnergyStrip() {
-  const { current, isFull, isLow, isEmpty, pct, timeToFull } = useEnergy()
+  const { current, isFull, isLow, isEmpty, pct, timeToFull, nextRegenAt } = useEnergy()
 
   return (
     <div className="shrink-0 flex items-center gap-2 px-4 py-1.5
@@ -18,6 +18,7 @@ export function EnergyStrip() {
           isEmpty ? 'text-red-400' : isLow ? 'text-amber-400' : 'text-yellow-300'
         )}
       />
+
       {/* Track */}
       <div className="flex-1 h-1 rounded-full bg-white/[0.05] overflow-hidden">
         <div
@@ -31,26 +32,16 @@ export function EnergyStrip() {
           style={{ width: `${pct}%` }}
         />
       </div>
+
       <span className={cn(
         'text-[10px] font-bold tabular-nums shrink-0 transition-colors',
         isEmpty ? 'text-red-400' : isLow ? 'text-amber-300' : 'text-white/40'
       )}>
         {current}/100
-        {!isFull && !isEmpty && (
+        {!isFull && !isEmpty && nextRegenAt && (
           <span className="text-white/20 font-normal"> · {timeToFull}</span>
         )}
       </span>
     </div>
   )
-}
-
-// src/components/layout/EnergyTicker.tsx
-// Invisible component — runs in game layout, ticks energy every 10s
-'use client'
-import { useEffect } from 'react'
-import { useEnergyTicker } from '@/features/hooks'
-
-export function EnergyTicker() {
-  useEnergyTicker()
-  return null
 }
