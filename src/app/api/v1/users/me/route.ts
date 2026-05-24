@@ -1,6 +1,6 @@
 // src/app/api/v1/users/me/route.ts
 import { NextResponse } from 'next/server'
-import { withAuth, ok, err } from '../_lib/handler'
+import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
 import { todayUTC } from '@/lib/utils'
