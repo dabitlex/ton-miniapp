@@ -1,7 +1,7 @@
 // src/app/api/v1/webhooks/ton/route.ts
 // Receives confirmed transaction events from TON Center webhook
 import { NextRequest }    from 'next/server'
-import { withWebhook, ok, err } from '../../_lib/handler'
+import { withWebhook, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
