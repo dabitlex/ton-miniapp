@@ -189,5 +189,5 @@ async function updateLastActive(userId: string) {
   await db
     .from('users')
     .update({ last_active_at: new Date().toISOString() })
-    .eq('id', userId)
+    .eq('id', userId) 
 }
