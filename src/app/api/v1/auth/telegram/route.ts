@@ -51,13 +51,13 @@ export async function POST(req: NextRequest) {
   let isNewUser = false
 
   // Try to find existing user by email
-  const { data: { users: existingUsers } } = await db.auth.admin.listUsers()
+  const { data: { users: existingUsers } } = await (db.auth.admin as any).listUsers()
   const existing = existingUsers.find(u => u.email === email)
 
   if (existing) {
     authUserId = existing.id
     // Update metadata if name/photo changed
-    await db.auth.admin.updateUserById(authUserId, {
+    await (db.auth.admin as any).updateUserById(authUserId, {
       user_metadata: {
         telegram_id: tgUser.id,
         telegram_username: tgUser.username ?? null,
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } else {
-    const { data: newAuth, error: createErr } = await db.auth.admin.createUser({
+    const { data: newAuth, error: createErr } = await (db.auth.admin as any).createUser({
       email,
       email_confirm: true,
       user_metadata: {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   // ── 6. Upsert user profile ─────────────────────────────────────────
-  const { error: upsertErr } = await db.from('users').upsert(
+  const { error: upsertErr } = await (db as any).from('users').upsert(
     {
       id: authUserId,
       telegram_id: tgUser.id,
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 8. Issue session ───────────────────────────────────────────────
-  const { data: session, error: sessionErr } = await db.auth.admin.createSession({
+  const { data: session, error: sessionErr } = await (db.auth.admin as any).createSession({
     user_id: authUserId,
   })
 
@@ -157,7 +157,7 @@ async function assignDailyQuests(userId: string, seasonId: string | null) {
   const hard   = templates.filter(t => t.difficulty === 'hard').slice(0, 1)
   const toAssign = [...easy, ...medium, ...hard]
 
-  await db.from('daily_quest_assignments').upsert(
+  await (db as any).from('daily_quest_assignments').upsert(
     toAssign.map(t => ({
       user_id: userId,
       template_id: t.id,
