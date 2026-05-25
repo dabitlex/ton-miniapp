@@ -31,7 +31,7 @@ export default function ProfilePage() {
   function copyReferral() {
     const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? 'yourbot'
     navigator.clipboard.writeText(
-      `https://t.me/${botUsername}?start=${profile.referralCode}`
+      `https://t.me/${botUsername}?start=${profile?.referralCode ?? ""}`
     ).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
