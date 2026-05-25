@@ -30,13 +30,12 @@ function hashIP(req: NextRequest): string {
   return crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)
 }
 
+// FIX: Next.js 15 erwartet keinen zweiten Parameter-Typ für einfache Routes
+// withAuth gibt eine Funktion zurück die nur NextRequest bekommt
 export function withAuth(
-  handler: (ctx: AuthCtx, routeCtx: { params: Record<string, string> }) => Promise<NextResponse>
+  handler: (ctx: AuthCtx) => Promise<NextResponse>
 ) {
-  return async (
-    req: NextRequest,
-    routeCtx: { params: Record<string, string> }
-  ): Promise<NextResponse> => {
+  return async (req: NextRequest): Promise<NextResponse> => {
     const authHeader = req.headers.get('Authorization')
     const token = authHeader?.startsWith('Bearer ')
       ? authHeader.slice(7).trim()
@@ -63,7 +62,7 @@ export function withAuth(
         ipHash:     hashIP(req),
         req,
       }
-      return await handler(ctx, routeCtx)
+      return await handler(ctx)
     } catch (e) {
       console.error(`[API Error] ${req.method} ${req.nextUrl.pathname}:`, e)
       return err('Internal server error', 'INTERNAL_ERROR', 500)
