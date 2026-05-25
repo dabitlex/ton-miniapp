@@ -54,7 +54,7 @@ export function withAuth(
         .eq('id', user.id)
         .single()
 
-      if (profile?.is_banned) return err('Account suspended', 'ACCOUNT_BANNED', 403)
+      if ((profile as any)?.is_banned) return err('Account suspended', 'ACCOUNT_BANNED', 403)
 
       const ctx: AuthCtx = {
         userId:     user.id,
