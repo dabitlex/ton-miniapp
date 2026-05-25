@@ -8,10 +8,15 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   let body: { refreshToken?: string }
-  try { body = await req.json() }
-  catch { return err('Invalid body', 'BAD_REQUEST') }
+  try {
+    body = await req.json()
+  } catch {
+    return err('Invalid body', 'BAD_REQUEST')
+  }
 
-  if (!body.refreshToken) return err('refreshToken required', 'MISSING_TOKEN')
+  if (!body.refreshToken) {
+    return err('refreshToken required', 'MISSING_TOKEN')
+  }
 
   const db = getAdminClient()
   const { data, error } = await db.auth.refreshSession({
@@ -23,9 +28,9 @@ export async function POST(req: NextRequest) {
   }
 
   return ok({
-    accessToken:  data.session.access_token,
+    accessToken: data.session.access_token,
     refreshToken: data.session.refresh_token,
-    expiresIn:    data.session.expires_in,
-    userId:       data.session.user.id,
+    expiresIn: data.session.expires_in,
+    userId: data.session.user.id,
   })
 }
