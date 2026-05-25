@@ -2,12 +2,9 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // TypeScript Fehler blockieren den Build nicht
-  // (DB-Typen werden zur Laufzeit validiert, nicht zur Build-Zeit)
   typescript: {
     ignoreBuildErrors: true,
   },
-  // ESLint Fehler blockieren den Build nicht
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -18,6 +15,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'telegram.org' },
     ],
   },
+  // Keine globalen Security Headers hier --
+  // werden selektiv in middleware.ts gesetzt
 }
 
 export default nextConfig
