@@ -2,7 +2,7 @@
 import { NextRequest } from 'next/server'
 import { validateTelegramInitData, parseTelegramInitData } from '@/lib/telegram/initData'
 import { getAdminClient } from '@/lib/supabase/admin'
-import { ok, err } from '../_lib/handler'
+import { ok, err } from '@/app/api/v1/_lib/handler'
 import { todayUTC } from '@/lib/utils'
 
 export const runtime = 'nodejs'
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   // ── 6. Upsert user profile ─────────────────────────────────────────
-  const { error: upsertErr } = await (db as any).from('users').upsert(
+  const { error: upsertErr } = await db.from('users').upsert(
     {
       id: authUserId,
       telegram_id: tgUser.id,
