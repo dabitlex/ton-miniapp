@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return err('initData is required', 'MISSING_INIT_DATA')
   }
 
-  // ── 2. Telegram initData validieren (HMAC-SHA256) ──────
+  // ── 2. Telegram initData validieren ───────────────────
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   if (!botToken) return err('Bot token not configured', 'CONFIG_ERROR', 500)
 
@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
     return err(`initData validation failed: ${reason}`, 'INVALID_INIT_DATA', 401)
   }
 
-  // ── 3. User aus initData extrahieren ───────────────────
   let parsed
   try { parsed = parseTelegramInitData(body.initData) }
   catch { return err('Failed to parse initData', 'PARSE_ERROR') }
@@ -37,91 +36,47 @@ export async function POST(req: NextRequest) {
 
   const tgUser = parsed.user
   const db     = getAdminClient()
+  const email  = `tg_${tgUser.id}@ton-miniapp.internal`
 
-  // ── 4. Supabase Auth User finden oder erstellen ────────
-  // FIX: Direkter Lookup über email statt listUsers()
-  // listUsers() ist langsam und schlägt auf Free Tier fehl
-  const email = `tg_${tgUser.id}@ton-miniapp.internal`
-
-  let authUserId: string
-  let isNewUser = false
-
-  // Versuche zuerst den User über die users-Tabelle zu finden
+  // ── 3. User in unserer Tabelle suchen ─────────────────
+  // Primärer Lookup: telegram_id in public.users
   const { data: existingProfile } = await (db as any)
     .from('users')
     .select('id')
     .eq('telegram_id', tgUser.id)
     .maybeSingle()
 
-  if (existingProfile) {
-    // Bestehender User -- ID aus unserer Tabelle
+  let authUserId: string
+  let isNewUser = false
+
+  if (existingProfile?.id) {
+    // ── Bestehender User ──────────────────────────────
     authUserId = existingProfile.id
 
-    // Auth-Metadaten aktualisieren (Name/Foto könnte sich geändert haben)
-    await (db.auth.admin as any).updateUserById(authUserId, {
-      user_metadata: {
-        telegram_id:         tgUser.id,
-        telegram_username:   tgUser.username   ?? null,
-        telegram_first_name: tgUser.first_name,
-      },
-    }).catch(() => {}) // Fehler ignorieren falls Update scheitert
-
   } else {
-    // Neuer User -- Supabase Auth User erstellen
-    isNewUser = true
+    // ── Neuer User — Auth-Account erstellen ──────────
+    isNewUser  = true
+    authUserId = await createAuthUser(db, email, tgUser)
 
-    const { data: newAuth, error: createErr } = await (db.auth.admin as any).createUser({
-      email,
-      email_confirm:  true,
-      user_metadata: {
-        telegram_id:         tgUser.id,
-        telegram_username:   tgUser.username   ?? null,
-        telegram_first_name: tgUser.first_name,
-      },
-    })
-
-    if (createErr) {
-      // Falls User bereits in Auth existiert aber nicht in users-Tabelle
-      // versuchen wir ihn über Email zu finden
-      if (createErr.message?.includes('already') || createErr.message?.includes('exists')) {
-        // Supabase gibt manchmal diesen Fehler -- User existiert bereits in Auth
-        // Suche über Admin API mit Filter
-        const { data: found } = await (db.auth.admin as any).listUsers({ 
-          filter: `email.eq.${email}`,
-          perPage: 1 
-        }).catch(() => ({ data: null }))
-        
-        if (found?.users?.[0]) {
-          authUserId = found.users[0].id
-          isNewUser  = false
-        } else {
-          return err(
-            `Auth user creation failed: ${createErr.message}`,
-            'AUTH_CREATE_ERROR',
-            500
-          )
-        }
-      } else {
-        return err(
-          `Auth user creation failed: ${createErr.message}`,
-          'AUTH_CREATE_ERROR',
-          500
-        )
-      }
-    } else {
-      authUserId = newAuth.user.id
+    if (!authUserId) {
+      return err(
+        'Auth user creation failed — bitte prüfe Supabase Authentication Settings: ' +
+        'Dashboard → Authentication → Settings → "Disable new user signups" muss OFF sein.',
+        'AUTH_CREATE_ERROR',
+        500
+      )
     }
   }
 
-  // ── 5. Aktive Saison holen ─────────────────────────────
+  // ── 4. Aktive Saison ──────────────────────────────────
   const { data: season } = await (db as any)
     .from('seasons')
     .select('id')
     .eq('status', 'active')
     .maybeSingle()
 
-  // ── 6. User-Profil upserten ────────────────────────────
-  const { error: upsertErr } = await (db as any).from('users').upsert(
+  // ── 5. User-Profil upserten ───────────────────────────
+  await (db as any).from('users').upsert(
     {
       id:                     authUserId,
       telegram_id:            tgUser.id,
@@ -137,24 +92,29 @@ export async function POST(req: NextRequest) {
     { onConflict: 'telegram_id' }
   )
 
-  if (upsertErr) {
-    return err(`Profile upsert failed: ${upsertErr.message}`, 'PROFILE_ERROR', 500)
-  }
+  // ── 6. Tagesquests sicherstellen ──────────────────────
+  await ensureDailyQuests(authUserId, season?.id ?? null)
 
-  // ── 7. Tagesquests zuweisen falls nötig ───────────────
-  if (isNewUser) {
-    await assignDailyQuests(authUserId, season?.id ?? null)
-  } else {
-    await ensureDailyQuests(authUserId, season?.id ?? null)
-  }
-
-  // ── 8. Session erstellen ───────────────────────────────
-  const { data: session, error: sessionErr } = await (db.auth.admin as any).createSession({
-    user_id: authUserId,
-  })
+  // ── 7. Session erstellen ──────────────────────────────
+  const { data: session, error: sessionErr } = await (db.auth.admin as any)
+    .createSession({ user_id: authUserId })
 
   if (sessionErr || !session) {
-    return err('Session creation failed', 'SESSION_ERROR', 500)
+    // Fallback: signInWithPassword versuchen
+    const { data: fallbackSession } = await db.auth.signInWithPassword({
+      email,
+      password: `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
+    })
+    if (!fallbackSession?.session) {
+      return err('Session creation failed', 'SESSION_ERROR', 500)
+    }
+    return ok({
+      accessToken:  fallbackSession.session.access_token,
+      refreshToken: fallbackSession.session.refresh_token,
+      expiresIn:    fallbackSession.session.expires_in,
+      userId:       authUserId,
+      isNewUser,
+    })
   }
 
   return ok({
@@ -166,12 +126,85 @@ export async function POST(req: NextRequest) {
   })
 }
 
-// ── Hilfsfunktionen ────────────────────────────────────────
+// ── Auth-User erstellen mit mehreren Fallbacks ─────────────
 
-async function assignDailyQuests(userId: string, seasonId: string | null) {
+async function createAuthUser(db: any, email: string, tgUser: any): Promise<string> {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN ?? ''
+
+  // Versuch 1: admin.createUser
+  const { data: newAuth, error: createErr } = await (db.auth.admin as any).createUser({
+    email,
+    email_confirm:    true,
+    password:         `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
+    user_metadata: {
+      telegram_id:         tgUser.id,
+      telegram_username:   tgUser.username   ?? null,
+      telegram_first_name: tgUser.first_name,
+    },
+  })
+
+  if (!createErr && newAuth?.user?.id) {
+    return newAuth.user.id
+  }
+
+  // Versuch 2: signUp (falls admin API blockiert ist)
+  if (createErr?.message?.includes('not allowed') ||
+      createErr?.message?.includes('Not allowed') ||
+      createErr?.message?.includes('signup')) {
+
+    const { data: signUpData, error: signUpErr } = await db.auth.signUp({
+      email,
+      password: `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
+      options: {
+        data: {
+          telegram_id:         tgUser.id,
+          telegram_username:   tgUser.username   ?? null,
+          telegram_first_name: tgUser.first_name,
+        },
+      },
+    })
+
+    if (!signUpErr && signUpData?.user?.id) {
+      return signUpData.user.id
+    }
+  }
+
+  // Versuch 3: User existiert bereits in Auth aber nicht in users-Tabelle
+  // Versuch über signInWithPassword
+  const { data: signInData } = await db.auth.signInWithPassword({
+    email,
+    password: `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
+  })
+
+  if (signInData?.user?.id) {
+    return signInData.user.id
+  }
+
+  return ''
+}
+
+// ── Tagesquests sicherstellen ─────────────────────────────
+
+async function ensureDailyQuests(userId: string, seasonId: string | null) {
   const db    = getAdminClient()
   const today = todayUTC()
 
+  const { count } = await (db as any)
+    .from('daily_quest_assignments')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('quest_date', today)
+
+  if ((count ?? 0) > 0) {
+    // Quests existieren bereits — nur last_active_at updaten
+    await (db as any)
+      .from('users')
+      .update({ last_active_at: new Date().toISOString() })
+      .eq('id', userId)
+    return
+  }
+
+  // Quests zuweisen
   const { data: templates } = await (db as any)
     .from('quest_templates')
     .select('id, difficulty')
@@ -195,25 +228,4 @@ async function assignDailyQuests(userId: string, seasonId: string | null) {
     })),
     { onConflict: 'user_id,template_id,quest_date' }
   )
-}
-
-async function ensureDailyQuests(userId: string, seasonId: string | null) {
-  const db    = getAdminClient()
-  const today = todayUTC()
-
-  const { count } = await (db as any)
-    .from('daily_quest_assignments')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('quest_date', today)
-
-  if ((count ?? 0) === 0) {
-    await assignDailyQuests(userId, seasonId)
-  }
-
-  // last_active_at aktualisieren
-  await (db as any)
-    .from('users')
-    .update({ last_active_at: new Date().toISOString() })
-    .eq('id', userId)
 }
