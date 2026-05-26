@@ -15,33 +15,37 @@ function SplashContent() {
     }
   }, [isAuthenticated, isInitializing, router])
 
-  if (authError) {
+  // Fehler anzeigen — jetzt mit dem echten Fehlertext
+  if (!isInitializing && authError) {
     return (
       <div className="h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
         <span className="text-4xl">⚠️</span>
-        <p className="text-sm text-white/50">Open this app inside Telegram</p>
-        <p className="text-xs text-white/20">{authError}</p>
+        <div>
+          <p className="text-sm font-bold text-white mb-1">
+            Open this app inside Telegram
+          </p>
+          <p className="text-xs text-white/40 max-w-xs break-words">
+            {authError}
+          </p>
+        </div>
       </div>
     )
   }
 
+  // Ladebildschirm
   return (
     <div className="h-dvh flex flex-col items-center justify-center gap-6">
-      {/* Logo */}
       <div className="relative">
         <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-600 to-fuchsia-600
-                        flex items-center justify-center text-4xl shadow-[0_0_40px_rgba(139,92,246,0.4)]">
+                        flex items-center justify-center text-4xl
+                        shadow-[0_0_40px_rgba(139,92,246,0.4)]">
           ⚡
         </div>
-        <div className="absolute inset-0 rounded-3xl bg-violet-500/20 blur-xl" />
       </div>
-
       <div className="text-center space-y-1">
         <h1 className="text-xl font-black text-white">TON MiniApp</h1>
         <p className="text-sm text-white/40">Loading your adventure…</p>
       </div>
-
-      {/* Loading dots */}
       <div className="flex gap-1.5">
         {[0, 1, 2].map(i => (
           <div
