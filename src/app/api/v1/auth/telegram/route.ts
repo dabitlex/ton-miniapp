@@ -34,10 +34,8 @@ export async function POST(req: NextRequest) {
 
   if (!parsed.user) return err('No user in initData', 'NO_USER', 400)
 
-  const tgUser = parsed.user
-  const db     = getAdminClient()
-
-  // FIX: .com statt .internal — Supabase lehnt .internal als ungültig ab
+  const tgUser   = parsed.user
+  const db       = getAdminClient()
   const email    = `tg${tgUser.id}@telegram-user.com`
   const password = `Tg!${tgUser.id}${botToken.slice(-6)}`
 
@@ -52,12 +50,9 @@ export async function POST(req: NextRequest) {
   let isNewUser = false
 
   if (existingProfile?.id) {
-    // Bestehender User gefunden
     authUserId = existingProfile.id
-
   } else {
-    // Neuer User — Auth-Account anlegen
-    isNewUser  = true
+    isNewUser = true
 
     // Versuch 1: admin.createUser
     const { data: newAuth, error: createErr } = await (db.auth.admin as any).createUser({
@@ -73,9 +68,8 @@ export async function POST(req: NextRequest) {
 
     if (!createErr && newAuth?.user?.id) {
       authUserId = newAuth.user.id
-
     } else {
-      // Versuch 2: signUp (Fallback falls admin API scheitert)
+      // Versuch 2: signUp
       const { data: signUpData, error: signUpErr } = await db.auth.signUp({
         email,
         password,
@@ -90,16 +84,15 @@ export async function POST(req: NextRequest) {
 
       if (!signUpErr && signUpData?.user?.id) {
         authUserId = signUpData.user.id
-
       } else {
-        // Versuch 3: Vielleicht existiert der Auth-User bereits (race condition)
+        // Versuch 3: User existiert bereits in Auth
         const { data: signInData } = await db.auth.signInWithPassword({ email, password })
         if (signInData?.user?.id) {
           authUserId = signInData.user.id
           isNewUser  = false
         } else {
           return err(
-            `User creation failed. createUser: ${createErr?.message} | signUp: ${signUpErr?.message}`,
+            `User creation failed: ${createErr?.message ?? 'unknown'} | ${signUpErr?.message ?? 'unknown'}`,
             'AUTH_CREATE_ERROR',
             500
           )
@@ -118,7 +111,7 @@ export async function POST(req: NextRequest) {
   // ── 5. User-Profil upserten ───────────────────────────
   await (db as any).from('users').upsert(
     {
-      id:                     authUserId,
+      id:                     authUserId!,
       telegram_id:            tgUser.id,
       telegram_username:      tgUser.username      ?? null,
       telegram_first_name:    tgUser.first_name,
@@ -133,40 +126,45 @@ export async function POST(req: NextRequest) {
   )
 
   // ── 6. Tagesquests sicherstellen ──────────────────────
-  await ensureDailyQuests(authUserId, season?.id ?? null)
+  await ensureDailyQuests(authUserId!, season?.id ?? null)
 
   // ── 7. Session erstellen ──────────────────────────────
-  // Versuch: admin.createSession
-  const { data: session, error: sessionErr } = await (db.auth.admin as any)
-    .createSession({ user_id: authUserId })
-
-  if (!sessionErr && session?.access_token) {
-    return ok({
-      accessToken:  session.access_token,
-      refreshToken: session.refresh_token,
-      expiresIn:    session.expires_in,
-      userId:       authUserId,
-      isNewUser,
-    })
-  }
-
-  // Fallback: signInWithPassword
+  // Zuerst signInWithPassword versuchen — zuverlässiger als createSession
   const { data: pwSession, error: pwErr } = await db.auth.signInWithPassword({
     email,
     password,
   })
 
-  if (pwErr || !pwSession?.session) {
-    return err('Session creation failed', 'SESSION_ERROR', 500)
+  if (!pwErr && pwSession?.session) {
+    return ok({
+      accessToken:  pwSession.session.access_token,
+      refreshToken: pwSession.session.refresh_token,
+      expiresIn:    pwSession.session.expires_in ?? 3600,
+      userId:       authUserId!,
+      isNewUser,
+    })
   }
 
-  return ok({
-    accessToken:  pwSession.session.access_token,
-    refreshToken: pwSession.session.refresh_token,
-    expiresIn:    pwSession.session.expires_in,
-    userId:       authUserId,
-    isNewUser,
-  })
+  // Fallback: admin.createSession
+  const { data: adminSession, error: adminSessionErr } = await (db.auth.admin as any)
+    .createSession({ user_id: authUserId })
+
+  if (!adminSessionErr && adminSession?.access_token) {
+    return ok({
+      accessToken:  adminSession.access_token,
+      refreshToken: adminSession.refresh_token,
+      expiresIn:    adminSession.expires_in ?? 3600,
+      userId:       authUserId!,
+      isNewUser,
+    })
+  }
+
+  // Beide fehlgeschlagen — detaillierter Fehler
+  return err(
+    `Session failed: signIn="${pwErr?.message}" | adminSession="${adminSessionErr?.message}"`,
+    'SESSION_ERROR',
+    500
+  )
 }
 
 // ── Tagesquests sicherstellen ─────────────────────────────
@@ -197,9 +195,9 @@ async function ensureDailyQuests(userId: string, seasonId: string | null) {
 
   if (!templates?.length) return
 
-  const easy    = templates.filter((t: any) => t.difficulty === 'easy').slice(0, 3)
-  const medium  = templates.filter((t: any) => t.difficulty === 'medium').slice(0, 2)
-  const hard    = templates.filter((t: any) => t.difficulty === 'hard').slice(0, 1)
+  const easy   = templates.filter((t: any) => t.difficulty === 'easy').slice(0, 3)
+  const medium = templates.filter((t: any) => t.difficulty === 'medium').slice(0, 2)
+  const hard   = templates.filter((t: any) => t.difficulty === 'hard').slice(0, 1)
 
   await (db as any).from('daily_quest_assignments').upsert(
     [...easy, ...medium, ...hard].map((t: any) => ({
