@@ -36,10 +36,12 @@ export async function POST(req: NextRequest) {
 
   const tgUser = parsed.user
   const db     = getAdminClient()
-  const email  = `tg_${tgUser.id}@ton-miniapp.internal`
 
-  // ── 3. User in unserer Tabelle suchen ─────────────────
-  // Primärer Lookup: telegram_id in public.users
+  // FIX: .com statt .internal — Supabase lehnt .internal als ungültig ab
+  const email    = `tg${tgUser.id}@telegram-user.com`
+  const password = `Tg!${tgUser.id}${botToken.slice(-6)}`
+
+  // ── 3. Bestehenden User suchen ────────────────────────
   const { data: existingProfile } = await (db as any)
     .from('users')
     .select('id')
@@ -50,21 +52,59 @@ export async function POST(req: NextRequest) {
   let isNewUser = false
 
   if (existingProfile?.id) {
-    // ── Bestehender User ──────────────────────────────
+    // Bestehender User gefunden
     authUserId = existingProfile.id
 
   } else {
-    // ── Neuer User — Auth-Account erstellen ──────────
+    // Neuer User — Auth-Account anlegen
     isNewUser  = true
-    authUserId = await createAuthUser(db, email, tgUser)
 
-    if (!authUserId) {
-      return err(
-        'Auth user creation failed — bitte prüfe Supabase Authentication Settings: ' +
-        'Dashboard → Authentication → Settings → "Disable new user signups" muss OFF sein.',
-        'AUTH_CREATE_ERROR',
-        500
-      )
+    // Versuch 1: admin.createUser
+    const { data: newAuth, error: createErr } = await (db.auth.admin as any).createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        telegram_id:         tgUser.id,
+        telegram_first_name: tgUser.first_name,
+        telegram_username:   tgUser.username ?? null,
+      },
+    })
+
+    if (!createErr && newAuth?.user?.id) {
+      authUserId = newAuth.user.id
+
+    } else {
+      // Versuch 2: signUp (Fallback falls admin API scheitert)
+      const { data: signUpData, error: signUpErr } = await db.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            telegram_id:         tgUser.id,
+            telegram_first_name: tgUser.first_name,
+            telegram_username:   tgUser.username ?? null,
+          },
+        },
+      })
+
+      if (!signUpErr && signUpData?.user?.id) {
+        authUserId = signUpData.user.id
+
+      } else {
+        // Versuch 3: Vielleicht existiert der Auth-User bereits (race condition)
+        const { data: signInData } = await db.auth.signInWithPassword({ email, password })
+        if (signInData?.user?.id) {
+          authUserId = signInData.user.id
+          isNewUser  = false
+        } else {
+          return err(
+            `User creation failed. createUser: ${createErr?.message} | signUp: ${signUpErr?.message}`,
+            'AUTH_CREATE_ERROR',
+            500
+          )
+        }
+      }
     }
   }
 
@@ -96,91 +136,37 @@ export async function POST(req: NextRequest) {
   await ensureDailyQuests(authUserId, season?.id ?? null)
 
   // ── 7. Session erstellen ──────────────────────────────
+  // Versuch: admin.createSession
   const { data: session, error: sessionErr } = await (db.auth.admin as any)
     .createSession({ user_id: authUserId })
 
-  if (sessionErr || !session) {
-    // Fallback: signInWithPassword versuchen
-    const { data: fallbackSession } = await db.auth.signInWithPassword({
-      email,
-      password: `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
-    })
-    if (!fallbackSession?.session) {
-      return err('Session creation failed', 'SESSION_ERROR', 500)
-    }
+  if (!sessionErr && session?.access_token) {
     return ok({
-      accessToken:  fallbackSession.session.access_token,
-      refreshToken: fallbackSession.session.refresh_token,
-      expiresIn:    fallbackSession.session.expires_in,
+      accessToken:  session.access_token,
+      refreshToken: session.refresh_token,
+      expiresIn:    session.expires_in,
       userId:       authUserId,
       isNewUser,
     })
   }
 
+  // Fallback: signInWithPassword
+  const { data: pwSession, error: pwErr } = await db.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (pwErr || !pwSession?.session) {
+    return err('Session creation failed', 'SESSION_ERROR', 500)
+  }
+
   return ok({
-    accessToken:  session.access_token,
-    refreshToken: session.refresh_token,
-    expiresIn:    session.expires_in,
+    accessToken:  pwSession.session.access_token,
+    refreshToken: pwSession.session.refresh_token,
+    expiresIn:    pwSession.session.expires_in,
     userId:       authUserId,
     isNewUser,
   })
-}
-
-// ── Auth-User erstellen mit mehreren Fallbacks ─────────────
-
-async function createAuthUser(db: any, email: string, tgUser: any): Promise<string> {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN ?? ''
-
-  // Versuch 1: admin.createUser
-  const { data: newAuth, error: createErr } = await (db.auth.admin as any).createUser({
-    email,
-    email_confirm:    true,
-    password:         `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
-    user_metadata: {
-      telegram_id:         tgUser.id,
-      telegram_username:   tgUser.username   ?? null,
-      telegram_first_name: tgUser.first_name,
-    },
-  })
-
-  if (!createErr && newAuth?.user?.id) {
-    return newAuth.user.id
-  }
-
-  // Versuch 2: signUp (falls admin API blockiert ist)
-  if (createErr?.message?.includes('not allowed') ||
-      createErr?.message?.includes('Not allowed') ||
-      createErr?.message?.includes('signup')) {
-
-    const { data: signUpData, error: signUpErr } = await db.auth.signUp({
-      email,
-      password: `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
-      options: {
-        data: {
-          telegram_id:         tgUser.id,
-          telegram_username:   tgUser.username   ?? null,
-          telegram_first_name: tgUser.first_name,
-        },
-      },
-    })
-
-    if (!signUpErr && signUpData?.user?.id) {
-      return signUpData.user.id
-    }
-  }
-
-  // Versuch 3: User existiert bereits in Auth aber nicht in users-Tabelle
-  // Versuch über signInWithPassword
-  const { data: signInData } = await db.auth.signInWithPassword({
-    email,
-    password: `tg_secure_${tgUser.id}_${botToken.slice(-8)}`,
-  })
-
-  if (signInData?.user?.id) {
-    return signInData.user.id
-  }
-
-  return ''
 }
 
 // ── Tagesquests sicherstellen ─────────────────────────────
@@ -196,7 +182,6 @@ async function ensureDailyQuests(userId: string, seasonId: string | null) {
     .eq('quest_date', today)
 
   if ((count ?? 0) > 0) {
-    // Quests existieren bereits — nur last_active_at updaten
     await (db as any)
       .from('users')
       .update({ last_active_at: new Date().toISOString() })
@@ -204,7 +189,6 @@ async function ensureDailyQuests(userId: string, seasonId: string | null) {
     return
   }
 
-  // Quests zuweisen
   const { data: templates } = await (db as any)
     .from('quest_templates')
     .select('id, difficulty')
@@ -216,10 +200,9 @@ async function ensureDailyQuests(userId: string, seasonId: string | null) {
   const easy    = templates.filter((t: any) => t.difficulty === 'easy').slice(0, 3)
   const medium  = templates.filter((t: any) => t.difficulty === 'medium').slice(0, 2)
   const hard    = templates.filter((t: any) => t.difficulty === 'hard').slice(0, 1)
-  const toAssign = [...easy, ...medium, ...hard]
 
   await (db as any).from('daily_quest_assignments').upsert(
-    toAssign.map((t: any) => ({
+    [...easy, ...medium, ...hard].map((t: any) => ({
       user_id:     userId,
       template_id: t.id,
       quest_date:  today,
