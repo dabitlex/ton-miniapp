@@ -1,17 +1,47 @@
 // src/app/api/v1/auth/telegram/route.ts
 import { NextRequest } from 'next/server'
 import { validateTelegramInitData, parseTelegramInitData } from '@/lib/telegram/initData'
-import { getAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@supabase/supabase-js'
 import { ok, err } from '@/app/api/v1/_lib/handler'
 import { todayUTC } from '@/lib/utils'
+import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Erstelle Service-Role Client der RLS komplett umgeht
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url || !key) throw new Error('Supabase env vars missing')
+
+  return createClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession:   false,
+    },
+    // Service Role Header explizit setzen
+    global: {
+      headers: {
+        'apikey':        key,
+        'Authorization': `Bearer ${key}`,
+      },
+    },
+  })
+}
+
 export async function POST(req: NextRequest) {
 
-  // ── 1. Body parsen ─────────────────────────────────────
+  // ── 1. Env prüfen ─────────────────────────────────────
+  const botToken   = process.env.TELEGRAM_BOT_TOKEN
+  const supaUrl    = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!botToken)   return err('TELEGRAM_BOT_TOKEN fehlt', 'CONFIG_ERROR', 500)
+  if (!supaUrl)    return err('SUPABASE_URL fehlt', 'CONFIG_ERROR', 500)
+  if (!serviceKey) return err('SERVICE_ROLE_KEY fehlt', 'CONFIG_ERROR', 500)
+
+  // ── 2. Body parsen ─────────────────────────────────────
   let body: { initData?: string }
   try { body = await req.json() }
   catch { return err('Invalid JSON body', 'BAD_REQUEST') }
@@ -19,16 +49,6 @@ export async function POST(req: NextRequest) {
   if (!body.initData || typeof body.initData !== 'string') {
     return err('initData is required', 'MISSING_INIT_DATA')
   }
-
-  // ── 2. Env prüfen ─────────────────────────────────────
-  const botToken   = process.env.TELEGRAM_BOT_TOKEN
-  const supaUrl    = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey    = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!botToken)   return err('TELEGRAM_BOT_TOKEN not configured', 'CONFIG_ERROR', 500)
-  if (!supaUrl)    return err('NEXT_PUBLIC_SUPABASE_URL not configured', 'CONFIG_ERROR', 500)
-  if (!serviceKey) return err('SUPABASE_SERVICE_ROLE_KEY not configured', 'CONFIG_ERROR', 500)
 
   // ── 3. Telegram initData validieren ───────────────────
   const { valid, reason } = validateTelegramInitData(body.initData, botToken)
@@ -46,23 +66,20 @@ export async function POST(req: NextRequest) {
   const email    = `tg${tgUser.id}@telegram-user.com`
   const password = `Tg!${tgUser.id}${botToken.slice(-6)}`
 
-  // Frischen Admin-Client erstellen (nicht gecacht)
-  const db = createClient(supaUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  })
+  // Service-Role Client (umgeht RLS komplett)
+  const db = getServiceClient()
 
   // ── 4. Auth-User holen oder erstellen ─────────────────
   let authUserId: string | null = null
   let isNewUser = false
 
-  // Versuch 1: Einloggen (User existiert bereits)
+  // Zuerst prüfen ob User bereits existiert (via signIn)
   const { data: signInData } = await db.auth.signInWithPassword({ email, password })
 
   if (signInData?.user?.id) {
     authUserId = signInData.user.id
-
   } else {
-    // Versuch 2: Neuen User anlegen mit admin API
+    // Neuer User anlegen
     isNewUser = true
     const { data: newAuth, error: createErr } = await db.auth.admin.createUser({
       email,
@@ -77,25 +94,19 @@ export async function POST(req: NextRequest) {
 
     if (!createErr && newAuth?.user?.id) {
       authUserId = newAuth.user.id
-
     } else {
-      // Versuch 3: signUp als letzter Fallback
+      // Fallback: signUp
       const { data: signUpData, error: signUpErr } = await db.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            telegram_id:         tgUser.id,
-            telegram_first_name: tgUser.first_name,
-          },
-        },
+        options: { data: { telegram_id: tgUser.id } },
       })
 
       if (!signUpErr && signUpData?.user?.id) {
         authUserId = signUpData.user.id
       } else {
         return err(
-          `All auth methods failed. createUser: "${createErr?.message}" | signUp: "${signUpErr?.message}"`,
+          `Auth failed: "${createErr?.message}" | "${signUpErr?.message}"`,
           'AUTH_CREATE_ERROR',
           500
         )
@@ -103,9 +114,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!authUserId) {
-    return err('Could not get auth user ID', 'AUTH_ID_ERROR', 500)
-  }
+  if (!authUserId) return err('No auth user ID', 'AUTH_ID_ERROR', 500)
 
   // ── 5. Aktive Saison ──────────────────────────────────
   const { data: season } = await db
@@ -114,39 +123,48 @@ export async function POST(req: NextRequest) {
     .eq('status', 'active')
     .maybeSingle()
 
-  // ── 6. User-Profil in public.users schreiben ──────────
-  const { error: upsertErr } = await db.from('users' as any).upsert(
-    {
-      id:                     authUserId,
-      telegram_id:            tgUser.id,
-      telegram_username:      tgUser.username      ?? null,
-      telegram_first_name:    tgUser.first_name,
-      telegram_last_name:     tgUser.last_name     ?? null,
-      telegram_photo_url:     tgUser.photo_url     ?? null,
-      telegram_language_code: tgUser.language_code ?? 'en',
-      telegram_is_premium:    tgUser.is_premium    ?? false,
-      last_active_at:         new Date().toISOString(),
-      current_season_id:      (season as any)?.id  ?? null,
-    },
-    { onConflict: 'telegram_id' }
-  )
+  // ── 6. public.users upserten via Service Role ─────────
+  // Service Role umgeht RLS — direkt als postgres schreiben
+  const userPayload = {
+    id:                     authUserId,
+    telegram_id:            tgUser.id,
+    telegram_username:      tgUser.username      ?? null,
+    telegram_first_name:    tgUser.first_name,
+    telegram_last_name:     tgUser.last_name     ?? null,
+    telegram_photo_url:     tgUser.photo_url     ?? null,
+    telegram_language_code: tgUser.language_code ?? 'en',
+    telegram_is_premium:    tgUser.is_premium    ?? false,
+    last_active_at:         new Date().toISOString(),
+    current_season_id:      (season as any)?.id  ?? null,
+  }
+
+  const { error: upsertErr } = await db
+    .from('users')
+    .upsert(userPayload as any, { onConflict: 'telegram_id' })
 
   if (upsertErr) {
-    return err(
-      `public.users upsert failed: ${upsertErr.message} (code: ${upsertErr.code})`,
-      'PROFILE_UPSERT_ERROR',
-      500
-    )
+    // Falls RLS immer noch blockiert: INSERT direkt versuchen
+    const { error: insertErr } = await db
+      .from('users')
+      .insert(userPayload as any)
+
+    if (insertErr && !insertErr.message.includes('duplicate')) {
+      return err(
+        `User write failed: upsert="${upsertErr.message}" | insert="${insertErr.message}"`,
+        'DB_WRITE_ERROR',
+        500
+      )
+    }
   }
 
-  // ── 7. Tagesquests sicherstellen ──────────────────────
+  // ── 7. Tagesquests ────────────────────────────────────
   try {
-    await ensureDailyQuests(db, authUserId, (season as any)?.id ?? null)
+    await ensureDailyQuests(db as any, authUserId, (season as any)?.id ?? null)
   } catch (e: any) {
-    console.error('[Auth] Quest assignment failed:', e?.message)
+    console.error('[Auth] Quests failed (non-critical):', e?.message)
   }
 
-  // ── 8. Session erstellen ──────────────────────────────
+  // ── 8. Session ────────────────────────────────────────
   const { data: session, error: sessionErr } = await db.auth.signInWithPassword({
     email,
     password,
@@ -169,7 +187,7 @@ export async function POST(req: NextRequest) {
 
   if (adminSessErr || !adminSess?.access_token) {
     return err(
-      `Session failed: "${sessionErr?.message}" | admin: "${adminSessErr?.message}"`,
+      `Session failed: "${sessionErr?.message}" | "${adminSessErr?.message}"`,
       'SESSION_ERROR',
       500
     )
@@ -183,8 +201,6 @@ export async function POST(req: NextRequest) {
     isNewUser,
   })
 }
-
-// ── Tagesquests ────────────────────────────────────────────
 
 async function ensureDailyQuests(db: any, userId: string, seasonId: string | null) {
   const today = todayUTC()
