@@ -39,22 +39,19 @@ export async function POST(req: NextRequest) {
   const email    = `tg${tgUser.id}@telegram-user.com`
   const password = `Tg!${tgUser.id}${botToken.slice(-6)}`
 
-  // ── 3. Bestehenden User suchen ────────────────────────
-  const { data: existingProfile } = await (db as any)
-    .from('users')
-    .select('id')
-    .eq('telegram_id', tgUser.id)
-    .maybeSingle()
-
-  let authUserId: string
+  // ── 3. Auth-User holen oder erstellen ─────────────────
+  // Zuerst in auth.users per Email suchen
+  let authUserId: string | null = null
   let isNewUser = false
 
-  if (existingProfile?.id) {
-    authUserId = existingProfile.id
-  } else {
-    isNewUser = true
+  // Versuch: direkt einloggen (User existiert bereits)
+  const { data: signInData } = await db.auth.signInWithPassword({ email, password })
 
-    // Versuch 1: admin.createUser
+  if (signInData?.user?.id) {
+    authUserId = signInData.user.id
+  } else {
+    // Neuer User — mit admin.createUser anlegen
+    isNewUser = true
     const { data: newAuth, error: createErr } = await (db.auth.admin as any).createUser({
       email,
       password,
@@ -66,39 +63,18 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    if (!createErr && newAuth?.user?.id) {
-      authUserId = newAuth.user.id
-    } else {
-      // Versuch 2: signUp
-      const { data: signUpData, error: signUpErr } = await db.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            telegram_id:         tgUser.id,
-            telegram_first_name: tgUser.first_name,
-            telegram_username:   tgUser.username ?? null,
-          },
-        },
-      })
-
-      if (!signUpErr && signUpData?.user?.id) {
-        authUserId = signUpData.user.id
-      } else {
-        // Versuch 3: User existiert bereits in Auth
-        const { data: signInData } = await db.auth.signInWithPassword({ email, password })
-        if (signInData?.user?.id) {
-          authUserId = signInData.user.id
-          isNewUser  = false
-        } else {
-          return err(
-            `User creation failed: ${createErr?.message ?? 'unknown'} | ${signUpErr?.message ?? 'unknown'}`,
-            'AUTH_CREATE_ERROR',
-            500
-          )
-        }
-      }
+    if (createErr || !newAuth?.user?.id) {
+      return err(
+        `Auth creation failed: ${createErr?.message ?? 'unknown error'}`,
+        'AUTH_CREATE_ERROR',
+        500
+      )
     }
+    authUserId = newAuth.user.id
+  }
+
+  if (!authUserId) {
+    return err('Could not determine auth user ID', 'AUTH_ID_ERROR', 500)
   }
 
   // ── 4. Aktive Saison ──────────────────────────────────
@@ -108,10 +84,11 @@ export async function POST(req: NextRequest) {
     .eq('status', 'active')
     .maybeSingle()
 
-  // ── 5. User-Profil upserten ───────────────────────────
-  await (db as any).from('users').upsert(
+  // ── 5. User-Profil in public.users upserten ───────────
+  // Service Role umgeht RLS — sollte immer funktionieren
+  const { error: upsertErr } = await (db as any).from('users').upsert(
     {
-      id:                     authUserId!,
+      id:                     authUserId,
       telegram_id:            tgUser.id,
       telegram_username:      tgUser.username      ?? null,
       telegram_first_name:    tgUser.first_name,
@@ -125,46 +102,59 @@ export async function POST(req: NextRequest) {
     { onConflict: 'telegram_id' }
   )
 
+  // Upsert-Fehler NICHT ignorieren — zurückgeben damit wir ihn sehen
+  if (upsertErr) {
+    return err(
+      `Profile upsert failed: ${upsertErr.message} | Code: ${upsertErr.code}`,
+      'PROFILE_UPSERT_ERROR',
+      500
+    )
+  }
+
   // ── 6. Tagesquests sicherstellen ──────────────────────
-  await ensureDailyQuests(authUserId!, season?.id ?? null)
+  try {
+    await ensureDailyQuests(authUserId, season?.id ?? null)
+  } catch (e: any) {
+    // Quests-Fehler ist nicht kritisch — App kann trotzdem starten
+    console.error('[Auth] Quest assignment failed:', e?.message)
+  }
 
   // ── 7. Session erstellen ──────────────────────────────
-  // Zuerst signInWithPassword versuchen — zuverlässiger als createSession
-  const { data: pwSession, error: pwErr } = await db.auth.signInWithPassword({
+  // signInWithPassword gibt direkt eine Session zurück
+  const { data: sessionData, error: sessionErr } = await db.auth.signInWithPassword({
     email,
     password,
   })
 
-  if (!pwErr && pwSession?.session) {
+  if (sessionErr || !sessionData?.session) {
+    // Fallback: admin.createSession
+    const { data: adminSess, error: adminErr } = await (db.auth.admin as any)
+      .createSession({ user_id: authUserId })
+
+    if (adminErr || !adminSess?.access_token) {
+      return err(
+        `Session failed: ${sessionErr?.message} | admin: ${adminErr?.message}`,
+        'SESSION_ERROR',
+        500
+      )
+    }
+
     return ok({
-      accessToken:  pwSession.session.access_token,
-      refreshToken: pwSession.session.refresh_token,
-      expiresIn:    pwSession.session.expires_in ?? 3600,
-      userId:       authUserId!,
+      accessToken:  adminSess.access_token,
+      refreshToken: adminSess.refresh_token,
+      expiresIn:    adminSess.expires_in ?? 3600,
+      userId:       authUserId,
       isNewUser,
     })
   }
 
-  // Fallback: admin.createSession
-  const { data: adminSession, error: adminSessionErr } = await (db.auth.admin as any)
-    .createSession({ user_id: authUserId })
-
-  if (!adminSessionErr && adminSession?.access_token) {
-    return ok({
-      accessToken:  adminSession.access_token,
-      refreshToken: adminSession.refresh_token,
-      expiresIn:    adminSession.expires_in ?? 3600,
-      userId:       authUserId!,
-      isNewUser,
-    })
-  }
-
-  // Beide fehlgeschlagen — detaillierter Fehler
-  return err(
-    `Session failed: signIn="${pwErr?.message}" | adminSession="${adminSessionErr?.message}"`,
-    'SESSION_ERROR',
-    500
-  )
+  return ok({
+    accessToken:  sessionData.session.access_token,
+    refreshToken: sessionData.session.refresh_token,
+    expiresIn:    sessionData.session.expires_in ?? 3600,
+    userId:       authUserId,
+    isNewUser,
+  })
 }
 
 // ── Tagesquests sicherstellen ─────────────────────────────
