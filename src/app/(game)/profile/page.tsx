@@ -1,20 +1,20 @@
 // src/app/(game)/profile/page.tsx
 'use client'
-import { useUserStore }  from '@/stores/useUserStore'
-import { useEnergy }     from '@/features/hooks'
-import { XPBar }         from '@/components/game/XPBar'
-import { LeagueBadge }   from '@/components/game/LeagueBadge'
-import { LevelBadge }    from '@/components/game/LevelBadge'
-import { SkeletonCard }  from '@/components/ui/Skeleton'
-import { formatNumber }  from '@/lib/utils'
-// FIX: xpForLevel kommt aus constants/game, nicht aus utils
+import { useState }     from 'react'
+import { useUserStore } from '@/stores/useUserStore'
+import { useEnergy }    from '@/features/hooks'
+import { XPBar }        from '@/components/game/XPBar'
+import { LeagueBadge }  from '@/components/game/LeagueBadge'
+import { LevelBadge }   from '@/components/game/LevelBadge'
+import { SkeletonCard } from '@/components/ui/Skeleton'
+import { TelegramAvatar } from '@/components/layout/GameHeader'
+import { formatNumber } from '@/lib/utils'
 import { xpForLevel, LEAGUES } from '@/lib/constants/game'
 import { Copy, CheckCircle } from 'lucide-react'
-import { useState } from 'react'
 
 export default function ProfilePage() {
-  const profile   = useUserStore(s => s.profile)
-  const energy    = useEnergy()
+  const profile         = useUserStore(s => s.profile)
+  const energy          = useEnergy()
   const [copied, setCopied] = useState(false)
 
   if (!profile) return (
@@ -24,14 +24,14 @@ export default function ProfilePage() {
     </div>
   )
 
-  const leagueRange    = LEAGUES[profile.league]
-  const levelsToNext   = leagueRange.max - profile.level
-  const xpNeededForLevel = xpForLevel(Math.min(profile.level, 29))
+  const leagueRange       = LEAGUES[profile.league]
+  const levelsToNext      = leagueRange.max - profile.level
+  const xpNeeded          = xpForLevel(Math.min(profile.level, 29))
 
   function copyReferral() {
-    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? 'yourbot'
+    const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? 'yourbot'
     navigator.clipboard.writeText(
-      `https://t.me/${botUsername}?start=${profile?.referralCode ?? ""}`
+      `https://t.me/${bot}?start=${profile?.referralCode ?? ''}`
     ).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -43,18 +43,12 @@ export default function ProfilePage() {
 
       {/* Header */}
       <div className="flex items-center gap-4 py-2">
-        {profile.telegramPhotoUrl ? (
-          <img
-            src={profile.telegramPhotoUrl}
-            alt=""
-            className="w-16 h-16 rounded-2xl ring-2 ring-violet-500/30"
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center
-                          justify-center text-2xl font-black text-violet-300">
-            {profile.telegramFirstName[0]}
-          </div>
-        )}
+        <TelegramAvatar
+          photoUrl={profile.telegramPhotoUrl}
+          firstName={profile.telegramFirstName}
+          size={64}
+          className="ring-2 ring-violet-500/30 rounded-2xl"
+        />
         <div>
           <h1 className="text-lg font-black text-white leading-tight">
             {profile.telegramFirstName} {profile.telegramLastName ?? ''}
@@ -74,7 +68,7 @@ export default function ProfilePage() {
         <div className="flex justify-between text-xs text-white/40">
           <span>Level Fortschritt</span>
           <span className="tabular-nums">
-            {profile.xpCurrentLevel.toLocaleString()} / {xpNeededForLevel.toLocaleString()} XP
+            {profile.xpCurrentLevel.toLocaleString()} / {xpNeeded.toLocaleString()} XP
           </span>
         </div>
         <XPBar />
@@ -88,17 +82,15 @@ export default function ProfilePage() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-2">
         {[
-          { label: 'Gesamt XP',   value: formatNumber(profile.xpTotal),       icon: '⭐' },
-          { label: 'Saison XP',   value: formatNumber(profile.seasonXp),       icon: '🗓' },
-          { label: 'Streak',      value: `${profile.streakCurrent} Tage`,      icon: '🔥' },
+          { label: 'Gesamt XP',    value: formatNumber(profile.xpTotal),      icon: '⭐' },
+          { label: 'Saison XP',    value: formatNumber(profile.seasonXp),      icon: '🗓' },
+          { label: 'Streak',       value: `${profile.streakCurrent} Tage`,     icon: '🔥' },
           { label: 'Bester Streak',value: `${profile.streakLongest} Tage`,     icon: '🏆' },
-          { label: 'Energie',     value: `${energy.current}/100`,              icon: '⚡' },
-          { label: 'XP Heute',    value: formatNumber(profile.xpEarnedToday),  icon: '📈' },
+          { label: 'Energie',      value: `${energy.current}/100`,             icon: '⚡' },
+          { label: 'XP Heute',     value: formatNumber(profile.xpEarnedToday), icon: '📈' },
         ].map(({ label, value, icon }) => (
-          <div
-            key={label}
-            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 flex items-center gap-2"
-          >
+          <div key={label}
+            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 flex items-center gap-2">
             <span className="text-xl">{icon}</span>
             <div>
               <p className="text-sm font-bold text-white leading-tight tabular-nums">{value}</p>
