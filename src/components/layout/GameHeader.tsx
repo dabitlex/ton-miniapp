@@ -25,7 +25,7 @@ export function GameHeader() {
 
       {/* Center: app name */}
       <span className="text-sm font-black text-white/70 tracking-tight">
-        TON<span className="text-violet-400">APP</span>
+        VEX<span className="text-violet-400">ALGO</span>
       </span>
 
       {/* Right: notifications + avatar */}
