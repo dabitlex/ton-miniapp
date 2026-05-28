@@ -8,31 +8,17 @@ import { createClient } from '@supabase/supabase-js'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Erstelle Service-Role Client der RLS komplett umgeht
 function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) throw new Error('Supabase env vars missing')
-
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
   return createClient(url, key, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession:   false,
-    },
-    // Service Role Header explizit setzen
-    global: {
-      headers: {
-        'apikey':        key,
-        'Authorization': `Bearer ${key}`,
-      },
-    },
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { apikey: key, Authorization: `Bearer ${key}` } },
   })
 }
 
 export async function POST(req: NextRequest) {
 
-  // ── 1. Env prüfen ─────────────────────────────────────
   const botToken   = process.env.TELEGRAM_BOT_TOKEN
   const supaUrl    = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -41,8 +27,7 @@ export async function POST(req: NextRequest) {
   if (!supaUrl)    return err('SUPABASE_URL fehlt', 'CONFIG_ERROR', 500)
   if (!serviceKey) return err('SERVICE_ROLE_KEY fehlt', 'CONFIG_ERROR', 500)
 
-  // ── 2. Body parsen ─────────────────────────────────────
-  let body: { initData?: string }
+  let body: { initData?: string; photoUrl?: string | null }
   try { body = await req.json() }
   catch { return err('Invalid JSON body', 'BAD_REQUEST') }
 
@@ -50,7 +35,7 @@ export async function POST(req: NextRequest) {
     return err('initData is required', 'MISSING_INIT_DATA')
   }
 
-  // ── 3. Telegram initData validieren ───────────────────
+  // Validate HMAC
   const { valid, reason } = validateTelegramInitData(body.initData, botToken)
   if (!valid) {
     return err(`initData validation failed: ${reason}`, 'INVALID_INIT_DATA', 401)
@@ -66,20 +51,21 @@ export async function POST(req: NextRequest) {
   const email    = `tg${tgUser.id}@telegram-user.com`
   const password = `Tg!${tgUser.id}${botToken.slice(-6)}`
 
-  // Service-Role Client (umgeht RLS komplett)
+  // photo_url: vom Client geliefert (aus initDataUnsafe) hat Vorrang
+  // initData enthält photo_url nicht immer zuverlässig
+  const photoUrl = body.photoUrl ?? tgUser.photo_url ?? null
+
   const db = getServiceClient()
 
-  // ── 4. Auth-User holen oder erstellen ─────────────────
+  // Auth User holen oder erstellen
   let authUserId: string | null = null
   let isNewUser = false
 
-  // Zuerst prüfen ob User bereits existiert (via signIn)
   const { data: signInData } = await db.auth.signInWithPassword({ email, password })
 
   if (signInData?.user?.id) {
     authUserId = signInData.user.id
   } else {
-    // Neuer User anlegen
     isNewUser = true
     const { data: newAuth, error: createErr } = await db.auth.admin.createUser({
       email,
@@ -95,20 +81,16 @@ export async function POST(req: NextRequest) {
     if (!createErr && newAuth?.user?.id) {
       authUserId = newAuth.user.id
     } else {
-      // Fallback: signUp
       const { data: signUpData, error: signUpErr } = await db.auth.signUp({
-        email,
-        password,
+        email, password,
         options: { data: { telegram_id: tgUser.id } },
       })
-
       if (!signUpErr && signUpData?.user?.id) {
         authUserId = signUpData.user.id
       } else {
         return err(
           `Auth failed: "${createErr?.message}" | "${signUpErr?.message}"`,
-          'AUTH_CREATE_ERROR',
-          500
+          'AUTH_CREATE_ERROR', 500
         )
       }
     }
@@ -116,59 +98,46 @@ export async function POST(req: NextRequest) {
 
   if (!authUserId) return err('No auth user ID', 'AUTH_ID_ERROR', 500)
 
-  // ── 5. Aktive Saison ──────────────────────────────────
   const { data: season } = await db
-    .from('seasons')
-    .select('id')
-    .eq('status', 'active')
-    .maybeSingle()
+    .from('seasons').select('id').eq('status', 'active').maybeSingle()
 
-  // ── 6. public.users upserten via Service Role ─────────
-  // Service Role umgeht RLS — direkt als postgres schreiben
-  const userPayload = {
-    id:                     authUserId,
-    telegram_id:            tgUser.id,
-    telegram_username:      tgUser.username      ?? null,
-    telegram_first_name:    tgUser.first_name,
-    telegram_last_name:     tgUser.last_name     ?? null,
-    telegram_photo_url:     tgUser.photo_url     ?? null,
-    telegram_language_code: tgUser.language_code ?? 'en',
-    telegram_is_premium:    tgUser.is_premium    ?? false,
-    last_active_at:         new Date().toISOString(),
-    current_season_id:      (season as any)?.id  ?? null,
-  }
-
-  const { error: upsertErr } = await db
-    .from('users')
-    .upsert(userPayload as any, { onConflict: 'telegram_id' })
+  // Upsert mit photo_url vom Client
+  const { error: upsertErr } = await db.from('users' as any).upsert(
+    {
+      id:                     authUserId,
+      telegram_id:            tgUser.id,
+      telegram_username:      tgUser.username      ?? null,
+      telegram_first_name:    tgUser.first_name,
+      telegram_last_name:     tgUser.last_name     ?? null,
+      telegram_photo_url:     photoUrl,              // ← korrekte URL vom Client
+      telegram_language_code: tgUser.language_code ?? 'en',
+      telegram_is_premium:    tgUser.is_premium    ?? false,
+      last_active_at:         new Date().toISOString(),
+      current_season_id:      (season as any)?.id  ?? null,
+    },
+    { onConflict: 'telegram_id' }
+  )
 
   if (upsertErr) {
-    // Falls RLS immer noch blockiert: INSERT direkt versuchen
-    const { error: insertErr } = await db
-      .from('users')
-      .insert(userPayload as any)
-
+    const { error: insertErr } = await db.from('users' as any).insert({
+      id: authUserId, telegram_id: tgUser.id,
+      telegram_first_name: tgUser.first_name,
+      telegram_photo_url: photoUrl,
+      last_active_at: new Date().toISOString(),
+      current_season_id: (season as any)?.id ?? null,
+    })
     if (insertErr && !insertErr.message.includes('duplicate')) {
       return err(
-        `User write failed: upsert="${upsertErr.message}" | insert="${insertErr.message}"`,
-        'DB_WRITE_ERROR',
-        500
+        `DB write failed: "${upsertErr.message}" | "${insertErr.message}"`,
+        'DB_WRITE_ERROR', 500
       )
     }
   }
 
-  // ── 7. Tagesquests ────────────────────────────────────
-  try {
-    await ensureDailyQuests(db as any, authUserId, (season as any)?.id ?? null)
-  } catch (e: any) {
-    console.error('[Auth] Quests failed (non-critical):', e?.message)
-  }
+  try { await ensureDailyQuests(db as any, authUserId, (season as any)?.id ?? null) }
+  catch (e: any) { console.error('[Auth] Quests failed:', e?.message) }
 
-  // ── 8. Session ────────────────────────────────────────
-  const { data: session, error: sessionErr } = await db.auth.signInWithPassword({
-    email,
-    password,
-  })
+  const { data: session, error: sessionErr } = await db.auth.signInWithPassword({ email, password })
 
   if (!sessionErr && session?.session) {
     return ok({
@@ -180,7 +149,6 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Fallback: admin.createSession
   const { data: adminSess, error: adminSessErr } = await db.auth.admin.createSession({
     user_id: authUserId,
   })
@@ -188,8 +156,7 @@ export async function POST(req: NextRequest) {
   if (adminSessErr || !adminSess?.access_token) {
     return err(
       `Session failed: "${sessionErr?.message}" | "${adminSessErr?.message}"`,
-      'SESSION_ERROR',
-      500
+      'SESSION_ERROR', 500
     )
   }
 
@@ -204,12 +171,10 @@ export async function POST(req: NextRequest) {
 
 async function ensureDailyQuests(db: any, userId: string, seasonId: string | null) {
   const today = todayUTC()
-
   const { count } = await db
     .from('daily_quest_assignments')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('quest_date', today)
+    .eq('user_id', userId).eq('quest_date', today)
 
   if ((count ?? 0) > 0) {
     await db.from('users').update({ last_active_at: new Date().toISOString() }).eq('id', userId)
@@ -217,10 +182,8 @@ async function ensureDailyQuests(db: any, userId: string, seasonId: string | nul
   }
 
   const { data: templates } = await db
-    .from('quest_templates')
-    .select('id, difficulty')
-    .eq('quest_type', 'daily')
-    .eq('is_active', true)
+    .from('quest_templates').select('id, difficulty')
+    .eq('quest_type', 'daily').eq('is_active', true)
 
   if (!templates?.length) return
 
@@ -230,11 +193,8 @@ async function ensureDailyQuests(db: any, userId: string, seasonId: string | nul
 
   await db.from('daily_quest_assignments').upsert(
     [...easy, ...medium, ...hard].map((t: any) => ({
-      user_id:     userId,
-      template_id: t.id,
-      quest_date:  today,
-      season_id:   seasonId,
-      status:      'available',
+      user_id: userId, template_id: t.id,
+      quest_date: today, season_id: seasonId, status: 'available',
     })),
     { onConflict: 'user_id,template_id,quest_date' }
   )
