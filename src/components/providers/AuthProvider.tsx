@@ -14,11 +14,10 @@ export function AuthProvider({ children }: Props) {
   const didInit      = useRef(false)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const auth               = useAuthStore()
-  const { setProfile }     = useUserStore()
-  const { hydrate }        = useEnergyStore()
+  const auth           = useAuthStore()
+  const { setProfile } = useUserStore()
+  const { hydrate }    = useEnergyStore()
 
-  // ── Profil laden ─────────────────────────────────────
   const fetchProfile = useCallback(async (token: string) => {
     try {
       const res  = await fetch('/api/v1/users/me', {
@@ -29,15 +28,13 @@ export function AuthProvider({ children }: Props) {
       if (!text) return
       const json = JSON.parse(text)
       if (!json.success) return
-      const profile = json.data as UserProfile
-      setProfile(profile)
-      hydrate(profile.energy)
+      setProfile(json.data as UserProfile)
+      hydrate((json.data as UserProfile).energy)
     } catch (e) {
-      console.error('[Auth] Profil laden fehlgeschlagen:', e)
+      console.error('[Auth] fetchProfile failed:', e)
     }
   }, [setProfile, hydrate])
 
-  // ── Token-Refresh planen ──────────────────────────────
   const scheduleRefresh = useCallback((expiresIn: number) => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current)
     const delay = Math.max(30_000, (expiresIn - 120) * 1000)
@@ -58,18 +55,18 @@ export function AuthProvider({ children }: Props) {
           auth.setSession(json.data)
           scheduleRefresh(json.data.expiresIn ?? 3600)
         }
-      } catch { /* silent fail */ }
+      } catch { /* silent */ }
     }, delay)
   }, [auth])
 
-  // ── Authentifizierung ─────────────────────────────────
-  const authenticate = useCallback(async (initData: string) => {
+  const authenticate = useCallback(async (initData: string, photoUrl: string | null) => {
     auth.setInitializing(true)
     try {
-      const res  = await fetch('/api/v1/auth/telegram', {
+      const res = await fetch('/api/v1/auth/telegram', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ initData }),
+        // photo_url direkt vom Client mitschicken — das ist die zuverlässige Quelle
+        body: JSON.stringify({ initData, photoUrl }),
       })
 
       const text = await res.text()
@@ -92,13 +89,7 @@ export function AuthProvider({ children }: Props) {
 
       const { accessToken, refreshToken, userId, expiresIn, isNewUser } = json.data
 
-      auth.setSession({
-        accessToken,
-        refreshToken,
-        userId,
-        expiresIn: expiresIn ?? 3600,
-      })
-
+      auth.setSession({ accessToken, refreshToken, userId, expiresIn: expiresIn ?? 3600 })
       await fetchProfile(accessToken)
       scheduleRefresh(expiresIn ?? 3600)
 
@@ -114,7 +105,6 @@ export function AuthProvider({ children }: Props) {
     }
   }, [auth, fetchProfile, scheduleRefresh, router])
 
-  // ── Bootstrap ─────────────────────────────────────────
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
@@ -133,8 +123,17 @@ export function AuthProvider({ children }: Props) {
 
     const initData = tg?.initData ?? process.env.NEXT_PUBLIC_DEV_INIT_DATA ?? ''
 
+    // photo_url direkt aus initDataUnsafe lesen — das ist die korrekte Quelle
+    // NIEMALS selbst aus IDs oder Hashes zusammenbauen
+    const photoUrl = tg?.initDataUnsafe?.user?.photo_url ?? null
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Auth] Telegram user:', tg?.initDataUnsafe?.user)
+      console.log('[Auth] photo_url:', photoUrl)
+    }
+
     if (initData) {
-      authenticate(initData)
+      authenticate(initData, photoUrl)
     } else {
       auth.setInitializing(false)
     }
@@ -144,14 +143,13 @@ export function AuthProvider({ children }: Props) {
     }
   }, []) // eslint-disable-line
 
-  // Realtime-Subscription -- lazy geladen um Bundle-Fehler zu vermeiden
+  // Realtime
   useEffect(() => {
     const { userId, accessToken } = auth
     if (!userId || !accessToken) return
 
     let channel: any = null
 
-    // Dynamischer Import verhindert SSR/Bundle-Probleme
     import('@/lib/supabase/client').then(({ createSupabaseBrowserClient }) => {
       try {
         const supabase = createSupabaseBrowserClient()
