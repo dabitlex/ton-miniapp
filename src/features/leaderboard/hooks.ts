@@ -10,7 +10,6 @@ export function useLeaderboard(league: LeagueTier | null = null) {
   const token = useAuthStore(s => s.accessToken)
   const store = useLeaderboardStore()
 
-  // Reset wenn Liga-Filter sich ändert
   useEffect(() => {
     store.reset()
     store.setLeague(league)
@@ -28,26 +27,34 @@ export function useLeaderboard(league: LeagueTier | null = null) {
       })
       if (league) params.set('league', league)
 
-      const res  = await fetch(`/api/v1/leaderboard/season?${params}`, {
+      const res = await fetch(`/api/v1/leaderboard/season?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const json = await res.json()
-      if (!json.success) throw new Error(json.error)
 
-      const { entries, userRank, userEntry, refreshedAt } = json.data
-      const { total, hasMore } = json.meta ?? {}
+      // Leere Antwort abfangen
+      const text = await res.text()
+      if (!text) throw new Error('Leere Server-Antwort')
+
+      let json: any
+      try { json = JSON.parse(text) }
+      catch { throw new Error(`Ungültige Antwort: ${text.slice(0, 100)}`) }
+
+      if (!json.success) throw new Error(json.error ?? 'Leaderboard-Fehler')
+
+      const entries     = json.data?.entries      ?? []
+      const userRank    = json.data?.userRank     ?? null
+      const userEntry   = json.data?.userEntry    ?? null
+      const refreshedAt = json.data?.refreshedAt  ?? new Date().toISOString()
+      const total       = json.meta?.total        ?? 0
+      const hasMore     = json.meta?.hasMore      ?? false
 
       if (store.page === 1) {
-        store.setEntries(entries, {
-          total:       total       ?? 0,
-          hasMore:     hasMore     ?? false,
-          refreshedAt: refreshedAt ?? new Date().toISOString(),
-        })
+        store.setEntries(entries, { total, hasMore, refreshedAt })
       } else {
         store.appendEntries(entries)
       }
 
-      store.setUserRank(userRank ?? null, userEntry ?? null)
+      store.setUserRank(userRank, userEntry)
       return json.data
     },
   })
