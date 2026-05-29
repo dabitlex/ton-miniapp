@@ -1,4 +1,4 @@
-// src/app/error.tsx 
+// src/app/error.tsx
 'use client'
 import { Button } from '@/components/ui/Button'
 import { AlertTriangle } from 'lucide-react'
