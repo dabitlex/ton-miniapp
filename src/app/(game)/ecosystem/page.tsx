@@ -1,4 +1,4 @@
-// src/app/(game)/ecosystem/page.tsx
+// src/app/(game)/ecosystem/page.tsx 
 // IMPORTANT: All copy uses "Ecosystem Support" — never "investment", "returns", "profit"
 'use client'
 import { useState }    from 'react'
