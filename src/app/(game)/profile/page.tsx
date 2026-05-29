@@ -1,16 +1,16 @@
 // src/app/(game)/profile/page.tsx
 'use client'
-import { useState }     from 'react'
-import { useUserStore } from '@/stores/useUserStore'
-import { useEnergy }    from '@/features/hooks'
-import { XPBar }        from '@/components/game/XPBar'
-import { LeagueBadge }  from '@/components/game/LeagueBadge'
-import { LevelBadge }   from '@/components/game/LevelBadge'
-import { SkeletonCard } from '@/components/ui/Skeleton'
-import { TelegramAvatar } from '@/components/layout/GameHeader'
-import { formatNumber } from '@/lib/utils'
+import { useState }      from 'react'
+import { useUserStore }  from '@/stores/useUserStore'
+import { useEnergy }     from '@/features/hooks'
+import { XPBar }         from '@/components/game/XPBar'
+import { LeagueBadge }   from '@/components/game/LeagueBadge'
+import { LevelBadge }    from '@/components/game/LevelBadge'
+import { SkeletonCard }  from '@/components/ui/Skeleton'
+import { TelegramAvatar }from '@/components/layout/GameHeader'
+import { formatNumber }  from '@/lib/utils'
 import { xpForLevel, LEAGUES } from '@/lib/constants/game'
-import { Copy, CheckCircle } from 'lucide-react'
+import { Copy, CheckCircle }   from 'lucide-react'
 
 export default function ProfilePage() {
   const profile         = useUserStore(s => s.profile)
@@ -24,24 +24,21 @@ export default function ProfilePage() {
     </div>
   )
 
-  const leagueRange       = LEAGUES[profile.league]
-  const levelsToNext      = leagueRange.max - profile.level
-  const xpNeeded          = xpForLevel(Math.min(profile.level, 29))
+  const leagueRange  = LEAGUES[profile.league]
+  const levelsToNext = leagueRange.max - profile.level
+  const xpNeeded     = xpForLevel(Math.min(profile.level, 29))
 
   function copyReferral() {
     const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? 'yourbot'
     navigator.clipboard.writeText(
       `https://t.me/${bot}?start=${profile?.referralCode ?? ''}`
-    ).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    ).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
   }
 
   return (
     <div className="px-4 pt-4 pb-6 space-y-4 max-w-lg mx-auto">
 
-      {/* Header */}
+      {/* Header — genau wie Ranks: einfaches img */}
       <div className="flex items-center gap-4 py-2">
         <TelegramAvatar
           photoUrl={profile.telegramPhotoUrl}
@@ -63,7 +60,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* XP progress */}
+      {/* XP */}
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
         <div className="flex justify-between text-xs text-white/40">
           <span>Level Fortschritt</span>
@@ -79,43 +76,40 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      {/* Stats grid */}
+      {/* Stats */}
       <div className="grid grid-cols-2 gap-2">
         {[
-          { label: 'Gesamt XP',    value: formatNumber(profile.xpTotal),      icon: '⭐' },
-          { label: 'Saison XP',    value: formatNumber(profile.seasonXp),      icon: '🗓' },
-          { label: 'Streak',       value: `${profile.streakCurrent} Tage`,     icon: '🔥' },
-          { label: 'Bester Streak',value: `${profile.streakLongest} Tage`,     icon: '🏆' },
-          { label: 'Energie',      value: `${energy.current}/100`,             icon: '⚡' },
-          { label: 'XP Heute',     value: formatNumber(profile.xpEarnedToday), icon: '📈' },
+          { label: 'Gesamt XP',     value: formatNumber(profile.xpTotal),      icon: '⭐' },
+          { label: 'Saison XP',     value: formatNumber(profile.seasonXp),      icon: '🗓' },
+          { label: 'Streak',        value: `${profile.streakCurrent} Tage`,     icon: '🔥' },
+          { label: 'Bester Streak', value: `${profile.streakLongest} Tage`,     icon: '🏆' },
+          { label: 'Energie',       value: `${energy.current}/100`,             icon: '⚡' },
+          { label: 'XP Heute',      value: formatNumber(profile.xpEarnedToday), icon: '📈' },
         ].map(({ label, value, icon }) => (
-          <div key={label}
-            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 flex items-center gap-2">
+          <div key={label} className="rounded-xl border border-white/[0.06]
+                                      bg-white/[0.02] p-3 flex items-center gap-2">
             <span className="text-xl">{icon}</span>
             <div>
-              <p className="text-sm font-bold text-white leading-tight tabular-nums">{value}</p>
+              <p className="text-sm font-bold text-white tabular-nums">{value}</p>
               <p className="text-[10px] text-white/35">{label}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Referral */}
+      {/* Referral — erscheint ab 2000 XP + Wallet */}
       {profile.referralEligible && (
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-2">
           <h3 className="text-sm font-bold text-white">Freunde einladen</h3>
-          <p className="text-xs text-white/40">Teile deinen Referral-Link für Bonus XP</p>
-          <button
-            onClick={copyReferral}
+          <p className="text-xs text-white/40">Teile deinen Link für Bonus XP</p>
+          <button onClick={copyReferral}
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl
-                       bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-white/60
-                       active:scale-[0.98] transition-transform"
-          >
+                       bg-white/[0.04] border border-white/[0.08] text-xs font-mono
+                       text-white/60 active:scale-[0.98] transition-transform">
             <span className="truncate">{profile.referralCode}</span>
             {copied
               ? <CheckCircle size={14} className="text-emerald-400 shrink-0" />
-              : <Copy size={14} className="text-white/30 shrink-0" />
-            }
+              : <Copy size={14} className="text-white/30 shrink-0" />}
           </button>
         </div>
       )}
