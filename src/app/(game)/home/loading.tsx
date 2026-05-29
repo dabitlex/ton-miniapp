@@ -17,4 +17,4 @@ export default function HomeLoading() {
       {[1,2].map(i => <SkeletonCard key={i} lines={1} />)}
     </div>
   )
-}
+} 
