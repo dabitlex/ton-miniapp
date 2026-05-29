@@ -50,8 +50,7 @@ export function GameHeader() {
   )
 }
 
-// ── TelegramAvatar ────────────────────────────────────────
-// Exportiert damit Profile-Seite es nutzen kann
+// Genau wie Ranks — einfaches img ohne crossOrigin oder referrerPolicy
 interface AvatarProps {
   photoUrl:   string | null
   firstName:  string
@@ -59,9 +58,7 @@ interface AvatarProps {
   className?: string
 }
 
-export function TelegramAvatar({
-  photoUrl, firstName, size = 32, className = ''
-}: AvatarProps) {
+export function TelegramAvatar({ photoUrl, firstName, size = 32, className = '' }: AvatarProps) {
   const [imgError, setImgError] = useState(false)
 
   if (photoUrl && !imgError) {
@@ -73,10 +70,8 @@ export function TelegramAvatar({
         width={size}
         height={size}
         onError={() => setImgError(true)}
-        className={`rounded-full object-cover ring-1 ring-white/10 ${className}`}
+        className={`rounded-full object-cover ${className}`}
         style={{ width: size, height: size }}
-        // KEIN referrerPolicy="no-referrer" — Telegram braucht den Referrer!
-        crossOrigin="anonymous"
       />
     )
   }
