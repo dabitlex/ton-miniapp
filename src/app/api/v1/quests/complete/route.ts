@@ -1,4 +1,4 @@
-// src/app/api/v1/quests/complete/route.ts
+// src/app/api/v1/quests/complete/route.ts 
 // SECURITY: server-authoritative XP + energy. Never trust client values.
 import { NextRequest } from 'next/server'
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
