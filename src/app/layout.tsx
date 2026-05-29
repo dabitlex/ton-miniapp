@@ -1,4 +1,4 @@
-// src/app/layout.tsx 
+// src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
 import { QueryProvider }  from '@/components/providers/QueryProvider'
 import { Toaster }        from '@/components/ui/Toaster'
