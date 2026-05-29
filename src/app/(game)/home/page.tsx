@@ -1,4 +1,4 @@
-// src/app/(game)/home/page.tsx
+// src/app/(game)/home/page.tsx 
 'use client'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useStreak }      from '@/features/hooks'
