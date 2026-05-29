@@ -1,4 +1,4 @@
-// src/app/(game)/leaderboard/page.tsx
+// src/app/(game)/leaderboard/page.tsx 
 'use client'
 import { useState, useCallback, useRef } from 'react'
 import { useLeaderboard }    from '@/features/leaderboard/hooks'
