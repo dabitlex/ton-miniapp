@@ -21,5 +21,5 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
         <MobileNav />
       </div>
     </AuthProvider>
-  )
+  ) 
 }
