@@ -1,6 +1,6 @@
 // src/app/(game)/clans/page.tsx
 'use client'
-import { useState, useEffect }                          from 'react'
+import { useState }                                     from 'react'
 import { useQuery, useMutation, useQueryClient }        from '@tanstack/react-query'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
@@ -9,7 +9,7 @@ import { Button }         from '@/components/ui/Button'
 import { SkeletonCard }   from '@/components/ui/Skeleton'
 import { cn, formatNumber } from '@/lib/utils'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
-import { Users, Plus, Search, Shield, LogOut } from 'lucide-react'
+import { Users, Search, Shield, LogOut } from 'lucide-react'
 import type { UserProfile } from '@/types/game'
 
 export default function ClansPage() {
@@ -22,7 +22,6 @@ export default function ClansPage() {
   const qc                  = useQueryClient()
   const headers             = { Authorization: `Bearer ${token}` }
 
-  // Profil neu laden (aktualisiert Clan-Daten im Store)
   const refreshProfile = async () => {
     if (!token) return
     try {
@@ -32,19 +31,14 @@ export default function ClansPage() {
     } catch { /* silent */ }
   }
 
-  // Beim ersten Laden Profil aktualisieren
-  useEffect(() => { refreshProfile() }, []) // eslint-disable-line
-
-  const hasClan   = !!profile?.clan?.clanId
-  const canCreate = (profile?.level ?? 0) >= GAME_CONSTANTS.CLAN_UNLOCK_LEVEL
-
-  // Eigenen Clan laden — immer wenn clanId vorhanden
-  const { data: myClanData, isLoading: loadingMyClan } = useQuery({
-    queryKey: ['my-clan', profile?.clan?.clanId],
-    enabled:  !!token && hasClan,
+  // ── Direkt eigene Clan-Mitgliedschaft laden ────────────────
+  // Nicht auf profile.clan verlassen — eigene Query
+  const { data: myMembership, isLoading: loadingMembership } = useQuery({
+    queryKey: ['my-membership'],
+    enabled:  !!token,
     staleTime:30_000,
     queryFn:  async () => {
-      const res  = await fetch(`/api/v1/clans/${profile!.clan!.clanId}`, { headers })
+      const res  = await fetch('/api/v1/clans/my', { headers })
       const json = await res.json()
       return json.success ? json.data : null
     },
@@ -64,6 +58,15 @@ export default function ClansPage() {
     },
   })
 
+  const hasClan   = !!myMembership?.clan
+  const canCreate = (profile?.level ?? 0) >= GAME_CONSTANTS.CLAN_UNLOCK_LEVEL
+
+  const invalidateAll = async () => {
+    await refreshProfile()
+    qc.invalidateQueries({ queryKey: ['my-membership'] })
+    qc.invalidateQueries({ queryKey: ['clans'] })
+  }
+
   // Beitreten
   const { mutate: joinClan, isPending: joining } = useMutation({
     mutationFn: async (clanId: string) => {
@@ -75,9 +78,7 @@ export default function ClansPage() {
     onSuccess: async () => {
       toast('success', '🎉 Clan beigetreten!')
       haptic('success')
-      await refreshProfile()
-      qc.invalidateQueries({ queryKey: ['my-clan'] })
-      qc.invalidateQueries({ queryKey: ['clans'] })
+      await invalidateAll()
       setView('mine')
     },
     onError: (e: Error) => { toast('error', e.message); haptic('error') },
@@ -93,9 +94,7 @@ export default function ClansPage() {
     },
     onSuccess: async () => {
       toast('info', 'Clan verlassen')
-      await refreshProfile()
-      qc.invalidateQueries({ queryKey: ['my-clan'] })
-      qc.invalidateQueries({ queryKey: ['clans'] })
+      await invalidateAll()
       setView('browse')
     },
     onError: (e: Error) => { toast('error', e.message) },
@@ -106,18 +105,19 @@ export default function ClansPage() {
       {/* Tabs */}
       <div className="flex border-b border-white/[0.06] shrink-0 px-4">
         {([
-          { key: 'browse', label: 'Entdecken', icon: Search },
-          { key: 'mine',   label: 'Mein Clan', icon: Shield },
-          { key: 'create', label: 'Erstellen', icon: Plus   },
-        ] as const).map(({ key, label, icon: Icon }) => (
+          { key: 'browse', label: 'Entdecken' },
+          { key: 'mine',   label: 'Mein Clan' },
+          { key: 'create', label: '+ Erstellen' },
+        ] as const).map(({ key, label }) => (
           <button key={key} onClick={() => setView(key)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 py-3',
-              'text-xs font-semibold transition-colors relative',
+              'flex-1 py-3 text-xs font-semibold transition-colors relative',
               view === key ? 'text-violet-300' : 'text-white/35'
             )}>
-            <Icon size={13} />
             {label}
+            {key === 'mine' && hasClan && (
+              <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-violet-400 align-middle" />
+            )}
             {view === key && (
               <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-400 rounded-full" />
             )}
@@ -127,7 +127,7 @@ export default function ClansPage() {
 
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6 space-y-3">
 
-        {/* ENTDECKEN */}
+        {/* ── ENTDECKEN ────────────────────────────── */}
         {view === 'browse' && (
           <>
             <div className="relative">
@@ -150,42 +150,50 @@ export default function ClansPage() {
                 </div>
               )
               : (clansData ?? []).map((clan: any) => (
-                  <div key={clan.id}
-                    className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="font-bold text-white text-sm truncate">{clan.name}</p>
-                          <span className="text-[10px] text-white/30 shrink-0">Lv.{clan.level}</span>
-                        </div>
-                        {clan.description && (
-                          <p className="text-xs text-white/35 line-clamp-1">{clan.description}</p>
-                        )}
-                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-white/30">
-                          <span className="flex items-center gap-1">
-                            <Users size={10} /> {clan.member_count}/20
-                          </span>
-                          <span>⭐ {formatNumber(clan.season_xp)} XP</span>
-                        </div>
+                <div key={clan.id}
+                  className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="font-bold text-white text-sm truncate">{clan.name}</p>
+                        <span className="text-[10px] text-white/30 shrink-0">Lv.{clan.level}</span>
                       </div>
-                      {!hasClan && (
-                        <Button size="sm" loading={joining}
-                          onClick={() => joinClan(clan.id)}
-                          className="h-8 text-xs px-3 shrink-0">
-                          Beitreten
-                        </Button>
+                      {clan.description && (
+                        <p className="text-xs text-white/35 line-clamp-1">{clan.description}</p>
                       )}
+                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-white/30">
+                        <span className="flex items-center gap-1">
+                          <Users size={10} /> {clan.member_count}/20
+                        </span>
+                        <span>⭐ {formatNumber(clan.season_xp)} XP</span>
+                      </div>
                     </div>
+                    {!hasClan && (
+                      <Button size="sm" loading={joining}
+                        onClick={() => joinClan(clan.id)}
+                        className="h-8 text-xs px-3 shrink-0">
+                        Beitreten
+                      </Button>
+                    )}
+                    {hasClan && myMembership?.clan?.id === clan.id && (
+                      <span className="text-[10px] font-bold text-violet-400 border border-violet-500/30
+                                       bg-violet-500/10 px-2 py-1 rounded-lg shrink-0">
+                        DEIN CLAN
+                      </span>
+                    )}
                   </div>
-                ))
+                </div>
+              ))
             }
           </>
         )}
 
-        {/* MEIN CLAN */}
+        {/* ── MEIN CLAN ────────────────────────────── */}
         {view === 'mine' && (
           <>
-            {!hasClan ? (
+            {loadingMembership ? (
+              <SkeletonCard lines={3} />
+            ) : !hasClan ? (
               <div className="text-center py-10 space-y-3">
                 <p className="text-4xl">🛡️</p>
                 <p className="text-sm text-white/40">Du bist in keinem Clan</p>
@@ -200,36 +208,36 @@ export default function ClansPage() {
                   )}
                 </div>
               </div>
-            ) : loadingMyClan ? (
-              <SkeletonCard lines={3} />
-            ) : myClanData ? (
+            ) : (
               <>
+                {/* Clan-Header */}
                 <div className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.05] p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-lg font-black text-white">{myClanData.clan.name}</p>
-                      {myClanData.clan.description && (
-                        <p className="text-xs text-white/40 mt-0.5">{myClanData.clan.description}</p>
+                      <p className="text-lg font-black text-white">{myMembership.clan.name}</p>
+                      {myMembership.clan.description && (
+                        <p className="text-xs text-white/40 mt-0.5">{myMembership.clan.description}</p>
                       )}
                       <div className="flex gap-3 mt-2 text-xs text-white/40">
-                        <span>⭐ {formatNumber(myClanData.clan.season_xp)} XP</span>
-                        <span><Users size={10} className="inline" /> {myClanData.clan.member_count}/20</span>
-                        <span>🏆 {myClanData.clan.wins}W</span>
+                        <span>⭐ {formatNumber(myMembership.clan.season_xp)} XP</span>
+                        <span><Users size={10} className="inline" /> {myMembership.clan.member_count}/20</span>
+                        <span>🏆 {myMembership.clan.wins}W {myMembership.clan.losses}L</span>
                       </div>
                     </div>
                     <span className="text-xs text-violet-300 font-semibold shrink-0">
-                      {profile?.clan?.role === 'leader'   ? '👑 Leader'
-                       : profile?.clan?.role === 'officer' ? '⚔️ Officer'
+                      {myMembership.role === 'leader'  ? '👑 Leader'
+                       : myMembership.role === 'officer' ? '⚔️ Officer'
                        : '🎮 Mitglied'}
                     </span>
                   </div>
                 </div>
 
+                {/* Mitglieder */}
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">
-                    Mitglieder ({myClanData.members.length})
+                    Mitglieder ({(myMembership.members ?? []).length})
                   </h3>
-                  {myClanData.members.map((m: any) => (
+                  {(myMembership.members ?? []).map((m: any) => (
                     <div key={m.userId}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl
                                  border border-white/[0.05] bg-white/[0.02]">
@@ -249,7 +257,7 @@ export default function ClansPage() {
                           )}
                         </p>
                         <p className="text-[10px] text-white/30">
-                          ⭐ {formatNumber(m.contributedXp)} XP · Lv.{m.level}
+                          ⭐ {formatNumber(m.contributedXp ?? 0)} XP · Lv.{m.level}
                         </p>
                       </div>
                       <span className="text-sm shrink-0">
@@ -262,17 +270,17 @@ export default function ClansPage() {
                 <Button variant="destructive" fullWidth loading={leaving}
                   onClick={() => {
                     if (window.confirm('Clan wirklich verlassen?')) {
-                      leaveClan(myClanData.clan.id)
+                      leaveClan(myMembership.clan.id)
                     }
                   }}>
                   <LogOut size={14} /> Clan verlassen
                 </Button>
               </>
-            ) : null}
+            )}
           </>
         )}
 
-        {/* ERSTELLEN */}
+        {/* ── ERSTELLEN ────────────────────────────── */}
         {view === 'create' && (
           <CreateClanForm
             canCreate={canCreate}
@@ -280,9 +288,7 @@ export default function ClansPage() {
             userLevel={profile?.level ?? 1}
             token={token ?? ''}
             onCreated={async () => {
-              await refreshProfile()
-              qc.invalidateQueries({ queryKey: ['my-clan'] })
-              qc.invalidateQueries({ queryKey: ['clans'] })
+              await invalidateAll()
               setView('mine')
             }}
           />
