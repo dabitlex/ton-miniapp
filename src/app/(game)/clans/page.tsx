@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient }        from '@tanstack/react-qu
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
+import { useEnergyStore } from '@/stores/useEnergyStore'
 import { Button }         from '@/components/ui/Button'
 import { SkeletonCard }   from '@/components/ui/Skeleton'
 import { cn, formatNumber } from '@/lib/utils'
@@ -123,6 +124,10 @@ export default function ClansPage() {
     onSuccess: (data) => {
       toast('success', `+${data.xpGranted} XP · Clan +${data.xpClanReward} XP`)
       haptic('success')
+      // Energie sofort im Store aktualisieren
+      if (data.energyAfter !== undefined) {
+        useEnergyStore.setState(s => ({ ...s, current: data.energyAfter }))
+      }
       qc.invalidateQueries({ queryKey: ['clan-missions'] })
       qc.invalidateQueries({ queryKey: ['my-membership'] })
     },
