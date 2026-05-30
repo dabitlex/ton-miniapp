@@ -1,22 +1,20 @@
 // src/app/(game)/profile/page.tsx
 'use client'
-import { useState }        from 'react'
-import { useUserStore }    from '@/stores/useUserStore'
-import { useEnergy }       from '@/features/hooks'
-import { XPBar }           from '@/components/game/XPBar'
-import { LeagueBadge }     from '@/components/game/LeagueBadge'
-import { LevelBadge }      from '@/components/game/LevelBadge'
-import { SkeletonCard }    from '@/components/ui/Skeleton'
-import { TelegramAvatar }  from '@/components/layout/GameHeader'
-import { WalletConnect }   from '@/components/ton/WalletConnect'
-import { formatNumber }    from '@/lib/utils'
+import { useUserStore }      from '@/stores/useUserStore'
+import { useEnergy }         from '@/features/hooks'
+import { XPBar }             from '@/components/game/XPBar'
+import { LeagueBadge }       from '@/components/game/LeagueBadge'
+import { LevelBadge }        from '@/components/game/LevelBadge'
+import { SkeletonCard }      from '@/components/ui/Skeleton'
+import { TelegramAvatar }    from '@/components/layout/GameHeader'
+import { WalletConnect }     from '@/components/ton/WalletConnect'
+import { ReferralSection }   from '@/components/game/ReferralSection'
+import { formatNumber }      from '@/lib/utils'
 import { xpForLevel, LEAGUES } from '@/lib/constants/game'
-import { Copy, CheckCircle }   from 'lucide-react'
 
 export default function ProfilePage() {
-  const profile              = useUserStore(s => s.profile)
-  const energy               = useEnergy()
-  const [copied, setCopied]  = useState(false)
+  const profile = useUserStore(s => s.profile)
+  const energy  = useEnergy()
 
   if (!profile) return (
     <div className="px-4 pt-4 pb-6 space-y-4">
@@ -28,13 +26,6 @@ export default function ProfilePage() {
   const leagueRange  = LEAGUES[profile.league]
   const levelsToNext = leagueRange.max - profile.level
   const xpNeeded     = xpForLevel(Math.min(profile.level, 29))
-
-  function copyReferral() {
-    const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? 'yourbot'
-    navigator.clipboard.writeText(
-      `https://t.me/${bot}?start=${profile?.referralCode ?? ''}`
-    ).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
-  }
 
   return (
     <div className="px-4 pt-4 pb-6 space-y-4 max-w-lg mx-auto">
@@ -69,12 +60,12 @@ export default function ProfilePage() {
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-violet-300 truncate">{profile.clan.name}</p>
             <p className="text-[10px] text-white/30">
-              {profile.clan.role === 'leader' ? '👑 Leader'
+              {profile.clan.role === 'leader'  ? '👑 Leader'
                : profile.clan.role === 'officer' ? '⚔️ Officer'
                : '🎮 Mitglied'}
             </p>
           </div>
-          <span className="text-xs text-white/30">⭐ {formatNumber(profile.clan.seasonXp ?? 0)}</span>
+          <span className="text-xs text-white/30">⭐ {formatNumber((profile.clan as any).seasonXp ?? 0)}</span>
         </div>
       )}
 
@@ -115,29 +106,17 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      {/* Wallet */}
+      {/* TON Wallet */}
       <div className="space-y-2">
         <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">TON Wallet</h3>
         <WalletConnect />
       </div>
 
       {/* Referral */}
-      {profile.referralEligible && (
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-2">
-          <h3 className="text-sm font-bold text-white">Freunde einladen</h3>
-          <p className="text-xs text-white/40">Teile deinen Link für Bonus XP</p>
-          <button onClick={copyReferral}
-            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl
-                       bg-white/[0.04] border border-white/[0.08] text-xs font-mono
-                       text-white/60 active:scale-[0.98] transition-transform">
-            <span className="truncate">{profile.referralCode}</span>
-            {copied
-              ? <CheckCircle size={14} className="text-emerald-400 shrink-0" />
-              : <Copy size={14} className="text-white/30 shrink-0" />
-            }
-          </button>
-        </div>
-      )}
+      <div className="space-y-2">
+        <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">Referral</h3>
+        <ReferralSection />
+      </div>
     </div>
   )
 }
