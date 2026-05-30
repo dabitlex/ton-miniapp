@@ -1,9 +1,9 @@
 // src/app/api/v1/auth/telegram/route.ts
-import { NextRequest } from 'next/server'
+import { NextRequest }    from 'next/server'
 import { validateTelegramInitData, parseTelegramInitData } from '@/lib/telegram/initData'
-import { ok, err } from '@/app/api/v1/_lib/handler'
-import { todayUTC } from '@/lib/utils'
-import { createClient } from '@supabase/supabase-js'
+import { ok, err }        from '@/app/api/v1/_lib/handler'
+import { todayUTC }       from '@/lib/utils'
+import { createClient }   from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -18,7 +18,6 @@ function getServiceClient() {
 }
 
 export async function POST(req: NextRequest) {
-
   const botToken   = process.env.TELEGRAM_BOT_TOKEN
   const supaUrl    = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!supaUrl)    return err('SUPABASE_URL fehlt', 'CONFIG_ERROR', 500)
   if (!serviceKey) return err('SERVICE_ROLE_KEY fehlt', 'CONFIG_ERROR', 500)
 
-  let body: { initData?: string; photoUrl?: string | null }
+  let body: { initData?: string; photoUrl?: string | null; startParam?: string | null }
   try { body = await req.json() }
   catch { return err('Invalid JSON body', 'BAD_REQUEST') }
 
@@ -35,11 +34,8 @@ export async function POST(req: NextRequest) {
     return err('initData is required', 'MISSING_INIT_DATA')
   }
 
-  // Validate HMAC
   const { valid, reason } = validateTelegramInitData(body.initData, botToken)
-  if (!valid) {
-    return err(`initData validation failed: ${reason}`, 'INVALID_INIT_DATA', 401)
-  }
+  if (!valid) return err(`initData validation failed: ${reason}`, 'INVALID_INIT_DATA', 401)
 
   let parsed
   try { parsed = parseTelegramInitData(body.initData) }
@@ -47,17 +43,15 @@ export async function POST(req: NextRequest) {
 
   if (!parsed.user) return err('No user in initData', 'NO_USER', 400)
 
-  const tgUser   = parsed.user
-  const email    = `tg${tgUser.id}@telegram-user.com`
-  const password = `Tg!${tgUser.id}${botToken.slice(-6)}`
-
-  // photo_url: vom Client geliefert (aus initDataUnsafe) hat Vorrang
-  // initData enthält photo_url nicht immer zuverlässig
-  const photoUrl = body.photoUrl ?? tgUser.photo_url ?? null
+  const tgUser    = parsed.user
+  const email     = `tg${tgUser.id}@telegram-user.com`
+  const password  = `Tg!${tgUser.id}${botToken.slice(-6)}`
+  const photoUrl  = body.photoUrl   ?? tgUser.photo_url ?? null
+  const startParam= body.startParam ?? null  // Referral-Code
 
   const db = getServiceClient()
 
-  // Auth User holen oder erstellen
+  // Auth-User holen oder erstellen
   let authUserId: string | null = null
   let isNewUser = false
 
@@ -68,9 +62,7 @@ export async function POST(req: NextRequest) {
   } else {
     isNewUser = true
     const { data: newAuth, error: createErr } = await db.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
+      email, password, email_confirm: true,
       user_metadata: {
         telegram_id:         tgUser.id,
         telegram_first_name: tgUser.first_name,
@@ -98,45 +90,69 @@ export async function POST(req: NextRequest) {
 
   if (!authUserId) return err('No auth user ID', 'AUTH_ID_ERROR', 500)
 
-  const { data: season } = await db
+  const { data: season } = await (db as any)
     .from('seasons').select('id').eq('status', 'active').maybeSingle()
 
-  // Upsert mit photo_url vom Client
-  const { error: upsertErr } = await db.from('users' as any).upsert(
+  // Referrer ermitteln (aus startParam)
+  let referredByUserId: string | null = null
+  if (isNewUser && startParam && startParam.length >= 8) {
+    const { data: referrer } = await (db as any)
+      .from('users')
+      .select('id')
+      .eq('referral_code', startParam)
+      .maybeSingle()
+
+    if (referrer?.id && referrer.id !== authUserId) {
+      referredByUserId = referrer.id
+    }
+  }
+
+  // User-Profil upserten
+  const { error: upsertErr } = await (db as any).from('users').upsert(
     {
       id:                     authUserId,
       telegram_id:            tgUser.id,
       telegram_username:      tgUser.username      ?? null,
       telegram_first_name:    tgUser.first_name,
       telegram_last_name:     tgUser.last_name     ?? null,
-      telegram_photo_url:     photoUrl,              // ← korrekte URL vom Client
+      telegram_photo_url:     photoUrl,
       telegram_language_code: tgUser.language_code ?? 'en',
       telegram_is_premium:    tgUser.is_premium    ?? false,
       last_active_at:         new Date().toISOString(),
       current_season_id:      (season as any)?.id  ?? null,
+      // Referrer nur setzen wenn neu und nicht schon gesetzt
+      ...(isNewUser && referredByUserId ? { referred_by_user_id: referredByUserId } : {}),
     },
     { onConflict: 'telegram_id' }
   )
 
   if (upsertErr) {
-    const { error: insertErr } = await db.from('users' as any).insert({
+    const { error: insertErr } = await (db as any).from('users').insert({
       id: authUserId, telegram_id: tgUser.id,
       telegram_first_name: tgUser.first_name,
       telegram_photo_url: photoUrl,
       last_active_at: new Date().toISOString(),
       current_season_id: (season as any)?.id ?? null,
+      ...(isNewUser && referredByUserId ? { referred_by_user_id: referredByUserId } : {}),
     })
     if (insertErr && !insertErr.message.includes('duplicate')) {
-      return err(
-        `DB write failed: "${upsertErr.message}" | "${insertErr.message}"`,
-        'DB_WRITE_ERROR', 500
-      )
+      return err(`DB write failed: "${upsertErr.message}"`, 'DB_WRITE_ERROR', 500)
     }
+  }
+
+  // Referral-Eintrag erstellen
+  if (isNewUser && referredByUserId) {
+    await (db as any).from('referrals').insert({
+      referrer_id:        referredByUserId,
+      referee_id:         authUserId,
+      referral_code_used: startParam,
+    }).single().catch(() => {}) // Ignore duplicate
   }
 
   try { await ensureDailyQuests(db as any, authUserId, (season as any)?.id ?? null) }
   catch (e: any) { console.error('[Auth] Quests failed:', e?.message) }
 
+  // Session erstellen
   const { data: session, error: sessionErr } = await db.auth.signInWithPassword({ email, password })
 
   if (!sessionErr && session?.session) {
