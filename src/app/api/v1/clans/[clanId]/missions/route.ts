@@ -11,8 +11,7 @@ function db() {
   )
 }
 
-// GET — Heutige Clan-Missionen laden (und bei Bedarf zuweisen)
-export const GET = withAuth(async (ctx, _routeCtx) => {
+export const GET = withAuth(async (ctx) => {
   const clanId = ctx.params?.clanId
   if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
 
@@ -21,12 +20,8 @@ export const GET = withAuth(async (ctx, _routeCtx) => {
 
   // Mitgliedschaft prüfen
   const { data: member } = await supabase
-    .from('clan_members')
-    .select('role')
-    .eq('clan_id', clanId)
-    .eq('user_id', ctx.userId)
-    .maybeSingle()
-
+    .from('clan_members').select('role')
+    .eq('clan_id', clanId).eq('user_id', ctx.userId).maybeSingle()
   if (!member) return err('Nicht Mitglied dieses Clans', 'NOT_MEMBER', 403)
 
   // Bestehende Missionen laden
@@ -34,28 +29,25 @@ export const GET = withAuth(async (ctx, _routeCtx) => {
     .from('clan_missions')
     .select(`
       id, status, energy_cost, xp_reward, xp_clan_reward,
-      assigned_date, completed_at, xp_granted, template_id,
+      assigned_date, completed_at, xp_granted,
       template:quest_templates(id, title, description, difficulty, icon_key)
     `)
     .eq('clan_id', clanId)
     .eq('user_id', ctx.userId)
     .eq('assigned_date', today)
 
-  // Missions für heute zuweisen falls noch keine da
   if (!existing || existing.length === 0) {
     // Templates holen
     const { data: templates } = await supabase
       .from('quest_templates')
-      .select('id, difficulty, xp_reward')
+      .select('id, xp_reward')
       .eq('quest_type', 'clan_mission')
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
-    if (!templates || templates.length === 0) {
-      return ok([]) // Keine Templates vorhanden
-    }
+    if (!templates || templates.length === 0) return ok([])
 
-    // Missionen einzeln einfügen (kein upsert wegen Constraint-Problemen)
+    // Missionen einzeln einfügen
     for (const t of templates.slice(0, 3)) {
       await supabase.from('clan_missions').insert({
         clan_id:        clanId,
@@ -68,8 +60,7 @@ export const GET = withAuth(async (ctx, _routeCtx) => {
         xp_clan_reward: Math.floor(t.xp_reward * 0.5),
         assigned_date:  today,
         status:         'available',
-      }).single()
-      // Fehler ignorieren (falls Duplikat)
+      })
     }
 
     // Neu laden
@@ -77,7 +68,7 @@ export const GET = withAuth(async (ctx, _routeCtx) => {
       .from('clan_missions')
       .select(`
         id, status, energy_cost, xp_reward, xp_clan_reward,
-        assigned_date, completed_at, xp_granted, template_id,
+        assigned_date, completed_at, xp_granted,
         template:quest_templates(id, title, description, difficulty, icon_key)
       `)
       .eq('clan_id', clanId)
@@ -90,8 +81,7 @@ export const GET = withAuth(async (ctx, _routeCtx) => {
   return ok(mapMissions(existing))
 })
 
-// POST — Mission abschließen
-export const POST = withAuth(async (ctx, _routeCtx) => {
+export const POST = withAuth(async (ctx) => {
   const clanId = ctx.params?.clanId
   if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
 
@@ -104,21 +94,15 @@ export const POST = withAuth(async (ctx, _routeCtx) => {
 
   const supabase = db()
 
-  // Mission prüfen
   const { data: mission } = await supabase
     .from('clan_missions')
     .select('id, status, energy_cost, xp_reward, xp_clan_reward')
-    .eq('id', missionId)
-    .eq('clan_id', clanId)
-    .eq('user_id', ctx.userId)
+    .eq('id', missionId).eq('clan_id', clanId).eq('user_id', ctx.userId)
     .single()
 
   if (!mission) return err('Mission nicht gefunden', 'NOT_FOUND', 404)
-  if (mission.status !== 'available') {
-    return err('Mission bereits abgeschlossen', 'ALREADY_DONE')
-  }
+  if (mission.status !== 'available') return err('Mission bereits abgeschlossen', 'ALREADY_DONE')
 
-  // Energie verbrauchen
   const { data: energyResult } = await supabase.rpc('consume_energy', {
     p_user_id: ctx.userId,
     p_amount:  mission.energy_cost,
@@ -130,7 +114,6 @@ export const POST = withAuth(async (ctx, _routeCtx) => {
     return err(energyRes?.failure_reason ?? 'Nicht genug Energie', 'NO_ENERGY')
   }
 
-  // XP für User vergeben
   const { data: xpResult } = await supabase.rpc('grant_xp', {
     p_user_id:       ctx.userId,
     p_xp_base:       mission.xp_reward,
@@ -139,22 +122,19 @@ export const POST = withAuth(async (ctx, _routeCtx) => {
   })
   const xp = (xpResult as any[])?.[0]
 
-  // Mission als abgeschlossen markieren
   await supabase.from('clan_missions').update({
     status:       'completed',
     completed_at: new Date().toISOString(),
     xp_granted:   xp?.xp_granted ?? mission.xp_reward,
   }).eq('id', missionId)
 
-  // Clan XP erhöhen
-  await supabase.rpc('increment_clan_xp', {
+  await supabase.rpc('increment_clan_xp' as any, {
     p_clan_id: clanId,
     p_xp:      mission.xp_clan_reward,
     p_user_id: ctx.userId,
   })
 
-  // Mitglied contributed_xp erhöhen
-  await supabase.rpc('increment_member_xp', {
+  await supabase.rpc('increment_member_xp' as any, {
     p_clan_id: clanId,
     p_user_id: ctx.userId,
     p_xp:      mission.xp_clan_reward,
