@@ -12,8 +12,8 @@ function db() {
 }
 
 // GET — Heutige Clan-Missionen laden (und bei Bedarf zuweisen)
-export const GET = withAuth(async (ctx, routeCtx) => {
-  const clanId = (routeCtx as any).params?.clanId
+export const GET = withAuth(async (ctx, _routeCtx) => {
+  const clanId = ctx.params?.clanId
   if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
 
   const supabase = db()
@@ -91,8 +91,8 @@ export const GET = withAuth(async (ctx, routeCtx) => {
 })
 
 // POST — Mission abschließen
-export const POST = withAuth(async (ctx, routeCtx) => {
-  const clanId = (routeCtx as any).params?.clanId
+export const POST = withAuth(async (ctx, _routeCtx) => {
+  const clanId = ctx.params?.clanId
   if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
 
   let body: { missionId?: string; nonce?: string }
