@@ -1,7 +1,7 @@
 // src/components/ton/WalletConnect.tsx
 'use client'
-import { useEffect, useRef }               from 'react'
-import { useTonConnectUI, useTonWallet }   from '@tonconnect/ui-react'
+import { useEffect, useRef }             from 'react'
+import { useTonConnectUI, useTonWallet } from '@tonconnect/ui-react'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
@@ -9,34 +9,73 @@ import { Button }         from '@/components/ui/Button'
 import { CheckCircle, Wallet, LogOut } from 'lucide-react'
 import type { UserProfile } from '@/types/game'
 
-interface Props {
-  onConnected?: () => void
+// Konvertiert raw TON Adresse (0:hex) zu benutzerfreundlichem Format (EQ.../UQ...)
+// Implementierung ohne externe Bibliothek via Base64url Encoding
+function rawToFriendly(rawAddress: string, bounceable = true): string {
+  try {
+    // raw Format: "0:2c8be42c..." → workchain + hash
+    const [workchainStr, hexHash] = rawAddress.split(':')
+    if (!workchainStr || !hexHash || hexHash.length !== 64) return rawAddress
+
+    const workchain = parseInt(workchainStr)
+    const hash = new Uint8Array(32)
+    for (let i = 0; i < 32; i++) {
+      hash[i] = parseInt(hexHash.slice(i * 2, i * 2 + 2), 16)
+    }
+
+    // Tag: bounceable = 0x11, non-bounceable = 0x51
+    const tag = bounceable ? 0x11 : 0x51
+    const addr = new Uint8Array(36)
+    addr[0] = tag
+    addr[1] = workchain & 0xff
+    addr.set(hash, 2)
+
+    // CRC16 berechnen
+    let crc = 0
+    for (let i = 0; i < 34; i++) {
+      crc ^= addr[i]! << 8
+      for (let j = 0; j < 8; j++) {
+        crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1
+        crc &= 0xffff
+      }
+    }
+    addr[34] = (crc >> 8) & 0xff
+    addr[35] = crc & 0xff
+
+    // Base64url encoding
+    const b64 = btoa(String.fromCharCode(...addr))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    return b64
+  } catch {
+    return rawAddress
+  }
 }
 
-export function WalletConnect({ onConnected }: Props) {
-  const [tonConnectUI]     = useTonConnectUI()
-  const wallet             = useTonWallet()
-  const token              = useAuthStore(s => s.accessToken)
-  const profile            = useUserStore(s => s.profile)
-  const { setProfile }     = useUserStore()
-  const { toast, haptic }  = useUIStore()
-  const savedRef           = useRef<string | null>(null)
+export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
+  const [tonConnectUI]    = useTonConnectUI()
+  const wallet            = useTonWallet()
+  const token             = useAuthStore(s => s.accessToken)
+  const profile           = useUserStore(s => s.profile)
+  const { setProfile }    = useUserStore()
+  const { toast, haptic } = useUIStore()
+  const savedRef          = useRef<string | null>(null)
 
-  // Wallet-Adresse automatisch in Supabase speichern wenn verbunden
   useEffect(() => {
     if (!wallet || !token) return
 
-    const address = wallet.account.address
-    const addressFriendly = (wallet.account as any).friendlyAddress ?? null
+    const rawAddress = wallet.account.address
 
-    // Nicht nochmal speichern wenn schon gleiche Adresse
-    if (savedRef.current === address) return
-    if (profile?.wallet?.address === address) {
-      savedRef.current = address
+    if (savedRef.current === rawAddress) return
+    if (profile?.wallet?.address === rawAddress) {
+      savedRef.current = rawAddress
       return
     }
 
-    savedRef.current = address
+    savedRef.current = rawAddress
+
+    // Beide Formate berechnen
+    const addressFriendly = rawToFriendly(rawAddress, true)   // EQ... (bounceable)
+    const addressRaw      = rawAddress                          // 0:hex...
 
     const save = async () => {
       try {
@@ -47,16 +86,15 @@ export function WalletConnect({ onConnected }: Props) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            address,
-            addressFriendly,
-            walletVersion: wallet.device?.appName ?? null,
-            publicKey:     wallet.account.publicKey ?? null,
+            address:         addressRaw,       // raw als Primary Key
+            addressFriendly: addressFriendly,  // EQ... für Anzeige
+            walletVersion:   wallet.device?.appName ?? null,
+            publicKey:       wallet.account.publicKey ?? null,
           }),
         })
         const json = await res.json()
         if (!json.success) throw new Error(json.error)
 
-        // Profil neu laden
         const profileRes  = await fetch('/api/v1/users/me', {
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -75,7 +113,6 @@ export function WalletConnect({ onConnected }: Props) {
     save()
   }, [wallet?.account.address]) // eslint-disable-line
 
-  // Wallet trennen
   async function disconnect() {
     try {
       await tonConnectUI.disconnect()
@@ -84,7 +121,6 @@ export function WalletConnect({ onConnected }: Props) {
         headers: { Authorization: `Bearer ${token}` },
       })
       savedRef.current = null
-      // Profil neu laden
       const res  = await fetch('/api/v1/users/me', {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -94,34 +130,36 @@ export function WalletConnect({ onConnected }: Props) {
     } catch { /* silent */ }
   }
 
-  // ── Verbunden ──────────────────────────────────────────────
+  // ── Verbunden ───────────────────────────────────────────────
   if (wallet) {
-    const addr     = wallet.account.address
-    const friendly = (wallet.account as any).friendlyAddress ?? addr
-    const short    = `${friendly.slice(0, 6)}…${friendly.slice(-6)}`
-    const appName  = wallet.device?.appName ?? 'Wallet'
+    const rawAddr    = wallet.account.address
+    const friendly   = rawToFriendly(rawAddr, true)  // EQ...
+    const short      = `${friendly.slice(0, 6)}…${friendly.slice(-4)}`
+    const appName    = wallet.device?.appName ?? 'Wallet'
+    const isMainnet  = wallet.account.chain === '-239'
 
     return (
       <div className="space-y-3">
         <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={14} className="text-emerald-400 shrink-0" />
             <span className="text-xs font-semibold text-emerald-300">
               {appName} verbunden
             </span>
           </div>
 
-          {/* Wallet App Icon + Name */}
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3">
             {wallet.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={wallet.imageUrl} alt={appName}
-                className="w-8 h-8 rounded-xl" />
+                className="w-9 h-9 rounded-xl shrink-0" />
             )}
-            <div>
-              <p className="text-xs font-mono text-white/70">{short}</p>
-              <p className="text-[10px] text-white/30">
-                {wallet.account.chain === '-239' ? 'TON Mainnet' : 'TON Testnet'}
+            <div className="flex-1 min-w-0">
+              {/* Anzeige: EQ... Format (benutzerfreundlich) */}
+              <p className="text-sm font-mono font-bold text-white">{short}</p>
+              <p className="text-[10px] text-white/30 truncate">{friendly}</p>
+              <p className="text-[10px] text-emerald-400/60 mt-0.5">
+                {isMainnet ? '✓ TON Mainnet' : '⚠ Testnet'}
               </p>
             </div>
           </div>
@@ -136,7 +174,7 @@ export function WalletConnect({ onConnected }: Props) {
     )
   }
 
-  // ── Nicht verbunden ────────────────────────────────────────
+  // ── Nicht verbunden ─────────────────────────────────────────
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
@@ -156,7 +194,7 @@ export function WalletConnect({ onConnected }: Props) {
         <div className="space-y-1.5 text-left">
           {[
             { icon: '💰', text: 'Token-Belohnungen am Saison-Ende' },
-            { icon: '🔓', text: 'Referral-System freischalten' },
+            { icon: '🔓', text: 'Referral-System freischalten (ab 2.000 XP)' },
             { icon: '⚡', text: 'Ecosystem XP-Boost aktivieren' },
           ].map(({ icon, text }) => (
             <div key={text} className="flex items-center gap-2 text-xs text-white/40">
@@ -172,7 +210,7 @@ export function WalletConnect({ onConnected }: Props) {
       </Button>
 
       <p className="text-center text-[10px] text-white/20">
-        Unterstützt Tonkeeper, MyTonWallet, Wallet und alle TON Wallets
+        Tonkeeper · MyTonWallet · Wallet · OpenMask · und mehr
       </p>
     </div>
   )
