@@ -1,6 +1,6 @@
 // src/app/api/v1/clans/[clanId]/leave/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
-import { createClient }     from '@supabase/supabase-js'
+import { createClient }      from '@supabase/supabase-js'
 
 function db() {
   return createClient(
@@ -10,7 +10,7 @@ function db() {
   )
 }
 
-export const POST = withAuth(async (ctx, _routeCtx) => {
+export const POST = withAuth(async (ctx) => {
   const clanId = ctx.params?.clanId
   if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
 
