@@ -1,10 +1,17 @@
-// src/app/api/v1/leaderboard/season/route.ts 
+// src/app/api/v1/leaderboard/season/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
-import { getAdminClient } from '@/lib/supabase/admin'
-import type { LeaderboardEntry } from '@/types/game'
+import { createClient }      from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+function db() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 export const GET = withAuth(async (ctx) => {
   const url    = new URL(ctx.req.url)
@@ -13,83 +20,92 @@ export const GET = withAuth(async (ctx) => {
   const league = url.searchParams.get('league') ?? null
   const offset = (page - 1) * limit
 
-  const db = getAdminClient()
+  const supabase = db()
 
-  // Get active season
-  const { data: season } = await db
-    .from('seasons')
-    .select('id')
-    .eq('status', 'active')
-    .maybeSingle()
+  // Cache-Typ bestimmen
+  const cacheType = 'season_global'
 
-  if (!season) return err('No active season', 'NO_SEASON', 404)
+  // Aktive Saison
+  const { data: season } = await supabase
+    .from('seasons').select('id').eq('status', 'active').maybeSingle()
 
-  // Query leaderboard cache (refreshed every 5 min by Edge Function)
-  let query = db
+  if (!season) return err('Keine aktive Saison', 'NO_SEASON', 404)
+
+  // Einträge laden — liga-Filter über metadata
+  let query = supabase
     .from('leaderboard_cache')
-    .select('*', { count: 'exact' })
+    .select('rank, entity_id, display_name, avatar_url, score, level, metadata, refreshed_at')
+    .eq('cache_type', cacheType)
     .eq('season_id', season.id)
-    .eq('entity_type', 'user')
     .order('rank', { ascending: true })
     .range(offset, offset + limit - 1)
 
+  // Liga-Filter via metadata
   if (league) {
-    query = query.contains('metadata', { league })
-  } else {
-    query = query.eq('cache_type', 'season_global')
+    query = query.eq('metadata->>league', league)
   }
 
-  const { data, count, error } = await query
-  if (error) return err('Leaderboard fetch failed', 'DB_ERROR', 500)
+  const { data: entries, error } = await query
 
-  const entries: LeaderboardEntry[] = (data ?? []).map(row => ({
-    rank:          row.rank,
-    userId:        row.entity_id,
-    firstName:     row.display_name,
-    username:      (row.metadata as any)?.username ?? null,
-    photoUrl:      row.avatar_url,
-    level:         row.level ?? 1,
-    league:        (row.metadata as any)?.league ?? 'bronze',
-    seasonXp:      row.score,
-    clanName:      (row.metadata as any)?.clan_name ?? undefined,
-    streakCurrent: (row.metadata as any)?.streak    ?? undefined,
-    isCurrentUser: row.entity_id === ctx.userId,
+  if (error) return err(`Cache-Fehler: ${error.message}`, 'DB_ERROR', 500)
+
+  // Gesamtzahl für Pagination
+  let countQuery = supabase
+    .from('leaderboard_cache')
+    .select('id', { count: 'exact', head: true })
+    .eq('cache_type', cacheType)
+    .eq('season_id', season.id)
+
+  if (league) countQuery = countQuery.eq('metadata->>league', league)
+  const { count } = await countQuery
+
+  // Eigenen Rang IMMER aus Global-Cache holen
+  // (unabhängig vom Liga-Filter)
+  const { data: myGlobalEntry } = await supabase
+    .from('leaderboard_cache')
+    .select('rank, entity_id, display_name, avatar_url, score, level, metadata')
+    .eq('cache_type', cacheType)
+    .eq('season_id', season.id)
+    .eq('entity_id', ctx.userId)
+    .maybeSingle()
+
+  const mappedEntries = (entries ?? []).map(e => ({
+    rank:          e.rank,
+    userId:        e.entity_id,
+    firstName:     e.display_name,
+    photoUrl:      e.avatar_url,
+    seasonXp:      e.score,
+    level:         e.level,
+    league:        (e.metadata as any)?.league   ?? 'bronze',
+    clanName:      (e.metadata as any)?.clan_name ?? null,
+    username:      (e.metadata as any)?.username  ?? null,
+    isCurrentUser: e.entity_id === ctx.userId,
+    refreshedAt:   e.refreshed_at,
   }))
 
-  // Get current user's rank if not in this page
-  let userRank: number | null = null
-  let userEntry: LeaderboardEntry | null = null
-  const userInPage = entries.find(e => e.isCurrentUser)
-
-  if (!userInPage) {
-    const { data: userCache } = await db
-      .from('leaderboard_cache')
-      .select('rank, score, level, display_name, avatar_url, metadata')
-      .eq('cache_type', 'season_global')
-      .eq('season_id', season.id)
-      .eq('entity_id', ctx.userId)
-      .maybeSingle()
-
-    if (userCache) {
-      userRank = userCache.rank
-      userEntry = {
-        rank:          userCache.rank,
-        userId:        ctx.userId,
-        firstName:     userCache.display_name,
-        username:      (userCache.metadata as any)?.username ?? null,
-        photoUrl:      userCache.avatar_url,
-        level:         userCache.level ?? 1,
-        league:        (userCache.metadata as any)?.league ?? 'bronze',
-        seasonXp:      userCache.score,
-        isCurrentUser: true,
-      }
-    }
-  }
-
-  const refreshedAt = (data?.[0] as any)?.refreshed_at ?? new Date().toISOString()
+  const refreshedAt = entries?.[0]?.refreshed_at ?? new Date().toISOString()
 
   return ok(
-    { entries, userRank, userEntry, refreshedAt },
-    { page, limit, total: count ?? 0, hasMore: offset + limit < (count ?? 0) }
+    {
+      entries:    mappedEntries,
+      refreshedAt,
+      // Eigener Rang kommt IMMER aus dem Global-Cache
+      userRank:   myGlobalEntry?.rank   ?? null,
+      userEntry:  myGlobalEntry ? {
+        rank:      myGlobalEntry.rank,
+        userId:    myGlobalEntry.entity_id,
+        firstName: myGlobalEntry.display_name,
+        photoUrl:  myGlobalEntry.avatar_url,
+        seasonXp:  myGlobalEntry.score,
+        level:     myGlobalEntry.level,
+        league:    (myGlobalEntry.metadata as any)?.league ?? 'bronze',
+      } : null,
+    },
+    {
+      page,
+      limit,
+      total:   count ?? 0,
+      hasMore: offset + limit < (count ?? 0),
+    }
   )
 })
