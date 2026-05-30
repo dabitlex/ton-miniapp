@@ -43,11 +43,25 @@ export async function POST(req: NextRequest) {
 
   if (!parsed.user) return err('No user in initData', 'NO_USER', 400)
 
-  const tgUser    = parsed.user
-  const email     = `tg${tgUser.id}@telegram-user.com`
-  const password  = `Tg!${tgUser.id}${botToken.slice(-6)}`
-  const photoUrl  = body.photoUrl   ?? tgUser.photo_url ?? null
-  const startParam= body.startParam ?? null  // Referral-Code
+  const tgUser     = parsed.user
+  const email      = `tg${tgUser.id}@telegram-user.com`
+  const password   = `Tg!${tgUser.id}${botToken.slice(-6)}`
+  const photoUrl   = body.photoUrl   ?? tgUser.photo_url ?? null
+
+  // start_param: kommt vom Client UND auch direkt aus initData prüfen
+  // Telegram bettet start_param manchmal direkt in initData ein
+  const startParamFromClient = body.startParam ?? null
+  const startParamFromInit   = (parsed as any).start_param ?? null
+  const startParam = startParamFromClient || startParamFromInit || null
+
+  // Debug-Log (kann nach dem Fix entfernt werden)
+  console.log('[Auth] Referral Debug:', {
+    telegramId: tgUser.id,
+    startParamFromClient,
+    startParamFromInit,
+    startParam,
+    initDataKeys: Object.keys(parsed ?? {}),
+  })
 
   const db = getServiceClient()
 
@@ -93,66 +107,76 @@ export async function POST(req: NextRequest) {
   const { data: season } = await (db as any)
     .from('seasons').select('id').eq('status', 'active').maybeSingle()
 
-  // Referrer ermitteln (aus startParam)
+  // Referrer ermitteln
   let referredByUserId: string | null = null
-  if (isNewUser && startParam && startParam.length >= 8) {
+  if (startParam && startParam.length >= 8) {
     const { data: referrer } = await (db as any)
       .from('users')
       .select('id')
-      .eq('referral_code', startParam)
+      .eq('referral_code', startParam.trim())
       .maybeSingle()
+
+    console.log('[Auth] Referrer lookup:', { startParam, found: referrer?.id ?? null })
 
     if (referrer?.id && referrer.id !== authUserId) {
       referredByUserId = referrer.id
     }
   }
 
+  // Bestehenden User prüfen ob er schon einen Referrer hat
+  let existingReferredBy: string | null = null
+  if (!isNewUser) {
+    const { data: existingUser } = await (db as any)
+      .from('users').select('referred_by_user_id')
+      .eq('id', authUserId).single()
+    existingReferredBy = existingUser?.referred_by_user_id ?? null
+  }
+
   // User-Profil upserten
+  const upsertData: any = {
+    id:                     authUserId,
+    telegram_id:            tgUser.id,
+    telegram_username:      tgUser.username      ?? null,
+    telegram_first_name:    tgUser.first_name,
+    telegram_last_name:     tgUser.last_name     ?? null,
+    telegram_photo_url:     photoUrl,
+    telegram_language_code: tgUser.language_code ?? 'en',
+    telegram_is_premium:    tgUser.is_premium    ?? false,
+    last_active_at:         new Date().toISOString(),
+    current_season_id:      (season as any)?.id  ?? null,
+  }
+
+  // Referrer setzen: bei neuem User ODER wenn noch kein Referrer gesetzt
+  if (referredByUserId && (isNewUser || !existingReferredBy)) {
+    upsertData.referred_by_user_id = referredByUserId
+  }
+
   const { error: upsertErr } = await (db as any).from('users').upsert(
-    {
-      id:                     authUserId,
-      telegram_id:            tgUser.id,
-      telegram_username:      tgUser.username      ?? null,
-      telegram_first_name:    tgUser.first_name,
-      telegram_last_name:     tgUser.last_name     ?? null,
-      telegram_photo_url:     photoUrl,
-      telegram_language_code: tgUser.language_code ?? 'en',
-      telegram_is_premium:    tgUser.is_premium    ?? false,
-      last_active_at:         new Date().toISOString(),
-      current_season_id:      (season as any)?.id  ?? null,
-      // Referrer nur setzen wenn neu und nicht schon gesetzt
-      ...(isNewUser && referredByUserId ? { referred_by_user_id: referredByUserId } : {}),
-    },
-    { onConflict: 'telegram_id' }
+    upsertData, { onConflict: 'telegram_id' }
   )
 
   if (upsertErr) {
-    const { error: insertErr } = await (db as any).from('users').insert({
-      id: authUserId, telegram_id: tgUser.id,
-      telegram_first_name: tgUser.first_name,
-      telegram_photo_url: photoUrl,
-      last_active_at: new Date().toISOString(),
-      current_season_id: (season as any)?.id ?? null,
-      ...(isNewUser && referredByUserId ? { referred_by_user_id: referredByUserId } : {}),
-    })
-    if (insertErr && !insertErr.message.includes('duplicate')) {
-      return err(`DB write failed: "${upsertErr.message}"`, 'DB_WRITE_ERROR', 500)
-    }
+    console.error('[Auth] Upsert failed:', upsertErr.message)
   }
 
-  // Referral-Eintrag erstellen
-  if (isNewUser && referredByUserId) {
-    await (db as any).from('referrals').insert({
+  // Referral-Eintrag erstellen (neu oder nachträglich)
+  if (referredByUserId && (isNewUser || !existingReferredBy)) {
+    const { error: refErr } = await (db as any).from('referrals').upsert({
       referrer_id:        referredByUserId,
       referee_id:         authUserId,
       referral_code_used: startParam,
-    }).single().catch(() => {}) // Ignore duplicate
+    }, { onConflict: 'referee_id' })
+
+    if (refErr) {
+      console.error('[Auth] Referral insert failed:', refErr.message)
+    } else {
+      console.log('[Auth] Referral saved:', { referredByUserId, authUserId })
+    }
   }
 
   try { await ensureDailyQuests(db as any, authUserId, (season as any)?.id ?? null) }
   catch (e: any) { console.error('[Auth] Quests failed:', e?.message) }
 
-  // Session erstellen
   const { data: session, error: sessionErr } = await db.auth.signInWithPassword({ email, password })
 
   if (!sessionErr && session?.session) {
@@ -162,6 +186,8 @@ export async function POST(req: NextRequest) {
       expiresIn:    session.session.expires_in ?? 3600,
       userId:       authUserId,
       isNewUser,
+      // Debug-Info zurückgeben (temporär)
+      _debug: { startParam, referredByUserId, isNewUser },
     })
   }
 
@@ -182,6 +208,7 @@ export async function POST(req: NextRequest) {
     expiresIn:    (adminSess as any).expires_in ?? 3600,
     userId:       authUserId,
     isNewUser,
+    _debug: { startParam, referredByUserId, isNewUser },
   })
 }
 
