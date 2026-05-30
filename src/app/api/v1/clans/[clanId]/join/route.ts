@@ -11,8 +11,8 @@ function db() {
   )
 }
 
-export const POST = withAuth(async (ctx, routeCtx) => {
-  const clanId = (routeCtx as any).params?.clanId
+export const POST = withAuth(async (ctx, _routeCtx) => {
+  const clanId = ctx.params?.clanId
   if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
 
   const supabase = db()
