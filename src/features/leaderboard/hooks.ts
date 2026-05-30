@@ -1,25 +1,29 @@
 // src/features/leaderboard/hooks.ts
 'use client'
-import { useEffect, useCallback } from 'react'
-import { useQuery }               from '@tanstack/react-query'
-import { useAuthStore }           from '@/stores/useAuthStore'
-import { useLeaderboardStore }    from '@/stores/useLeaderboardStore'
-import type { LeagueTier }        from '@/types/game'
+import { useEffect, useCallback }        from 'react'
+import { useQuery, useQueryClient }      from '@tanstack/react-query'
+import { useAuthStore }                  from '@/stores/useAuthStore'
+import { useLeaderboardStore }           from '@/stores/useLeaderboardStore'
+import type { LeagueTier }               from '@/types/game'
 
 export function useLeaderboard(league: LeagueTier | null = null) {
   const token = useAuthStore(s => s.accessToken)
   const store = useLeaderboardStore()
+  const qc    = useQueryClient()
 
-  // Nur Einträge zurücksetzen wenn Liga sich ändert (userRank bleibt)
+  // Wenn Liga sich ändert: Cache invalidieren damit queryFn IMMER läuft
   useEffect(() => {
-    store.reset()       // löscht nur entries, NICHT userRank
+    store.reset()
     store.setLeague(league)
+    // Cache für diese Kombination als veraltet markieren → erzwingt neuen Fetch
+    qc.invalidateQueries({ queryKey: ['leaderboard', 'season', league] })
   }, [league]) // eslint-disable-line
 
   const { isLoading, refetch } = useQuery({
     queryKey:  ['leaderboard', 'season', league],
     enabled:   !!token,
-    staleTime: 5 * 60_000,
+    staleTime: 0,         // Immer frisch fetchen wenn Liga wechselt
+    gcTime:    5 * 60_000,// Cache 5 min im Speicher behalten
     queryFn:   async () => {
       store.setLoading(true)
       const params = new URLSearchParams({ page: '1', limit: '50' })
@@ -38,12 +42,11 @@ export function useLeaderboard(league: LeagueTier | null = null) {
       const userEntry   = json.data?.userEntry   ?? null
       const refreshedAt = json.data?.refreshedAt ?? new Date().toISOString()
       const total       = json.meta?.total       ?? 0
-      const hasMore     = json.meta?.hasMore      ?? false
+      const hasMore     = json.meta?.hasMore     ?? false
 
       store.setEntries(entries, { total, hasMore, refreshedAt })
 
-      // userRank nur setzen wenn wir einen echten Wert haben
-      // (API gibt immer den globalen Rang zurück, unabhängig vom Filter)
+      // userRank immer setzen — API gibt immer globalen Rang zurück
       if (userRank !== null || store.userRank === null) {
         store.setUserRank(userRank, userEntry)
       }
