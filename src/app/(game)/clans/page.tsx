@@ -219,8 +219,8 @@ export default function ClansPage() {
                         <p className="text-xs text-white/40 mt-0.5">{myMembership.clan.description}</p>
                       )}
                       <div className="flex gap-3 mt-2 text-xs text-white/40">
-                        <span>⭐ {formatNumber(myMembership.clan.season_xp)} XP</span>
-                        <span><Users size={10} className="inline" /> {myMembership.clan.member_count}/20</span>
+                        <span>⭐ {formatNumber(myMembership.clan.seasonXp)} XP</span>
+                        <span><Users size={10} className="inline" /> {myMembership.clan.memberCount}/20</span>
                         <span>🏆 {myMembership.clan.wins}W {myMembership.clan.losses}L</span>
                       </div>
                     </div>
