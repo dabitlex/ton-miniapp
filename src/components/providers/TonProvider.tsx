@@ -6,28 +6,21 @@ const manifestUrl =
   process.env.NEXT_PUBLIC_TON_MANIFEST_URL ??
   `${process.env.NEXT_PUBLIC_APP_URL}/tonconnect-manifest.json`
 
+// twaReturnUrl MUSS eine t.me/ URL sein
+// damit die Wallet-App nach Bestätigung zur MiniApp zurückleitet
+const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? ''
+const twaReturnUrl = `https://t.me/${botUsername}` as `${string}://${string}`
+
 export function TonProvider({ children }: { children: React.ReactNode }) {
   return (
     <TonConnectUIProvider
       manifestUrl={manifestUrl}
       actionsConfiguration={{
-        // Kehrt nach der Wallet-Bestätigung zur MiniApp zurück
-        twaReturnUrl: process.env.NEXT_PUBLIC_APP_URL as `${string}://${string}`,
+        // t.me/BOT_USERNAME — Telegram öffnet die MiniApp nach Wallet-Bestätigung
+        twaReturnUrl,
         returnStrategy: 'back',
-      }}
-      walletsListConfiguration={{
-        includeWallets: [
-          {
-            appName: 'telegram-wallet',
-            name: 'Wallet',
-            imageUrl: 'https://wallet.tg/images/logo-288.png',
-            tondns: 'wallet.ton',
-            aboutUrl: 'https://wallet.tg',
-            universalLink: 'https://t.me/wallet?attach=wallet',
-            bridgeUrl: 'https://bridge.tonapi.io/bridge',
-            platforms: ['ios','android','macos','windows','linux'],
-          },
-        ],
+        modals:         ['before', 'success', 'error'],
+        notifications:  ['before', 'success', 'error'],
       }}
     >
       {children}
