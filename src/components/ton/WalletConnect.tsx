@@ -6,11 +6,11 @@ import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import { Button }         from '@/components/ui/Button'
-import { CheckCircle, Wallet, LogOut, Copy, ChevronDown } from 'lucide-react'
+import { CheckCircle, Wallet, LogOut, Copy } from 'lucide-react'
 import type { UserProfile } from '@/types/game'
 
-// Konvertiert raw TON Adresse zu EQ... (bounceable) oder UQ... (non-bounceable)
-function rawToFriendly(rawAddress: string, bounceable: boolean): string {
+// Raw (0:hex) → UQ... (non-bounceable, Tonkeeper-Standard)
+function rawToUQ(rawAddress: string): string {
   try {
     const [workchainStr, hexHash] = rawAddress.split(':')
     if (!workchainStr || !hexHash || hexHash.length !== 64) return rawAddress
@@ -21,9 +21,9 @@ function rawToFriendly(rawAddress: string, bounceable: boolean): string {
       hash[i] = parseInt(hexHash.slice(i * 2, i * 2 + 2), 16)!
     }
 
-    const tag = bounceable ? 0x11 : 0x51
+    // 0x51 = non-bounceable tag (UQ...)
     const addr = new Uint8Array(36)
-    addr[0] = tag
+    addr[0] = 0x51
     addr[1] = workchain & 0xff
     addr.set(hash, 2)
 
@@ -53,10 +53,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
   const { setProfile }    = useUserStore()
   const { toast, haptic } = useUIStore()
   const savedRef          = useRef<string | null>(null)
-  const [copied, setCopied]       = useState(false)
-  const [showBoth, setShowBoth]   = useState(false)
-  // Nutzer-Präferenz: welches Format anzeigen (EQ oder UQ)
-  const [showBounceable, setShowBounceable] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!wallet || !token) return
@@ -67,8 +64,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
     }
     savedRef.current = rawAddress
 
-    const eqAddress = rawToFriendly(rawAddress, true)   // EQ...
-    const uqAddress = rawToFriendly(rawAddress, false)  // UQ...
+    const uqAddress = rawToUQ(rawAddress)
 
     const save = async () => {
       try {
@@ -77,20 +73,24 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             address:         rawAddress,
-            addressFriendly: eqAddress,   // EQ... als Standard in DB
+            addressFriendly: uqAddress,
             walletVersion:   wallet.device?.appName ?? null,
             publicKey:       wallet.account.publicKey ?? null,
           }),
         })
         const json = await res.json()
         if (!json.success) throw new Error(json.error)
-        const profileRes  = await fetch('/api/v1/users/me', { headers: { Authorization: `Bearer ${token}` } })
+
+        const profileRes  = await fetch('/api/v1/users/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
         const profileJson = await profileRes.json()
         if (profileJson.success) setProfile(profileJson.data as UserProfile)
+
         toast('success', '✅ Wallet verbunden!')
         haptic('success')
         onConnected?.()
-      } catch (e: any) {
+      } catch {
         toast('error', 'Wallet konnte nicht gespeichert werden')
       }
     }
@@ -100,7 +100,10 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
   async function disconnect() {
     try {
       await tonConnectUI.disconnect()
-      await fetch('/api/v1/users/wallet', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetch('/api/v1/users/wallet', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
       savedRef.current = null
       const res  = await fetch('/api/v1/users/me', { headers: { Authorization: `Bearer ${token}` } })
       const json = await res.json()
@@ -109,83 +112,49 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
     } catch { /* silent */ }
   }
 
-  function copyAddress(addr: string) {
-    navigator.clipboard.writeText(addr).then(() => {
-      setCopied(true); setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
   // ── Verbunden ───────────────────────────────────────────────
   if (wallet) {
-    const raw       = wallet.account.address
-    const eqAddr    = rawToFriendly(raw, true)   // EQ... bounceable
-    const uqAddr    = rawToFriendly(raw, false)  // UQ... non-bounceable
-    const displayed = showBounceable ? eqAddr : uqAddr
-    const short     = `${displayed.slice(0, 8)}…${displayed.slice(-6)}`
-    const appName   = wallet.device?.appName ?? 'Wallet'
-    const isMainnet = wallet.account.chain === '-239'
+    const uqAddr   = rawToUQ(wallet.account.address)
+    const short    = `${uqAddr.slice(0, 8)}…${uqAddr.slice(-6)}`
+    const appName  = wallet.device?.appName ?? 'Wallet'
+    const isMainnet= wallet.account.chain === '-239'
 
     return (
       <div className="space-y-3">
         <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
-          {/* Header */}
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={14} className="text-emerald-400 shrink-0" />
             <span className="text-xs font-semibold text-emerald-300">{appName} verbunden</span>
             {isMainnet
               ? <span className="ml-auto text-[10px] text-emerald-400/70">Mainnet ✓</span>
-              : <span className="ml-auto text-[10px] text-amber-400">⚠ Testnet</span>}
+              : <span className="ml-auto text-[10px] text-amber-400">⚠ Testnet</span>
+            }
           </div>
 
-          {/* Wallet App + Adresse */}
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3">
             {wallet.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={wallet.imageUrl} alt={appName} className="w-9 h-9 rounded-xl shrink-0" />
+              <img src={wallet.imageUrl} alt={appName}
+                className="w-9 h-9 rounded-xl shrink-0" />
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-mono font-bold text-white leading-tight">{short}</p>
-              <p className="text-[10px] text-white/30 font-mono truncate">{displayed}</p>
+              <p className="text-sm font-mono font-bold text-white">{short}</p>
+              <p className="text-[10px] text-white/30 font-mono truncate">{uqAddr}</p>
             </div>
-            <button onClick={() => copyAddress(displayed)}
-              className="shrink-0 p-1.5 rounded-lg bg-white/[0.06] text-white/40
-                         hover:text-white/70 transition-colors">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(uqAddr).then(() => {
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 2000)
+                })
+              }}
+              className="shrink-0 p-1.5 rounded-lg bg-white/[0.06]
+                         text-white/40 hover:text-white/70 transition-colors">
               {copied
                 ? <CheckCircle size={13} className="text-emerald-400" />
-                : <Copy size={13} />}
+                : <Copy size={13} />
+              }
             </button>
-          </div>
-
-          {/* Format-Umschalter */}
-          <div className="border-t border-white/[0.06] pt-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/30">Format:</span>
-              <div className="flex rounded-lg overflow-hidden border border-white/[0.08]">
-                <button
-                  onClick={() => setShowBounceable(false)}
-                  className={`px-2.5 py-1 text-[10px] font-semibold transition-colors ${
-                    !showBounceable
-                      ? 'bg-violet-500/30 text-violet-200'
-                      : 'text-white/30 hover:text-white/50'
-                  }`}>
-                  UQ… <span className="opacity-50">(Tonkeeper)</span>
-                </button>
-                <button
-                  onClick={() => setShowBounceable(true)}
-                  className={`px-2.5 py-1 text-[10px] font-semibold transition-colors ${
-                    showBounceable
-                      ? 'bg-violet-500/30 text-violet-200'
-                      : 'text-white/30 hover:text-white/50'
-                  }`}>
-                  EQ… <span className="opacity-50">(Smart Contracts)</span>
-                </button>
-              </div>
-            </div>
-            <p className="text-[10px] text-white/20 mt-1.5 leading-relaxed">
-              {showBounceable
-                ? 'EQ-Adressen werden für Smart Contract Interaktionen genutzt'
-                : 'UQ-Adressen werden in Tonkeeper & Wallets angezeigt'}
-            </p>
           </div>
         </div>
 
@@ -214,6 +183,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
             </p>
           </div>
         </div>
+
         <div className="space-y-1.5 text-left">
           {[
             { icon: '💰', text: 'Token-Belohnungen am Saison-Ende' },
@@ -226,9 +196,11 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
           ))}
         </div>
       </div>
+
       <Button fullWidth onClick={() => tonConnectUI.openModal()}>
         <Wallet size={14} /> Wallet verbinden
       </Button>
+
       <p className="text-center text-[10px] text-white/20">
         Tonkeeper · MyTonWallet · Wallet · OpenMask · und mehr
       </p>
