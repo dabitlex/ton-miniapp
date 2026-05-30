@@ -1,21 +1,22 @@
 // src/app/(game)/profile/page.tsx
 'use client'
-import { useState }      from 'react'
-import { useUserStore }  from '@/stores/useUserStore'
-import { useEnergy }     from '@/features/hooks'
-import { XPBar }         from '@/components/game/XPBar'
-import { LeagueBadge }   from '@/components/game/LeagueBadge'
-import { LevelBadge }    from '@/components/game/LevelBadge'
-import { SkeletonCard }  from '@/components/ui/Skeleton'
-import { TelegramAvatar }from '@/components/layout/GameHeader'
-import { formatNumber }  from '@/lib/utils'
+import { useState }        from 'react'
+import { useUserStore }    from '@/stores/useUserStore'
+import { useEnergy }       from '@/features/hooks'
+import { XPBar }           from '@/components/game/XPBar'
+import { LeagueBadge }     from '@/components/game/LeagueBadge'
+import { LevelBadge }      from '@/components/game/LevelBadge'
+import { SkeletonCard }    from '@/components/ui/Skeleton'
+import { TelegramAvatar }  from '@/components/layout/GameHeader'
+import { WalletConnect }   from '@/components/ton/WalletConnect'
+import { formatNumber }    from '@/lib/utils'
 import { xpForLevel, LEAGUES } from '@/lib/constants/game'
 import { Copy, CheckCircle }   from 'lucide-react'
 
 export default function ProfilePage() {
-  const profile         = useUserStore(s => s.profile)
-  const energy          = useEnergy()
-  const [copied, setCopied] = useState(false)
+  const profile              = useUserStore(s => s.profile)
+  const energy               = useEnergy()
+  const [copied, setCopied]  = useState(false)
 
   if (!profile) return (
     <div className="px-4 pt-4 pb-6 space-y-4">
@@ -38,7 +39,7 @@ export default function ProfilePage() {
   return (
     <div className="px-4 pt-4 pb-6 space-y-4 max-w-lg mx-auto">
 
-      {/* Header — genau wie Ranks: einfaches img */}
+      {/* Header */}
       <div className="flex items-center gap-4 py-2">
         <TelegramAvatar
           photoUrl={profile.telegramPhotoUrl}
@@ -59,6 +60,23 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Clan Badge */}
+      {profile.clan && (
+        <div className="rounded-xl border border-violet-500/20 bg-violet-500/[0.05]
+                        px-3 py-2 flex items-center gap-2">
+          <span className="text-base">🛡️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-violet-300 truncate">{profile.clan.name}</p>
+            <p className="text-[10px] text-white/30">
+              {profile.clan.role === 'leader' ? '👑 Leader'
+               : profile.clan.role === 'officer' ? '⚔️ Officer'
+               : '🎮 Mitglied'}
+            </p>
+          </div>
+          <span className="text-xs text-white/30">⭐ {formatNumber(profile.clan.seasonXp ?? 0)}</span>
+        </div>
+      )}
 
       {/* XP */}
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
@@ -97,7 +115,13 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      {/* Referral — erscheint ab 2000 XP + Wallet */}
+      {/* Wallet */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">TON Wallet</h3>
+        <WalletConnect />
+      </div>
+
+      {/* Referral */}
       {profile.referralEligible && (
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-2">
           <h3 className="text-sm font-bold text-white">Freunde einladen</h3>
@@ -109,25 +133,9 @@ export default function ProfilePage() {
             <span className="truncate">{profile.referralCode}</span>
             {copied
               ? <CheckCircle size={14} className="text-emerald-400 shrink-0" />
-              : <Copy size={14} className="text-white/30 shrink-0" />}
+              : <Copy size={14} className="text-white/30 shrink-0" />
+            }
           </button>
-        </div>
-      )}
-
-      {/* Wallet */}
-      {profile.wallet ? (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span className="text-xs font-semibold text-emerald-300">Wallet verbunden</span>
-          </div>
-          <p className="text-xs font-mono text-white/40 truncate">{profile.wallet.address}</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 text-center">
-          <p className="text-sm text-white/40">
-            Verbinde eine TON Wallet um Belohnungen zu beanspruchen
-          </p>
         </div>
       )}
     </div>
