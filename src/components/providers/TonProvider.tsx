@@ -2,25 +2,32 @@
 'use client'
 import { TonConnectUIProvider } from '@tonconnect/ui-react'
 
-const manifestUrl =
-  process.env.NEXT_PUBLIC_TON_MANIFEST_URL ??
-  `${process.env.NEXT_PUBLIC_APP_URL}/tonconnect-manifest.json`
-
-// twaReturnUrl MUSS eine t.me/ URL sein
-// damit die Wallet-App nach Bestätigung zur MiniApp zurückleitet
-const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? ''
-const twaReturnUrl = `https://t.me/${botUsername}` as `${string}://${string}`
-
 export function TonProvider({ children }: { children: React.ReactNode }) {
+  const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const botUsername= process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? ''
+
+  // Manifest über API-Route laden (mit CORS-Headern)
+  const manifestUrl = `${appUrl}/api/tonconnect-manifest.json`
+
+  // twaReturnUrl: MUSS https://t.me/... sein
+  // Ohne korrekten Bot-Username kann Telegram nicht zurückleiten
+  if (!botUsername) {
+    console.error('[TON Connect] NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ist nicht gesetzt!')
+  }
+
+  const twaReturnUrl = `https://t.me/${botUsername}` as `${string}://${string}`
+
   return (
     <TonConnectUIProvider
       manifestUrl={manifestUrl}
       actionsConfiguration={{
-        // t.me/BOT_USERNAME — Telegram öffnet die MiniApp nach Wallet-Bestätigung
         twaReturnUrl,
-        returnStrategy: 'back',
+        returnStrategy:  'back',
         modals:         ['before', 'success', 'error'],
         notifications:  ['before', 'success', 'error'],
+      }}
+      uiPreferences={{
+        theme: 'DARK',
       }}
     >
       {children}
