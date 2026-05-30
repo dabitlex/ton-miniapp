@@ -59,28 +59,25 @@ export function AuthProvider({ children }: Props) {
     }, delay)
   }, [auth])
 
-  const authenticate = useCallback(async (initData: string, photoUrl: string | null) => {
+  const authenticate = useCallback(async (
+    initData: string,
+    photoUrl:   string | null,
+    startParam: string | null   // ← Referral-Code aus Telegram Deep Link
+  ) => {
     auth.setInitializing(true)
     try {
       const res = await fetch('/api/v1/auth/telegram', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        // photo_url direkt vom Client mitschicken — das ist die zuverlässige Quelle
-        body: JSON.stringify({ initData, photoUrl }),
+        body:    JSON.stringify({ initData, photoUrl, startParam }),
       })
 
       const text = await res.text()
-      if (!text) {
-        auth.setAuthError('Leere Server-Antwort')
-        return
-      }
+      if (!text) { auth.setAuthError('Leere Server-Antwort'); return }
 
       let json: any
       try { json = JSON.parse(text) }
-      catch {
-        auth.setAuthError(`Server-Fehler: ${text.slice(0, 150)}`)
-        return
-      }
+      catch { auth.setAuthError(`Server-Fehler: ${text.slice(0, 150)}`); return }
 
       if (!json.success) {
         auth.setAuthError(json.error ?? 'Authentifizierung fehlgeschlagen')
@@ -121,19 +118,17 @@ export function AuthProvider({ children }: Props) {
       } catch { /* ignore */ }
     }
 
-    const initData = tg?.initData ?? process.env.NEXT_PUBLIC_DEV_INIT_DATA ?? ''
-
-    // photo_url direkt aus initDataUnsafe lesen — das ist die korrekte Quelle
-    // NIEMALS selbst aus IDs oder Hashes zusammenbauen
-    const photoUrl = tg?.initDataUnsafe?.user?.photo_url ?? null
+    const initData  = tg?.initData ?? process.env.NEXT_PUBLIC_DEV_INIT_DATA ?? ''
+    const photoUrl  = tg?.initDataUnsafe?.user?.photo_url ?? null
+    // start_param enthält den Referral-Code wenn App über Deep Link geöffnet
+    const startParam = tg?.initDataUnsafe?.start_param ?? null
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('[Auth] Telegram user:', tg?.initDataUnsafe?.user)
-      console.log('[Auth] photo_url:', photoUrl)
+      console.log('[Auth] start_param (Referral):', startParam)
     }
 
     if (initData) {
-      authenticate(initData, photoUrl)
+      authenticate(initData, photoUrl, startParam)
     } else {
       auth.setInitializing(false)
     }
@@ -143,7 +138,6 @@ export function AuthProvider({ children }: Props) {
     }
   }, []) // eslint-disable-line
 
-  // Realtime
   useEffect(() => {
     const { userId, accessToken } = auth
     if (!userId || !accessToken) return
