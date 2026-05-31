@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     secure:   process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     expires:  new Date(session.expires_at),
-    path:     '/admin',
+    path:     '/',
   })
 
   return response
