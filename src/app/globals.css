@@ -1,87 +1,289 @@
-/* src/app/globals.css */ 
+/* src/app/globals.css — VEXALGO Premium Design System */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root { color-scheme: dark; }
+/* ── Google Fonts ────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap');
 
-  * {
-    -webkit-tap-highlight-color: transparent;
-    box-sizing: border-box;
-  }
+/* ── Design Tokens ───────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-void:        #020207;
+  --bg-deep:        #060610;
+  --bg-card:        rgba(255,255,255,0.032);
+  --bg-card-hover:  rgba(255,255,255,0.055);
+  --bg-glass:       rgba(255,255,255,0.045);
 
-  html {
-    height: 100%;
-    overflow: hidden;
-    /* Telegram WebApp viewport height variable */
-    --tg-viewport-height: 100dvh;
-  }
+  /* Brand */
+  --violet:         #7C3AED;
+  --violet-bright:  #8B5CF6;
+  --violet-glow:    rgba(124,58,237,0.35);
+  --neon:           #A855F7;
+  --neon-dim:       rgba(168,85,247,0.15);
+  --blue-accent:    #3B82F6;
+  --cyan-accent:    #06B6D4;
 
-  body {
-    height: 100%;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    overscroll-behavior: none;
-    touch-action: pan-y;
-    /* Disable text selection in game UI */
-    user-select: none;
-    -webkit-user-select: none;
-  }
+  /* Status */
+  --emerald:        #10B981;
+  --gold:           #F59E0B;
+  --gold-dim:       rgba(245,158,11,0.15);
+  --rose:           #F43F5E;
 
-  /* Allow selection in inputs */
-  input, textarea {
-    user-select: text;
-    -webkit-user-select: text;
-  }
+  /* Typography */
+  --text-primary:   rgba(255,255,255,0.95);
+  --text-secondary: rgba(255,255,255,0.55);
+  --text-muted:     rgba(255,255,255,0.25);
+  --text-ultra:     rgba(255,255,255,0.12);
+
+  /* Borders */
+  --border:         rgba(255,255,255,0.07);
+  --border-glow:    rgba(124,58,237,0.3);
+  --border-active:  rgba(168,85,247,0.5);
+
+  /* Shadows */
+  --shadow-card:    0 4px 24px rgba(0,0,0,0.4);
+  --shadow-glow:    0 0 30px rgba(124,58,237,0.25);
+  --shadow-violet:  0 8px 32px rgba(124,58,237,0.3);
+
+  /* Fonts */
+  --font-display:   'Orbitron', monospace;
+  --font-body:      'DM Sans', sans-serif;
+
+  /* Spacing */
+  --nav-height:     64px;
+  --header-height:  52px;
+  --strip-height:   32px;
 }
 
-@layer utilities {
-  .h-dvh   { height: 100dvh; }
-  .min-h-dvh { min-height: 100dvh; }
+/* ── Base Reset ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
-  /* Telegram safe area */
-  .pt-safe { padding-top:    env(safe-area-inset-top);    }
-  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-  .pl-safe { padding-left:   env(safe-area-inset-left);   }
-  .pr-safe { padding-right:  env(safe-area-inset-right);  }
-
-  /* Smooth scroll container */
-  .scroll-snap-y { scroll-snap-type: y mandatory; }
-  .scroll-snap-start { scroll-snap-align: start; }
-
-  /* No scrollbar */
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+html {
+  height: 100%;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Custom animations */
-@keyframes xpFloat {
-  0%   { transform: translateX(-50%) translateY(0);   opacity: 1; }
-  60%  { transform: translateX(-50%) translateY(-80px); opacity: 1; }
-  100% { transform: translateX(-50%) translateY(-120px); opacity: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-void);
+  color: var(--text-primary);
+  height: 100%;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes xpPulse {
-  0%   { transform: scale(1);    }
-  50%  { transform: scale(1.15); }
-  100% { transform: scale(1);    }
+/* ── Scrollbar Hide ──────────────────────────────────────────── */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
+
+/* ── Ambient Background ──────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,58,237,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 30% at 80% 80%, rgba(59,130,246,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 40% at 20% 60%, rgba(168,85,247,0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Tailwind animate-in utility (simple fallback) */
-@keyframes slideInFromTop {
-  from { transform: translateY(-12px); opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
+/* ── Glass Card System ───────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-.animate-in.slide-in-from-top-3 {
-  animation: slideInFromTop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.card-glow {
+  background: linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(255,255,255,0.025) 100%);
+  border: 1px solid var(--border-glow);
+  border-radius: 16px;
+  box-shadow: var(--shadow-glow);
 }
 
-@keyframes slideInFromTop4 {
-  from { transform: translateY(-16px); opacity: 0; }
-  to   { transform: translateY(0);     opacity: 1; }
+/* ── Typography ──────────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-body    { font-family: var(--font-body); }
+
+/* ── Glow Utilities ──────────────────────────────────────────── */
+.glow-violet  { box-shadow: 0 0 20px rgba(124,58,237,0.4); }
+.glow-neon    { box-shadow: 0 0 20px rgba(168,85,247,0.4); }
+.glow-emerald { box-shadow: 0 0 20px rgba(16,185,129,0.4); }
+.glow-gold    { box-shadow: 0 0 20px rgba(245,158,11,0.4); }
+
+.text-glow-violet { text-shadow: 0 0 20px rgba(168,85,247,0.6); }
+.text-glow-gold   { text-shadow: 0 0 20px rgba(245,158,11,0.6); }
+
+/* ── Gradient Text ───────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #A855F7 0%, #3B82F6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
-.animate-in.slide-in-from-top-4 {
-  animation: slideInFromTop4 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #FDE68A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
+
+/* ── Animated Gradient Border ────────────────────────────────── */
+.border-animated {
+  position: relative;
+  border-radius: 16px;
+}
+.border-animated::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.5), rgba(59,130,246,0.3), rgba(168,85,247,0.5));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  pointer-events: none;
+}
+
+/* ── Shimmer Loading ─────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.03) 0%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Pulse Glow ──────────────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.05); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ── Float ───────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+.float { animation: float 3s ease-in-out infinite; }
+
+/* ── Scan Line ───────────────────────────────────────────────── */
+@keyframes scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* ── Progress Bar ────────────────────────────────────────────── */
+.progress-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--violet), var(--neon));
+  box-shadow: 0 0 8px rgba(168,85,247,0.6);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 6px rgba(255,255,255,0.8);
+}
+
+/* ── Button System ───────────────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, var(--violet) 0%, var(--neon) 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+.btn-primary:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 10px rgba(124,58,237,0.25);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.btn-secondary:active {
+  transform: scale(0.96);
+  background: rgba(255,255,255,0.09);
+}
+
+/* ── Nav Active Indicator ────────────────────────────────────── */
+@keyframes nav-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.nav-active-dot {
+  animation: nav-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── XP Popup ────────────────────────────────────────────────── */
+@keyframes xp-float {
+  0%   { opacity: 0; transform: translateY(0) scale(0.8); }
+  20%  { opacity: 1; transform: translateY(-8px) scale(1); }
+  80%  { opacity: 1; transform: translateY(-24px) scale(1); }
+  100% { opacity: 0; transform: translateY(-36px) scale(0.9); }
+}
+.xp-popup { animation: xp-float 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+/* ── Streak Flame ────────────────────────────────────────────── */
+@keyframes flame {
+  0%, 100% { transform: scaleY(1) rotate(-2deg); }
+  50%       { transform: scaleY(1.08) rotate(2deg); }
+}
+.flame { animation: flame 0.8s ease-in-out infinite; }
+
+/* ── Safe Area ───────────────────────────────────────────────── */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-top    { padding-top: env(safe-area-inset-top, 0px); }
