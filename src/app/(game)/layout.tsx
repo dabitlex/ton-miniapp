@@ -11,13 +11,11 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     <AuthProvider>
       <TonProvider>
         <EnergyTicker />
-        <div className="flex flex-col h-dvh bg-[#0c0c0f] overflow-hidden">
+        <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--bg-void)' }}>
           <GameHeader />
           <EnergyStrip />
-          <main
-            className="flex-1 overflow-y-auto overscroll-contain
-                       [scrollbar-width:none] [-webkit-overflow-scrolling:touch]"
-          >
+          <main className="flex-1 overflow-y-auto overscroll-contain relative z-10
+                           [scrollbar-width:none] [-webkit-overflow-scrolling:touch]">
             {children}
           </main>
           <MobileNav />
