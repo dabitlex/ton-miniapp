@@ -1,30 +1,26 @@
 // src/components/game/LevelBadge.tsx
-import { cn } from '@/lib/utils'
+interface Props { level: number; size?: 'sm' | 'md' | 'lg' }
 
-function styleForLevel(level: number): string {
-  if (level <= 5)  return 'bg-amber-900/40  text-amber-400   border-amber-700/30'
-  if (level <= 10) return 'bg-slate-500/20  text-slate-300   border-slate-500/30'
-  if (level <= 15) return 'bg-yellow-500/20 text-yellow-400  border-yellow-500/30'
-  if (level <= 20) return 'bg-cyan-500/20   text-cyan-300    border-cyan-500/30'
-  if (level <= 25) return 'bg-blue-500/20   text-blue-300    border-blue-500/30'
-  return                  'bg-violet-500/20 text-violet-300  border-violet-500/30'
-}
+export function LevelBadge({ level, size = 'sm' }: Props) {
+  const sizes = {
+    sm: { px: '6px 8px', fontSize: 10, borderRadius: 6 },
+    md: { px: '8px 10px', fontSize: 12, borderRadius: 8 },
+    lg: { px: '10px 14px', fontSize: 14, borderRadius: 10 },
+  }
+  const s = sizes[size]
 
-interface LevelBadgeProps {
-  level: number
-  size?: 'sm' | 'md'
-}
-
-export function LevelBadge({ level, size = 'sm' }: LevelBadgeProps) {
   return (
-    <div className={cn(
-      'inline-flex items-center justify-center font-black border rounded-lg tabular-nums',
-      size === 'sm'
-        ? 'text-xs px-1.5 py-0.5 min-w-[28px]'
-        : 'text-sm px-2.5 py-1 min-w-[36px]',
-      styleForLevel(level)
-    )}>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      padding: s.px, fontSize: s.fontSize, fontWeight: 900,
+      borderRadius: s.borderRadius,
+      fontFamily: 'var(--font-display)',
+      color: 'white',
+      background: 'linear-gradient(135deg, #7C3AED, #A855F7)',
+      boxShadow: '0 2px 10px rgba(124,58,237,0.35)',
+      letterSpacing: '0.02em',
+    }}>
       {level}
-    </div>
+    </span>
   )
 }
