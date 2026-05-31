@@ -1,7 +1,8 @@
 // src/features/quests/hooks.ts
 'use client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { v4 as uuidv4 } from 'uuid'
+import { useEffect } from 'react'
+import { v4 as uuidv4 }  from 'uuid'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useQuestStore }  from '@/stores/useQuestStore'
 import { useEnergyStore } from '@/stores/useEnergyStore'
@@ -27,11 +28,13 @@ export function useQuests() {
   const { showXPGain, toast, haptic } = useUIStore()
   const qc         = useQueryClient()
 
-  // ── Fetch daily quests ─────────────────────────────────────────────
+  // ── Daily Quests ──────────────────────────────────────────────
   const { isLoading: isLoadingDaily, refetch: refetchDaily } = useQuery({
     queryKey:  ['quests', 'daily'],
     enabled:   !!token,
     staleTime: 5 * 60_000,
+    // Automatisch alle 60 Sekunden refreshen
+    refetchInterval: 60_000,
     queryFn:   async () => {
       questStore.setLoadingDaily(true)
       const data = await apiFetch<DailyQuest[]>('/api/v1/quests/daily', token!)
@@ -40,11 +43,13 @@ export function useQuests() {
     },
   })
 
-  // ── Fetch weekly quests ────────────────────────────────────────────
+  // ── Weekly Quests ─────────────────────────────────────────────
   const { isLoading: isLoadingWeekly } = useQuery({
     queryKey:  ['quests', 'weekly'],
     enabled:   !!token,
     staleTime: 15 * 60_000,
+    // Weekly alle 5 Minuten refreshen
+    refetchInterval: 5 * 60_000,
     queryFn:   async () => {
       questStore.setLoadingWeekly(true)
       const data = await apiFetch<WeeklyQuest[]>('/api/v1/quests/weekly', token!)
@@ -53,37 +58,31 @@ export function useQuests() {
     },
   })
 
-  // ── Complete quest mutation ────────────────────────────────────────
-  const { mutate: completeQuest } = useMutation({
+  // ── Complete Quest ────────────────────────────────────────────
+  const { mutate: completeQuest, isPending: isCompleting } = useMutation({
     mutationFn: async ({ questId, questType }: { questId: string; questType: 'daily' | 'weekly' }) => {
       const nonce = uuidv4()
       return apiFetch<{
-        xpGranted: number; leveledUp: boolean; newLevel: number;
+        xpGranted: number; leveledUp: boolean; newLevel: number
         newLeague: string; energyAfter: number; softCapped: boolean
       }>('/api/v1/quests/complete', token!, {
         method: 'POST',
-        body: JSON.stringify({ questId, questType, nonce }),
+        body:   JSON.stringify({ questId, questType, nonce }),
       })
     },
 
-    onMutate: ({ questId, questType }) => {
-      // Save previous energy for rollback
+    onMutate: ({ questId }) => {
       const prevEnergy = useEnergyStore.getState().current
-
-      // Find quest to get energy cost
       const { daily, weekly } = useQuestStore.getState()
       const quest = [...daily, ...weekly].find(q => q.id === questId)
       if (quest) energy.optimisticConsume(quest.template.energyCost)
-
-      // Optimistically mark as completed
       questStore.setCompleting(questId)
       questStore.optimisticComplete(questId)
-
       return { questId, prevEnergy }
     },
 
     onSuccess: (data, { questType }, context) => {
-      // Update energy from authoritative server value
+      // Energie vom Server übernehmen
       energy.hydrate({
         current:       data.energyAfter,
         max:           100,
@@ -93,37 +92,43 @@ export function useQuests() {
         secondsToFull: (100 - data.energyAfter) * 900,
       })
 
-      // Show XP gain animation
       showXPGain(data.xpGranted, data.leveledUp, data.leveledUp ? data.newLevel : undefined)
 
-      // Update user profile optimistically
       if (data.leveledUp) {
         patchProfile({ level: data.newLevel, league: data.newLeague as any })
         haptic('heavy')
       }
 
-      // Patch season XP in profile
       const profile = useUserStore.getState().profile
       if (profile) {
         patchProfile({
-          seasonXp:       profile.seasonXp + data.xpGranted,
-          xpEarnedToday:  profile.xpEarnedToday + data.xpGranted,
+          seasonXp:      profile.seasonXp + data.xpGranted,
+          xpEarnedToday: profile.xpEarnedToday + data.xpGranted,
         })
       }
 
       if (data.softCapped) {
-        toast('warning', 'Daily XP cap reached. Come back tomorrow!', 4000)
+        toast('warning', '⚠️ Tages-XP-Limit erreicht. Komm morgen wieder!', 4000)
       }
 
-      // Invalidate leaderboard after XP change
+      // Nach Abschluss: Quests neu laden damit Fortschritte sichtbar sind
+      // (z.B. daily_hard_champion entsperrt sich wenn alle anderen done sind)
+      qc.invalidateQueries({ queryKey: ['quests', questType] })
       qc.invalidateQueries({ queryKey: ['leaderboard'] })
     },
 
     onError: (error: Error, _, context) => {
-      // Rollback optimistic updates
       if (context?.questId) questStore.rollbackComplete(context.questId)
       if (context?.prevEnergy !== undefined) energy.restore(context.prevEnergy)
-      toast('error', error.message)
+
+      // Verifikationsfehler verständlich anzeigen
+      if (error.message.includes('QUEST_CONDITION_NOT_MET') ||
+          error.message.includes('nicht erfüllt') ||
+          error.message.includes('noch nicht')) {
+        toast('warning', `⚠️ ${error.message}`)
+      } else {
+        toast('error', error.message)
+      }
       haptic('error')
     },
   })
