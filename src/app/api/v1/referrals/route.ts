@@ -10,7 +10,6 @@ function db() {
   )
 }
 
-// GET /api/v1/referrals — Eigene Referral-Stats
 export const GET = withAuth(async (ctx) => {
   const supabase = db()
 
@@ -32,13 +31,16 @@ export const GET = withAuth(async (ctx) => {
     .order('created_at', { ascending: false })
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? ''
-  const referralLink = `https://t.me/${botUsername}?start=${(user as any)?.referral_code ?? ''}`
+  const referralCode = (user as any)?.referral_code ?? ''
+
+  // FIX: ?startapp= statt ?start= für Mini Apps
+  const referralLink = `https://t.me/${botUsername}?startapp=${referralCode}`
 
   const list = (referrals ?? []).map((r: any) => ({
-    id:           r.id,
-    isValid:      r.is_valid,
-    createdAt:    r.created_at,
-    validatedAt:  r.validated_at,
+    id:          r.id,
+    isValid:     r.is_valid,
+    createdAt:   r.created_at,
+    validatedAt: r.validated_at,
     referee: {
       firstName: r.referee?.telegram_first_name,
       username:  r.referee?.telegram_username,
@@ -49,16 +51,23 @@ export const GET = withAuth(async (ctx) => {
   }))
 
   return ok({
-    referralCode:    (user as any)?.referral_code,
+    referralCode,
     referralLink,
-    referralEligible:(user as any)?.referral_eligible,
-    totalReferrals:  list.length,
-    validReferrals:  list.filter((r: any) => r.isValid).length,
-    referrals:       list,
-    // Anforderungen für Referral-Berechtigung
+    referralEligible: (user as any)?.referral_eligible,
+    totalReferrals:   list.length,
+    validReferrals:   list.filter((r: any) => r.isValid).length,
+    referrals:        list,
     requirements: {
-      level:       { current: (user as any)?.level ?? 1,     required: 5,    met: ((user as any)?.level ?? 1) >= 5 },
-      xp:          { current: (user as any)?.xp_total ?? 0,  required: 2000, met: ((user as any)?.xp_total ?? 0) >= 2000 },
+      level: {
+        current:  (user as any)?.level     ?? 1,
+        required: 5,
+        met:      ((user as any)?.level    ?? 1) >= 5,
+      },
+      xp: {
+        current:  (user as any)?.xp_total  ?? 0,
+        required: 2000,
+        met:      ((user as any)?.xp_total ?? 0) >= 2000,
+      },
     },
   })
 })
