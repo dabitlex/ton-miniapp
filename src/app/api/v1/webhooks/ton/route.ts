@@ -1,25 +1,39 @@
 // src/app/api/v1/webhooks/ton/route.ts
-// Empfängt Transaktions-Events von TONapi.io
+// Empfängt TX-Events von TONapi.io Webhook
 import { NextRequest, NextResponse } from 'next/server'
-import { ok, err }        from '@/app/api/v1/_lib/handler'
 import { createClient }   from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 function db() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  return createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
+
+// Hash normalisieren → lowercase Hex (gleiche Funktion wie in resolve-tx)
+function normalizeHash(hash: string): string {
+  if (/^[0-9a-fA-F]{64}$/.test(hash)) return hash.toLowerCase()
+  try {
+    const normalized = hash.replace(/-/g, '+').replace(/_/g, '/')
+    const padded     = normalized.padEnd(normalized.length + (4 - normalized.length % 4) % 4, '=')
+    const binary     = atob(padded)
+    const hex = Array.from(binary)
+      .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+      .join('')
+    return hex.toLowerCase()
+  } catch {
+    return hash.toLowerCase()
+  }
 }
 
 export async function POST(req: NextRequest) {
-  // ── Sicherheit: Secret-Token in URL prüfen ────────────────
+  // Secret prüfen
   const url    = new URL(req.url)
   const secret = url.searchParams.get('secret')
-
   if (!secret || secret !== process.env.TON_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -28,48 +42,33 @@ export async function POST(req: NextRequest) {
   try { payload = await req.json() }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  // ── TONapi.io Webhook Format ──────────────────────────────
-  // TONapi sendet Events in verschiedenen Formaten je nach Subscription-Typ
-  // Wir unterstützen beide gängigen Formate:
+  // ── TONapi Webhook Format ─────────────────────────────────
+  // Dokumentiertes Format: { account_id, lt, tx_hash }
+  let txHash: string | null = null
 
-  let txHash: string | null     = null
-  let senderAddress: string | null  = null
-  let recipientAddress: string | null = null
-  let amountNano: string | null  = null
-
-  // Format 1: TONapi.io account_transaction event
-  if (payload.event_id === 'account_transaction' || payload.account_id) {
-    const tx = payload.data?.lt ? payload.data : payload
-    txHash          = tx.hash          ?? tx.tx_hash       ?? null
-    senderAddress   = tx.in_msg?.source?.address           ?? null
-    recipientAddress= tx.account?.address ?? tx.in_msg?.destination?.address ?? null
-    amountNano      = tx.in_msg?.value  ?? tx.amount_nano  ?? null
+  // Primär: tx_hash direkt (TONapi Standard-Format)
+  if (payload.tx_hash) {
+    txHash = normalizeHash(payload.tx_hash)
   }
-
-  // Format 2: Direktes Format (z.B. eigener Poller)
-  if (!txHash && payload.tx_hash) {
-    txHash          = payload.tx_hash
-    senderAddress   = payload.sender       ?? null
-    recipientAddress= payload.recipient    ?? null
-    amountNano      = payload.amount_nano  ?? null
+  // Fallback: hash Feld
+  else if (payload.hash) {
+    txHash = normalizeHash(payload.hash)
   }
-
-  // Format 3: TON Center Format
-  if (!txHash && payload.hash) {
-    txHash          = payload.hash
-    senderAddress   = payload.in_msg?.source   ?? null
-    recipientAddress= payload.in_msg?.destination ?? null
-    amountNano      = payload.in_msg?.value    ?? null
+  // Fallback: verschachteltes Format
+  else if (payload.account_id && payload.data?.tx_hash) {
+    txHash = normalizeHash(payload.data.tx_hash)
   }
 
   if (!txHash) {
-    console.log('[TON Webhook] Kein TX Hash gefunden:', JSON.stringify(payload).slice(0, 200))
+    console.log('[TON Webhook] Kein TX Hash:', JSON.stringify(payload).slice(0, 200))
     return NextResponse.json({ handled: false, reason: 'No tx_hash' })
   }
 
+  console.log(`[TON Webhook] Empfangen TX: ${txHash}`)
+
   const supabase = db()
 
-  // ── Transaktion in DB aktualisieren ──────────────────────
+  // TX in DB suchen (beide Hashes sind jetzt Hex-normalisiert)
   const { data: existingTx } = await supabase
     .from('ton_transactions')
     .select('id, status')
@@ -77,53 +76,26 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (!existingTx) {
-    // TX nicht in unserer DB → ignorieren (fremde Transaktion)
+    console.log(`[TON Webhook] Unbekannte TX: ${txHash}`)
     return NextResponse.json({ handled: false, reason: 'Unknown tx' })
   }
 
   if (existingTx.status === 'confirmed') {
-    // Bereits bestätigt → idempotent
     return NextResponse.json({ handled: true, reason: 'Already confirmed' })
   }
 
-  // Transaktion als bestätigt markieren
+  // TX als confirmed markieren → Trigger fn_activate_boost_on_tx_confirm feuert
   await supabase.from('ton_transactions').update({
-    status:            'confirmed',
-    confirmed_at:      new Date().toISOString(),
-    sender_address:    senderAddress,
-    recipient_address: recipientAddress,
-    amount_nano:       amountNano,
-    raw_data:          payload,
+    status:       'confirmed',
+    confirmed_at: new Date().toISOString(),
+    raw_data:     payload,
   }).eq('tx_hash', txHash)
 
-  // ── Ecosystem Boost aktivieren ────────────────────────────
-  const { data: support } = await supabase
-    .from('ecosystem_support')
-    .update({ is_active: true })
-    .eq('tx_id', existingTx.id)
-    .select('user_id, xp_boost_percent, tier')
-    .maybeSingle()
-
-  if (support) {
-    // System-Event loggen
-    await supabase.from('system_events').insert({
-      event_type: 'ecosystem_boost_activated',
-      payload: {
-        user_id:          support.user_id,
-        tier:             support.tier,
-        xp_boost_percent: support.xp_boost_percent,
-        tx_hash:          txHash,
-      },
-      success: true,
-    }).catch(() => {}) // Non-critical
-
-    console.log(`[TON Webhook] Boost aktiviert: ${support.tier} für User ${support.user_id}`)
-  }
-
+  console.log(`[TON Webhook] TX bestätigt + Boost aktiviert: ${txHash}`)
   return NextResponse.json({ handled: true, tx_hash: txHash })
 }
 
-// GET für Webhook-Verification (TONapi.io prüft ob URL erreichbar)
+// GET für Webhook-Verification
 export async function GET(req: NextRequest) {
   const url    = new URL(req.url)
   const secret = url.searchParams.get('secret')
