@@ -256,6 +256,10 @@ export default function EcosystemPage() {
               : ECOSYSTEM_TIERS.map(tier => {
                   const isCurrent     = active?.tier === tier.key
                   const isPendingThis = pendingTierKey === tier.key
+                  // Niedrigere/gleiche Tiers sperren wenn höherer Boost aktiv
+                  const isLowerTier   = active
+                    ? tier.boostPercent <= active.boostPercent && !isCurrent
+                    : false
 
                   return (
                     <div key={tier.key} className="rounded-2xl p-4 relative overflow-hidden"
@@ -318,7 +322,7 @@ export default function EcosystemPage() {
                       </p>
 
                       <button
-                        disabled={isCurrent || !!pendingTierKey || !!pending}
+                        disabled={isCurrent || isLowerTier || !!pendingTierKey || !!pending}
                         onClick={() => handleSupport(tier)}
                         className="w-full py-2.5 rounded-xl text-sm font-bold text-white
                                    transition-all active:scale-95 disabled:opacity-50
@@ -336,6 +340,8 @@ export default function EcosystemPage() {
                           Wird verarbeitet...</>
                         ) : isCurrent ? (
                           '✓ Aktiv'
+                        ) : isLowerTier ? (
+                          '— Nicht verfügbar'
                         ) : (
                           <><Zap size={14} fill="currentColor" /> {tier.tonAmount} TON senden</>
                         )}
