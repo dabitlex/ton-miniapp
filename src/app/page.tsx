@@ -1,68 +1,81 @@
-// src/app/page.tsx
+// src/app/page.tsx — VEXALGO Splash Screen
 'use client'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { AuthProvider } from '@/components/providers/AuthProvider'
-import { useAuthStore } from '@/stores/useAuthStore'
+import { useEffect, useState } from 'react'
+import { AuthProvider }        from '@/components/providers/AuthProvider'
 
-function SplashContent() {
-  const { isAuthenticated, isInitializing, authError } = useAuthStore()
-  const router = useRouter()
+export default function SplashPage() {
+  const [phase, setPhase] = useState<'logo' | 'loading' | 'done'>('logo')
 
   useEffect(() => {
-    if (!isInitializing && isAuthenticated) {
-      router.replace('/home')
-    }
-  }, [isAuthenticated, isInitializing, router])
+    const t1 = setTimeout(() => setPhase('loading'), 800)
+    return () => clearTimeout(t1)
+  }, [])
 
-  // Fehler anzeigen — jetzt mit dem echten Fehlertext
-  if (!isInitializing && authError) {
-    return (
-      <div className="h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <span className="text-4xl">⚠️</span>
-        <div>
-          <p className="text-sm font-bold text-white mb-1">
-            Open this app inside Telegram
-          </p>
-          <p className="text-xs text-white/40 max-w-xs break-words">
-            {authError}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  // Ladebildschirm
-  return (
-    <div className="h-dvh flex flex-col items-center justify-center gap-6">
-      <div className="relative">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-600 to-fuchsia-600
-                        flex items-center justify-center text-4xl
-                        shadow-[0_0_40px_rgba(139,92,246,0.4)]">
-          ⚡
-        </div>
-      </div>
-      <div className="text-center space-y-1">
-        <h1 className="text-xl font-black text-white">TON MiniApp</h1>
-        <p className="text-sm text-white/40">Loading your adventure…</p>
-      </div>
-      <div className="flex gap-1.5">
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            className="w-2 h-2 rounded-full bg-violet-400/60 animate-bounce"
-            style={{ animationDelay: `${i * 150}ms` }}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export default function EntryPage() {
   return (
     <AuthProvider>
-      <SplashContent />
+      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
+        style={{ background: 'var(--bg-void)' }}>
+
+        {/* Ambient */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2
+                          w-80 h-80 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)',
+              filter: 'blur(40px)',
+              animation: 'pulse-glow 3s ease-in-out infinite',
+            }} />
+        </div>
+
+        {/* Logo */}
+        <div className="relative flex flex-col items-center"
+          style={{
+            animation: 'float 3s ease-in-out infinite',
+            opacity: phase === 'logo' ? 0 : 1,
+            transform: phase === 'logo' ? 'scale(0.8) translateY(20px)' : 'scale(1) translateY(0)',
+            transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}>
+
+          {/* Logo image */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-192.png" alt="VEXALGO" width={80} height={80}
+            className="rounded-2xl mb-5"
+            style={{ boxShadow: '0 0 40px rgba(124,58,237,0.5), 0 0 80px rgba(124,58,237,0.2)' }} />
+
+          {/* Brand name */}
+          <h1 className="font-display text-4xl font-black tracking-[0.15em] mb-1">
+            VEX<span style={{
+              background: 'linear-gradient(135deg, #A855F7, #3B82F6)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>ALGO</span>
+          </h1>
+          <p className="text-[11px] font-semibold tracking-[0.3em]"
+            style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-display)' }}>
+            EARN · LEVEL · DOMINATE
+          </p>
+        </div>
+
+        {/* Loading bar */}
+        {phase === 'loading' && (
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-32">
+            <div className="h-[2px] rounded-full overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div className="h-full rounded-full"
+                style={{
+                  background: 'linear-gradient(90deg, #7C3AED, #A855F7)',
+                  animation: 'shimmer 1.2s ease-in-out infinite',
+                  width: '60%',
+                }} />
+            </div>
+            <p className="text-center text-[10px] mt-2 font-medium"
+              style={{ color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-display)',
+                letterSpacing: '0.2em' }}>
+              INITIALISIERUNG...
+            </p>
+          </div>
+        )}
+      </div>
     </AuthProvider>
   )
 }
