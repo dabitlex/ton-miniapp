@@ -90,7 +90,7 @@ export default function EcosystemPage() {
 
       toast('info', 'Transaktion gesendet — ermittle TX Hash...')
 
-      // ── Schritt 2: BOC an Backend senden → echten TX Hash holen ─
+      // ── Schritt 2: TX Hash ermitteln (TONapi polling) ──────────
       const hashRes = await fetch('/api/v1/ecosystem/resolve-tx', {
         method:  'POST',
         headers: {
@@ -98,13 +98,24 @@ export default function EcosystemPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          boc:       result.boc,
-          tonAmount: tier.tonAmount,
-          tierKey:   tier.key,
+          tonAmount:     tier.tonAmount,
+          tierKey:       tier.key,
+          // Sender-Adresse für TX-Matching bei gleichzeitigen Käufen
+          senderAddress: wallet?.account?.address ?? null,
         }),
       })
 
       const hashJson = await hashRes.json()
+
+      if (hashRes.status === 202) {
+        // TX gesendet aber noch nicht auf Chain sichtbar
+        // TONapi Webhook wird Boost automatisch aktivieren
+        toast('success', '✅ Zahlung gesendet! Boost aktiviert sich automatisch in ~30 Sekunden.')
+        qc.invalidateQueries({ queryKey: ['ecosystem'] })
+        setPendingTierKey(null)
+        return
+      }
+
       if (!hashJson.success) throw new Error(hashJson.error)
 
       const txHash = hashJson.data.txHash
