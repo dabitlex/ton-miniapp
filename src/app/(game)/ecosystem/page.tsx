@@ -1,5 +1,4 @@
 // src/app/(game)/ecosystem/page.tsx
-// IMPORTANT: "Ecosystem Support" — never "investment", "returns", "profit"
 'use client'
 import { useState }                                     from 'react'
 import { useQuery, useMutation, useQueryClient }        from '@tanstack/react-query'
@@ -14,17 +13,6 @@ import { Zap, Wallet } from 'lucide-react'
 // TON zu Nano konvertieren
 function toNano(amount: number): string {
   return (BigInt(Math.round(amount * 1e9))).toString()
-}
-
-// BOC Hash berechnen (TX-Hash aus TON Connect Response)
-async function bocToTxHash(boc: string): Promise<string> {
-  try {
-    // Suche TX über TON Center API anhand der letzten Transaktionen
-    // Wir nutzen einen Timestamp-basierten Fallback Hash
-    return `toncenter_${Date.now()}_${boc.slice(0, 16)}`
-  } catch {
-    return `tx_${Date.now()}`
-  }
 }
 
 export default function EcosystemPage() {
@@ -52,7 +40,7 @@ export default function EcosystemPage() {
     },
   })
 
-  const { mutate: submitSupport, isPending: submitting } = useMutation({
+  const { mutate: submitSupport } = useMutation({
     mutationFn: async ({ txHash, tonAmount }: { txHash: string; tonAmount: number }) => {
       const res = await fetch('/api/v1/ecosystem/support', {
         method:  'POST',
@@ -64,7 +52,7 @@ export default function EcosystemPage() {
       return json.data
     },
     onSuccess: () => {
-      toast('success', '✅ Transaktion eingereicht! Boost aktiviert nach Bestätigung (~30s).')
+      toast('success', '✅ Transaktion bestätigt! Boost aktiviert sich in ~30 Sekunden.')
       qc.invalidateQueries({ queryKey: ['ecosystem'] })
       setPendingTierKey(null)
     },
@@ -75,7 +63,6 @@ export default function EcosystemPage() {
   })
 
   async function handleSupport(tier: EcosystemSupportTier) {
-    // Wallet prüfen
     if (!wallet) {
       toast('error', 'Verbinde zuerst eine TON Wallet')
       tonConnectUI.openModal()
@@ -91,31 +78,49 @@ export default function EcosystemPage() {
     setPendingTierKey(tier.key)
 
     try {
-      // Echte TON Connect Transaktion senden
+      // ── Schritt 1: Transaktion via TON Connect senden ────────
       const result = await tonConnectUI.sendTransaction({
-        validUntil: Math.floor(Date.now() / 1000) + 360, // 6 Minuten gültig
-        messages: [
-          {
-            address: treasuryWallet,
-            amount:  toNano(tier.tonAmount),
-            // Payload: tier key als Kommentar damit der Webhook zuordnen kann
-            payload: btoa(`vexalgo_ecosystem_${tier.key}_${Date.now()}`),
-          },
-        ],
+        validUntil: Math.floor(Date.now() / 1000) + 600, // 10 Min gültig
+        messages: [{
+          address: treasuryWallet,
+          amount:  toNano(tier.tonAmount),
+        }],
       })
 
-      // TX Hash aus BOC extrahieren oder Fallback nutzen
-      const txHash = await bocToTxHash(result.boc)
+      toast('info', 'Transaktion gesendet — ermittle TX Hash...')
 
-      // An Backend senden
+      // ── Schritt 2: BOC an Backend senden → echten TX Hash holen ─
+      const hashRes = await fetch('/api/v1/ecosystem/resolve-tx', {
+        method:  'POST',
+        headers: {
+          Authorization:  `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          boc:       result.boc,
+          tonAmount: tier.tonAmount,
+          tierKey:   tier.key,
+        }),
+      })
+
+      const hashJson = await hashRes.json()
+      if (!hashJson.success) throw new Error(hashJson.error)
+
+      const txHash = hashJson.data.txHash
+
+      // ── Schritt 3: Support registrieren mit echtem Hash ──────
       submitSupport({ txHash, tonAmount: tier.tonAmount })
 
     } catch (e: any) {
       setPendingTierKey(null)
-      if (e.message?.includes('User rejects') || e.message?.includes('Reject')) {
+      if (e?.message?.includes('User rejects') || e?.message?.includes('Reject')) {
         toast('info', 'Transaktion abgebrochen')
       } else {
-        toast('error', e.message ?? 'Transaktion fehlgeschlagen')
+        if (e?.message?.includes('verifiziert werden')) {
+        toast('error', '⚠️ TX nicht verifiziert — prüfe deine Wallet. Support: @vexalgo_support')
+      } else {
+        toast('error', e?.message ?? 'Transaktion fehlgeschlagen')
+      }
       }
     }
   }
@@ -147,8 +152,7 @@ export default function EcosystemPage() {
         {/* ── Wallet Status ─────────────────────────────────── */}
         {!wallet && (
           <button onClick={() => tonConnectUI.openModal()}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl
-                       active:scale-[0.98] transition-all"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:scale-[0.98] transition-all"
             style={{
               background: 'rgba(59,130,246,0.08)',
               border: '1px solid rgba(59,130,246,0.2)',
@@ -230,8 +234,7 @@ export default function EcosystemPage() {
                 ))
               : ECOSYSTEM_TIERS.map(tier => {
                   const isCurrent     = active?.tier === tier.key
-                  const isBetter      = active && tier.boostPercent > active.boostPercent
-                  const isPendingThis = pendingTierKey === tier.key || submitting
+                  const isPendingThis = pendingTierKey === tier.key
 
                   return (
                     <div key={tier.key} className="rounded-2xl p-4 relative overflow-hidden"
@@ -294,7 +297,7 @@ export default function EcosystemPage() {
                       </p>
 
                       <button
-                        disabled={isCurrent || isPendingThis}
+                        disabled={isCurrent || !!pendingTierKey}
                         onClick={() => handleSupport(tier)}
                         className="w-full py-2.5 rounded-xl text-sm font-bold text-white
                                    transition-all active:scale-95 disabled:opacity-50
@@ -306,14 +309,12 @@ export default function EcosystemPage() {
                           boxShadow: isCurrent ? 'none' : '0 4px 16px rgba(124,58,237,0.3)',
                           border: isCurrent ? '1px solid rgba(255,255,255,0.1)' : 'none',
                           color: isCurrent ? 'rgba(255,255,255,0.4)' : 'white',
-                          cursor: isCurrent ? 'default' : 'pointer',
                         }}>
                         {isPendingThis ? (
-                          <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                          <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                          Wird verarbeitet...</>
                         ) : isCurrent ? (
                           '✓ Aktiv'
-                        ) : isBetter ? (
-                          <><Zap size={14} fill="currentColor" /> Upgrade → {tier.tonAmount} TON</>
                         ) : (
                           <><Zap size={14} fill="currentColor" /> {tier.tonAmount} TON senden</>
                         )}
@@ -325,15 +326,15 @@ export default function EcosystemPage() {
           </div>
         </div>
 
-        {/* ── Pending Info ─────────────────────────────────── */}
+        {/* ── Info ─────────────────────────────────────────── */}
         <div className="rounded-xl px-3 py-2.5"
           style={{
             background: 'rgba(59,130,246,0.06)',
             border: '1px solid rgba(59,130,246,0.15)',
           }}>
           <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            ℹ️ Nach dem Senden wird deine Transaktion automatisch bestätigt (~30 Sekunden).
-            Der Boost aktiviert sich sobald die TON-Blockchain die TX bestätigt.
+            ℹ️ Nach dem Senden wird deine Transaktion automatisch verifiziert.
+            Der Boost aktiviert sich sobald die TON-Blockchain die TX bestätigt (~30 Sekunden).
           </p>
         </div>
 
@@ -354,12 +355,10 @@ export default function EcosystemPage() {
                   }}>
                   <div>
                     <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                      {h.tier.replace('_', ' ')} —{' '}
-                      <span style={{ color: '#A855F7' }}>+{h.boostPercent}%</span>
+                      {h.tier.replace('_', ' ')} — <span style={{ color: '#A855F7' }}>+{h.boostPercent}%</span>
                     </p>
                     <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                      {new Date(h.createdAt).toLocaleDateString('de-DE')} ·{' '}
-                      {formatNumber(h.tonAmount)} TON
+                      {new Date(h.createdAt).toLocaleDateString('de-DE')} · {formatNumber(h.tonAmount)} TON
                     </p>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
