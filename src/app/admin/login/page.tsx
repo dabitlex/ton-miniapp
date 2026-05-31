@@ -1,103 +1,131 @@
 // src/app/admin/login/page.tsx
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-declare global {
-  interface Window {
-    onTelegramAuth: (user: any) => void
-  }
-}
-
 export default function AdminLoginPage() {
-  const router  = useRouter()
-  const ref     = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState<string | null>(null)
+  const router   = useRouter()
+  const ref      = useRef<HTMLDivElement>(null)
+  const [error,   setError]   = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
-
-    window.onTelegramAuth = async (user) => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res  = await fetch('/api/admin/auth', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(user),
-        })
-        const json = await res.json()
-
-        if (res.ok && json.success) {
-          router.replace('/admin')
-        } else {
-          setError('Zugriff verweigert')
-        }
-      } catch {
-        setError('Verbindungsfehler')
-      } finally {
+  const handleAuth = useCallback(async (user: Record<string, any>) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res  = await fetch('/api/admin/auth', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(user),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        router.replace('/admin')
+      } else {
+        setError(json.error ?? 'Zugriff verweigert')
         setLoading(false)
       }
-    }
-
-    // Telegram Login Widget Script laden
-    if (ref.current && botUsername) {
-      const script       = document.createElement('script')
-      script.src         = 'https://telegram.org/js/telegram-widget.js?22'
-      script.async       = true
-      script.setAttribute('data-telegram-login',   botUsername)
-      script.setAttribute('data-size',             'large')
-      script.setAttribute('data-onauth',           'onTelegramAuth(user)')
-      script.setAttribute('data-request-access',   'write')
-      script.setAttribute('data-userpic',          'false')
-      ref.current.appendChild(script)
+    } catch {
+      setError('Verbindungsfehler')
+      setLoading(false)
     }
   }, [router])
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted || !ref.current) return
+
+    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+    if (!botUsername) return
+
+    // Callback ZUERST setzen bevor Script lädt
+    ;(window as any).onTelegramAuth = handleAuth
+
+    // Container leeren (für Re-renders)
+    ref.current.innerHTML = ''
+
+    // Script frisch laden mit Timestamp gegen Cache
+    const script = document.createElement('script')
+    script.src   = `https://telegram.org/js/telegram-widget.js?22&_=${Date.now()}`
+    script.setAttribute('data-telegram-login',  botUsername)
+    script.setAttribute('data-size',            'large')
+    script.setAttribute('data-onauth',          'onTelegramAuth(user)')
+    script.setAttribute('data-request-access',  'write')
+    script.setAttribute('data-userpic',         'false')
+    script.setAttribute('data-lang',            'de')
+
+    ref.current.appendChild(script)
+
+    return () => {
+      // Cleanup
+      delete (window as any).onTelegramAuth
+    }
+  }, [mounted, handleAuth])
+
   return (
-    <div className="min-h-screen flex items-center justify-center"
-      style={{ background: '#020207' }}>
-      <div className="w-full max-w-sm mx-4">
+    <div style={{
+      minHeight: '100vh', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#020207',
+    }}>
+      <div style={{ width: '100%', maxWidth: 380, padding: '0 16px' }}>
 
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <h1 style={{
-            fontFamily: 'monospace',
-            fontSize: 28, fontWeight: 900,
-            letterSpacing: '0.1em', color: 'white',
+            fontFamily: 'monospace', fontSize: 28,
+            fontWeight: 900, letterSpacing: '0.1em', color: 'white', margin: 0,
           }}>
             VEX<span style={{ color: '#A855F7' }}>ALGO</span>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 4 }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 6 }}>
             Admin Dashboard
           </p>
         </div>
 
-        {/* Login Card */}
+        {/* Card */}
         <div style={{
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 16, padding: 24,
+          borderRadius: 16, padding: 28,
         }}>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>
+          <p style={{
+            color: 'rgba(255,255,255,0.5)', fontSize: 13,
+            textAlign: 'center', marginBottom: 20, marginTop: 0,
+          }}>
             Mit Telegram anmelden
           </p>
 
-          {/* Telegram Widget Container */}
-          <div ref={ref} className="flex justify-center" />
+          {/* Widget Container */}
+          {mounted && (
+            <div ref={ref} style={{ display: 'flex', justifyContent: 'center', minHeight: 40 }} />
+          )}
 
           {loading && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <div className="w-4 h-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Prüfe Berechtigung...</span>
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: 8, marginTop: 16,
+            }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: '50%',
+                border: '2px solid rgba(168,85,247,0.3)',
+                borderTopColor: '#A855F7',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                Prüfe Berechtigung...
+              </span>
             </div>
           )}
 
           {error && (
             <p style={{
               color: '#F43F5E', fontSize: 12,
-              textAlign: 'center', marginTop: 12,
+              textAlign: 'center', marginTop: 14, marginBottom: 0,
             }}>
               ⚠️ {error}
             </p>
@@ -111,6 +139,10 @@ export default function AdminLoginPage() {
           Zugriff nur für autorisierte Administratoren
         </p>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   )
 }
