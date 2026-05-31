@@ -42,11 +42,11 @@ export default function EcosystemPage() {
   })
 
   const { mutate: submitSupport } = useMutation({
-    mutationFn: async ({ txHash, tonAmount }: { txHash: string; tonAmount: number }) => {
+    mutationFn: async ({ txHash, tonAmount, source }: { txHash: string; tonAmount: number; source?: string }) => {
       const res = await fetch('/api/v1/ecosystem/support', {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ txHash, tonAmount }),
+        body:    JSON.stringify({ txHash, tonAmount, source }),
       })
       const json = await res.json()
       if (!json.success) throw new Error(json.error)
@@ -118,10 +118,11 @@ export default function EcosystemPage() {
 
       if (!hashJson.success) throw new Error(hashJson.error)
 
-      const txHash = hashJson.data.txHash
+      const txHash  = hashJson.data.txHash
+      const source  = hashJson.data.source  // 'tonapi_poll', 'tonapi', etc.
 
       // ── Schritt 3: Support registrieren mit echtem Hash ──────
-      submitSupport({ txHash, tonAmount: tier.tonAmount })
+      submitSupport({ txHash, tonAmount: tier.tonAmount, source })
 
     } catch (e: any) {
       setPendingTierKey(null)
