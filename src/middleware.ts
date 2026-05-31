@@ -1,29 +1,52 @@
 // src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  const response = NextResponse.next({ request })
-
-  // WICHTIG: X-Frame-Options NICHT setzen für Telegram MiniApp
-  // Telegram WebView bettet die App ein -- DENY würde das blockieren
-  // Sicherheit wird durch Telegram initData HMAC-Validierung gewährleistet
-
-  // Content-Type Schutz
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-
-  // Kein Cache für API Routes
-  if (pathname.startsWith('/api/')) {
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
-    response.headers.set('Pragma', 'no-cache')
-  }
-
-  return response
-}
+import { createClient } from '@supabase/supabase-js'
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|tonconnect-manifest.json|.*\\.png|.*\\.svg|.*\\.jpg|.*\\.webp).*)',
-  ],
+  matcher: ['/admin/:path*'],
+}
+
+export async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname
+
+  // Login-Seite immer erlauben
+  if (path === '/admin/login') return NextResponse.next()
+
+  // Session Token aus Cookie
+  const token = req.cookies.get('admin_session')?.value
+
+  if (!token) {
+    return NextResponse.redirect(new URL('/admin/login', req.url))
+  }
+
+  // Token in Supabase prüfen
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data: session } = await supabase
+      .from('admin_sessions')
+      .select('telegram_id, expires_at')
+      .eq('token', token)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle()
+
+    if (!session) {
+      const response = NextResponse.redirect(new URL('/admin/login', req.url))
+      response.cookies.delete('admin_session')
+      return response
+    }
+
+    // Telegram ID in Header weitergeben
+    const requestHeaders = new Headers(req.headers)
+    requestHeaders.set('x-admin-telegram-id', session.telegram_id.toString())
+
+    return NextResponse.next({ request: { headers: requestHeaders } })
+
+  } catch {
+    return NextResponse.redirect(new URL('/admin/login', req.url))
+  }
 }
