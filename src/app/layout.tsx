@@ -20,7 +20,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#020207" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <script src="https://telegram.org/js/telegram-web-app.js" async />
+        {/* KEIN async — Telegram SDK muss synchron geladen sein bevor React mounted */}
+        <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
       <body suppressHydrationWarning>
         {children}
