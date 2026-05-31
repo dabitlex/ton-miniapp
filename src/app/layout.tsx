@@ -1,37 +1,29 @@
 // src/app/layout.tsx
-import type { Metadata, Viewport } from 'next'
-import { QueryProvider }  from '@/components/providers/QueryProvider'
-import { Toaster }        from '@/components/ui/Toaster'
-import { XPPopupLayer }   from '@/components/ui/XPPopupLayer'
+import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title:       'TON MiniApp',
-  description: 'Gamified Telegram MiniApp on TON',
-}
-
-export const viewport: Viewport = {
-  width:          'device-width',
-  initialScale:   1,
-  maximumScale:   1,
-  userScalable:   false,
-  viewportFit:    'cover',
-  themeColor:     '#0c0c0f',
+  title:       'VEXALGO',
+  description: 'Earn · Level · Dominate — The premium Web3 Telegram Mini App',
+  icons: {
+    icon:  '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/site.webmanifest',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="de" suppressHydrationWarning>
       <head>
-        {/* Telegram WebApp SDK — must load before page JS */}
-        <script src="https://telegram.org/js/telegram-web-app.js" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#020207" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <script src="https://telegram.org/js/telegram-web-app.js" async />
       </head>
-      <body className="bg-[#0c0c0f] text-white antialiased overscroll-none select-none">
-        <QueryProvider>
-          {children}
-          <Toaster />
-          <XPPopupLayer />
-        </QueryProvider>
+      <body suppressHydrationWarning>
+        {children}
       </body>
     </html>
   )
