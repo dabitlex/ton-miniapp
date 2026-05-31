@@ -1,4 +1,4 @@
-// src/app/api/v1/ecosystem/support/route.ts 
+// src/app/api/v1/ecosystem/support/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient }    from '@/lib/supabase/admin'
 import { ECOSYSTEM_TIERS }   from '@/lib/constants/game'
@@ -7,11 +7,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export const POST = withAuth(async (ctx) => {
-  let body: { txHash?: string; tonAmount?: string | number }
+  let body: { txHash?: string; tonAmount?: string | number; source?: string }
   try { body = await ctx.req.json() }
   catch { return err('Invalid body', 'BAD_REQUEST') }
 
-  const { txHash, tonAmount: rawAmount } = body
+  const { txHash, tonAmount: rawAmount, source } = body
   if (!txHash || !rawAmount) return err('txHash and tonAmount required', 'MISSING_FIELDS')
 
   const tonAmount = parseFloat(String(rawAmount))
@@ -31,7 +31,7 @@ export const POST = withAuth(async (ctx) => {
   // Classify tier
   const sorted = [...ECOSYSTEM_TIERS].sort((a, b) => b.tonAmount - a.tonAmount)
   const tier   = sorted.find(t => tonAmount >= t.tonAmount)
-  if (!tier) return err(`Minimum 1 TON required for Ecosystem Support`, 'BELOW_MIN')
+  if (!tier) return err('Minimum 1 TON required for Ecosystem Support', 'BELOW_MIN')
 
   // Active season required
   const { data: season } = await db
@@ -42,7 +42,15 @@ export const POST = withAuth(async (ctx) => {
 
   if (!season) return err('No active season', 'NO_SEASON', 404)
 
-  // Create pending TON transaction record
+  // TX via TONapi Polling gefunden = bereits on-chain bestätigt
+  // TX via Webhook = ebenfalls bestätigt
+  // Nur wenn source unbekannt → pending
+  const isConfirmedOnChain = source === 'tonapi_poll' || source === 'tonapi'
+  const txStatus = isConfirmedOnChain ? 'confirmed' : 'pending'
+
+  console.log(`[EcoSupport] TX ${txHash} source=${source} status=${txStatus}`)
+
+  // TON Transaction speichern
   const { data: tx, error: txErr } = await db
     .from('ton_transactions')
     .insert({
@@ -50,8 +58,9 @@ export const POST = withAuth(async (ctx) => {
       sender_address:    wallet.address,
       recipient_address: process.env.NEXT_PUBLIC_TON_TREASURY_WALLET ?? 'treasury',
       amount_nano:       Math.round(tonAmount * 1e9),
-      status:            'pending',
-      detected_via:      'user_report',
+      status:            txStatus,
+      confirmed_at:      isConfirmedOnChain ? new Date().toISOString() : null,
+      detected_via:      source ?? 'user_report',
     })
     .select('id')
     .single()
@@ -61,7 +70,8 @@ export const POST = withAuth(async (ctx) => {
     return err(`Transaction record failed: ${txErr.message}`, 'DB_ERROR', 500)
   }
 
-  // Create ecosystem support record (inactive until confirmed)
+  // Ecosystem Support erstellen
+  // Wenn TX bereits bestätigt → Boost sofort aktivieren
   await db.from('ecosystem_support').insert({
     user_id:           ctx.userId,
     season_id:         season.id,
@@ -71,13 +81,23 @@ export const POST = withAuth(async (ctx) => {
     xp_boost_percent:  tier.boostPercent,
     boost_active_from: new Date().toISOString(),
     boost_active_until:season.ends_at,
-    is_active:         false, // activated on webhook confirmation
+    is_active:         isConfirmedOnChain, // ← sofort aktiv wenn on-chain bestätigt
   })
 
+  if (isConfirmedOnChain) {
+    console.log(`[EcoSupport] ✅ Boost sofort aktiviert: ${tier.key} +${tier.boostPercent}% für User ${ctx.userId}`)
+    return ok({
+      activated:  true,
+      tier:       tier.key,
+      boostPct:   tier.boostPercent,
+      message:    'Boost aktiviert!',
+    })
+  }
+
   return ok({
-    pending:    true,
-    tier:       tier.key,
-    boostPct:   tier.boostPercent,
-    message:    'Transaction submitted. Your XP boost will activate after network confirmation (~30s).',
+    pending:  true,
+    tier:     tier.key,
+    boostPct: tier.boostPercent,
+    message:  'Transaction submitted. Boost activates after confirmation (~30s).',
   })
 })
