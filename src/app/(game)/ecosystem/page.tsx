@@ -34,6 +34,7 @@ export default function EcosystemPage() {
       if (!json.success) throw new Error(json.error)
       return json.data as {
         activeBoost: ActiveEcosystemBoost | null
+        pendingBoost: { tier: string; boostPercent: number } | null
         tiers: EcosystemSupportTier[]
         history: any[]
       }
@@ -126,6 +127,7 @@ export default function EcosystemPage() {
   }
 
   const active = data?.activeBoost
+  const pending = data?.pendingBoost
 
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-6">
@@ -219,7 +221,26 @@ export default function EcosystemPage() {
           </div>
         )}
 
-        {/* ── Tiers ────────────────────────────────────────── */}
+        {/* ── Pending Banner ────────────────────────────────── */}
+        {pending && !active && (
+          <div className="rounded-2xl p-4 flex items-center gap-3"
+            style={{
+              background: 'rgba(245,158,11,0.08)',
+              border: '1px solid rgba(245,158,11,0.25)',
+            }}>
+            <span className="w-4 h-4 rounded-full border-2 border-amber-400/60 border-t-amber-400 animate-spin shrink-0" />
+            <div>
+              <p className="text-sm font-bold" style={{ color: '#F59E0B' }}>
+                Boost wird bestätigt...
+              </p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                +{pending.boostPercent}% XP — Warte auf TON Blockchain (~30 Sek)
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tiers ────────────────────────────────────────── */}}
         <div>
           <h3 className="text-[11px] font-black tracking-widest mb-3"
             style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-display)' }}>
@@ -297,7 +318,7 @@ export default function EcosystemPage() {
                       </p>
 
                       <button
-                        disabled={isCurrent || !!pendingTierKey}
+                        disabled={isCurrent || !!pendingTierKey || !!pending}
                         onClick={() => handleSupport(tier)}
                         className="w-full py-2.5 rounded-xl text-sm font-bold text-white
                                    transition-all active:scale-95 disabled:opacity-50
