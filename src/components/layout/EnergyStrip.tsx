@@ -1,47 +1,66 @@
 // src/components/layout/EnergyStrip.tsx
 'use client'
-import { useEnergy }   from '@/features/hooks'
-import { cn }          from '@/lib/utils'
-import { Zap }         from 'lucide-react'
+import { useEnergy } from '@/features/hooks'
 
 export function EnergyStrip() {
-  const { current, isFull, isLow, isEmpty, pct, timeToFull, nextRegenAt } = useEnergy()
+  const energy = useEnergy()
+  const pct    = Math.round((energy.current / 100) * 100)
+  const isLow  = energy.current < 20
+  const isFull = energy.current >= 100
+
+  const color = isLow
+    ? 'linear-gradient(90deg, #F43F5E, #FB7185)'
+    : isFull
+    ? 'linear-gradient(90deg, #10B981, #34D399)'
+    : 'linear-gradient(90deg, #7C3AED, #A855F7, #06B6D4)'
 
   return (
-    <div className="shrink-0 flex items-center gap-2 px-4 py-1.5
-                    border-b border-white/[0.04] bg-[#0c0c0f]">
-      <Zap
-        size={11}
-        fill="currentColor"
-        className={cn(
-          'shrink-0 transition-colors',
-          isEmpty ? 'text-red-400' : isLow ? 'text-amber-400' : 'text-yellow-300'
-        )}
-      />
+    <div className="shrink-0 flex items-center gap-2.5 px-4 h-8 relative"
+      style={{ background: 'rgba(6,6,16,0.8)' }}>
 
-      {/* Track */}
-      <div className="flex-1 h-1 rounded-full bg-white/[0.05] overflow-hidden">
-        <div
-          className={cn(
-            'h-full rounded-full transition-all duration-500',
-            isEmpty ? 'bg-red-500'
-              : isLow  ? 'bg-amber-400'
-              : isFull ? 'bg-gradient-to-r from-yellow-300 to-green-400'
-              : 'bg-gradient-to-r from-yellow-400 to-yellow-300'
-          )}
-          style={{ width: `${pct}%` }}
-        />
+      {/* Energy icon */}
+      <span className="text-[11px]" style={{
+        filter: isLow
+          ? 'drop-shadow(0 0 4px rgba(244,63,94,0.8))'
+          : 'drop-shadow(0 0 4px rgba(168,85,247,0.8))'
+      }}>⚡</span>
+
+      {/* Progress track */}
+      <div className="flex-1 h-[3px] rounded-full"
+        style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="h-full rounded-full transition-all duration-700"
+          style={{
+            width: `${pct}%`,
+            background: color,
+            boxShadow: isLow
+              ? '0 0 8px rgba(244,63,94,0.5)'
+              : '0 0 8px rgba(168,85,247,0.5)',
+          }} />
       </div>
 
-      <span className={cn(
-        'text-[10px] font-bold tabular-nums shrink-0 transition-colors',
-        isEmpty ? 'text-red-400' : isLow ? 'text-amber-300' : 'text-white/40'
-      )}>
-        {current}/100
-        {!isFull && !isEmpty && nextRegenAt && (
-          <span className="text-white/20 font-normal"> · {timeToFull}</span>
-        )}
+      {/* Value */}
+      <span className="text-[11px] font-bold tabular-nums shrink-0"
+        style={{
+          color: isLow ? '#F43F5E' : isFull ? '#10B981' : 'rgba(168,85,247,0.9)',
+          minWidth: '44px', textAlign: 'right',
+        }}>
+        {energy.current}/100
       </span>
+
+      {/* Regen timer */}
+      {!isFull && energy.nextRegenAt && (
+        <span className="text-[10px] shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
+          {formatRegen(energy.nextRegenAt)}
+        </span>
+      )}
     </div>
   )
+}
+
+function formatRegen(nextRegenAt: string): string {
+  const diff = new Date(nextRegenAt).getTime() - Date.now()
+  if (diff <= 0) return ''
+  const m = Math.floor(diff / 60000)
+  const s = Math.floor((diff % 60000) / 1000)
+  return m > 0 ? `${m}m` : `${s}s`
 }
