@@ -1,4 +1,4 @@
-// src/app/api/v1/ecosystem/route.ts 
+// src/app/api/v1/ecosystem/route.ts
 import { withAuth, ok } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { ECOSYSTEM_TIERS } from '@/lib/constants/game'
@@ -9,16 +9,13 @@ export const dynamic = 'force-dynamic'
 export const GET = withAuth(async (ctx) => {
   const db = getAdminClient()
 
-  // Get user's active boost (if any)
+  // Aktiver Boost
   const { data: boost } = await db
     .from('ecosystem_support')
     .select(`
-      tier,
-      ton_amount,
-      xp_boost_percent,
-      boost_active_from,
-      boost_active_until,
-      tx:ton_transactions ( tx_hash )
+      tier, ton_amount, xp_boost_percent,
+      boost_active_from, boost_active_until,
+      tx:ton_transactions(tx_hash)
     `)
     .eq('user_id', ctx.userId)
     .eq('is_active', true)
@@ -28,19 +25,28 @@ export const GET = withAuth(async (ctx) => {
     .limit(1)
     .maybeSingle()
 
-  // Get support history (last 10)
+  // Pending TX prüfen — verhindert Doppelkauf
+  const { data: pendingSupport } = await db
+    .from('ecosystem_support')
+    .select(`
+      tier, xp_boost_percent,
+      tx:ton_transactions(status)
+    `)
+    .eq('user_id', ctx.userId)
+    .eq('is_active', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const hasPendingTx = (pendingSupport?.tx as any)?.status === 'pending'
+
+  // History
   const { data: history } = await db
     .from('ecosystem_support')
     .select(`
-      id,
-      tier,
-      ton_amount,
-      xp_boost_percent,
-      is_active,
-      boost_active_from,
-      boost_active_until,
-      created_at,
-      tx:ton_transactions ( tx_hash, status, amount_ton )
+      id, tier, ton_amount, xp_boost_percent,
+      is_active, boost_active_from, boost_active_until, created_at,
+      tx:ton_transactions(tx_hash, status, amount_ton)
     `)
     .eq('user_id', ctx.userId)
     .order('created_at', { ascending: false })
@@ -48,25 +54,28 @@ export const GET = withAuth(async (ctx) => {
 
   return ok({
     tiers: ECOSYSTEM_TIERS,
-    activeBoost: boost
-      ? {
-          tier:             boost.tier,
-          boostPercent:     boost.xp_boost_percent,
-          tonAmount:        boost.ton_amount,
-          boostActiveFrom:  boost.boost_active_from,
-          boostActiveUntil: boost.boost_active_until,
-          txHash:           (boost.tx as any)?.tx_hash ?? null,
-        }
-      : null,
+    activeBoost: boost ? {
+      tier:             boost.tier,
+      boostPercent:     boost.xp_boost_percent,
+      tonAmount:        boost.ton_amount,
+      boostActiveFrom:  boost.boost_active_from,
+      boostActiveUntil: boost.boost_active_until,
+      txHash:           (boost.tx as any)?.tx_hash ?? null,
+    } : null,
+    // Pending TX → UI zeigt "Bestätigung ausstehend" und blockiert neue Käufe
+    pendingBoost: hasPendingTx ? {
+      tier:        pendingSupport!.tier,
+      boostPercent:pendingSupport!.xp_boost_percent,
+    } : null,
     history: (history ?? []).map(h => ({
-      id:              h.id,
-      tier:            h.tier,
-      tonAmount:       h.ton_amount,
-      boostPercent:    h.xp_boost_percent,
-      isActive:        h.is_active,
-      boostUntil:      h.boost_active_until,
-      createdAt:       h.created_at,
-      txStatus:        (h.tx as any)?.status ?? 'unknown',
+      id:          h.id,
+      tier:        h.tier,
+      tonAmount:   h.ton_amount,
+      boostPercent:h.xp_boost_percent,
+      isActive:    h.is_active,
+      boostUntil:  h.boost_active_until,
+      createdAt:   h.created_at,
+      txStatus:    (h.tx as any)?.status ?? 'unknown',
     })),
   })
 })
