@@ -91,7 +91,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
         haptic('success')
         onConnected?.()
       } catch {
-        toast('error', 'Wallet konnte nicht gespeichert werden')
+        toast('error', 'Could not save wallet')
       }
     }
     save()
@@ -108,11 +108,11 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
       const res  = await fetch('/api/v1/users/me', { headers: { Authorization: `Bearer ${token}` } })
       const json = await res.json()
       if (json.success) setProfile(json.data as UserProfile)
-      toast('info', 'Wallet getrennt')
+      toast('info', 'Wallet disconnected')
     } catch { /* silent */ }
   }
 
-  // ── Verbunden ───────────────────────────────────────────────
+  // ── Connected ───────────────────────────────────────────────
   if (wallet) {
     const uqAddr   = rawToUQ(wallet.account.address)
     const short    = `${uqAddr.slice(0, 8)}…${uqAddr.slice(-6)}`
@@ -124,7 +124,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
         <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={14} className="text-emerald-400 shrink-0" />
-            <span className="text-xs font-semibold text-emerald-300">{appName} verbunden</span>
+            <span className="text-xs font-semibold text-emerald-300">{appName} connected</span>
             {isMainnet
               ? <span className="ml-auto text-[10px] text-emerald-400/70">Mainnet ✓</span>
               : <span className="ml-auto text-[10px] text-amber-400">⚠ Testnet</span>
@@ -161,13 +161,13 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
         <button onClick={disconnect}
           className="w-full flex items-center justify-center gap-2
                      text-xs text-white/25 hover:text-white/50 py-1 transition-colors">
-          <LogOut size={11} /> Wallet trennen
+          <LogOut size={11} /> Disconnect Wallet
         </button>
       </div>
     )
   }
 
-  // ── Nicht verbunden ─────────────────────────────────────────
+  // ── Nicht connected ─────────────────────────────────────────
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
@@ -177,7 +177,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
             <Wallet size={18} className="text-blue-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">TON Wallet verbinden</p>
+            <p className="text-sm font-bold text-white">Connect TON Wallet</p>
             <p className="text-xs text-white/40 mt-0.5 leading-relaxed">
               Connect your wallet to receive season rewards
             </p>
@@ -198,7 +198,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
       </div>
 
       <Button fullWidth onClick={() => tonConnectUI.openModal()}>
-        <Wallet size={14} /> Wallet verbinden
+        <Wallet size={14} /> Connect Wallet
       </Button>
 
       <p className="text-center text-[10px] text-white/20">
