@@ -22,7 +22,8 @@ export default function HomePage() {
 
   const completed = daily.filter(q => q.status === 'completed').length
   const total     = daily.length
-  const allDone   = total > 0 && completed === total
+  const allDone     = total > 0 && completed === total
+  const activeBoost = profile?.ecosystemBoost ?? 0
 
   return (
     <div className="flex flex-col min-h-full pb-4">
@@ -83,7 +84,7 @@ export default function HomePage() {
               </p>
               <p className="text-3xl font-black text-white"
                 style={{ fontFamily: 'var(--font-display)' }}>
-                {profile ? formatNumber(profile.seasonXp) : '—'}
+                {profile ? profile.seasonXp.toLocaleString() : '—'}
               </p>
             </div>
             <div className="text-right">
@@ -204,6 +205,7 @@ export default function HomePage() {
                 quest={q}
                 onComplete={(id) => completeQuest(id, 'daily')}
                 completing={completingId === q.id}
+                activeBoostPct={activeBoost}
                 index={i}
               />
             ))}
