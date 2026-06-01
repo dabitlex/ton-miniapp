@@ -9,7 +9,7 @@ import { WalletConnect }   from '@/components/ton/WalletConnect'
 import { ReferralSection } from '@/components/game/ReferralSection'
 import { formatNumber }    from '@/lib/utils'
 import { Flame, Star, Zap, TrendingUp, Trophy, Calendar } from 'lucide-react'
-import { xpForLevel, LEAGUES } from '@/lib/constants/game'
+import { xpForLevel } from '@/lib/constants/game'
 
 export default function ProfilePage() {
   const profile = useUserStore(s => s.profile)
@@ -68,7 +68,6 @@ export default function ProfilePage() {
                 @{profile.telegramUsername}
               </p>
             )}
-            <LeagueBadge league={profile.league} />
           </div>
         </div>
       </div>
