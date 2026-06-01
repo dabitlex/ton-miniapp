@@ -13,7 +13,7 @@ function db() {
 
 export const POST = withAuth(async (ctx) => {
   const clanId = ctx.params?.clanId
-  if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
+  if (!clanId) return err('Clan ID missing', 'MISSING_ID')
 
   const supabase = db()
 
@@ -23,21 +23,21 @@ export const POST = withAuth(async (ctx) => {
     .eq('id', clanId)
     .single()
 
-  if (!clan || !clan.is_active) return err('Clan nicht gefunden', 'NOT_FOUND', 404)
-  if (!clan.is_public) return err('Dieser Clan ist privat', 'PRIVATE_CLAN')
+  if (!clan || !clan.is_active) return err('Clan not found', 'NOT_FOUND', 404)
+  if (!clan.is_public) return err('This clan is private', 'PRIVATE_CLAN')
   if (clan.member_count >= GAME_CONSTANTS.CLAN_MAX_MEMBERS) {
-    return err('Clan ist voll (max. 20 Mitglieder)', 'CLAN_FULL')
+    return err('Clan is full (max. 20 members)', 'CLAN_FULL')
   }
 
   const { data: user } = await supabase
     .from('users').select('level').eq('id', ctx.userId).single()
   if (!user || user.level < clan.min_level_to_join) {
-    return err(`Mindest-Level ${clan.min_level_to_join} erforderlich`, 'LEVEL_REQUIRED')
+    return err(`Minimum Level ${clan.min_level_to_join} required`, 'LEVEL_REQUIRED')
   }
 
   const { data: existing } = await supabase
     .from('clan_members').select('clan_id').eq('user_id', ctx.userId).maybeSingle()
-  if (existing) return err('Du bist bereits in einem Clan', 'ALREADY_IN_CLAN')
+  if (existing) return err('You are already in a clan', 'ALREADY_IN_CLAN')
 
   const { error } = await supabase.from('clan_members').insert({
     clan_id: clanId,
