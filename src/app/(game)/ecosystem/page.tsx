@@ -208,7 +208,7 @@ export default function EcosystemPage() {
                   +{active.boostPercent}% XP
                 </p>
                 <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  Bis {new Date(active.boostActiveUntil).toLocaleDateString('de-DE')}
+                  Until {new Date(active.boostActiveUntil).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </p>
               </div>
               <Zap size={36} fill="#34D399"
