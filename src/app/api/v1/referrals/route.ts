@@ -18,6 +18,14 @@ export const GET = withAuth(async (ctx) => {
     .select('referral_code, referral_eligible, level, xp_total')
     .eq('id', ctx.userId).single()
 
+  // Check wallet
+  const { data: walletData } = await supabase
+    .from('wallets')
+    .select('address')
+    .eq('user_id', ctx.userId)
+    .eq('status', 'connected')
+    .maybeSingle()
+
   const { data: referrals } = await supabase
     .from('referrals')
     .select(`
@@ -50,23 +58,44 @@ export const GET = withAuth(async (ctx) => {
     },
   }))
 
+  const userLevel   = (user as any)?.level    ?? 1
+  const userXp      = (user as any)?.xp_total ?? 0
+  const hasWallet   = !!walletData?.address
+
+  const levelMet  = userLevel >= 5
+  const xpMet     = userXp   >= 2000
+  const walletMet = hasWallet
+
+  // Live berechnen — nicht auf DB-Spalte vertrauen
+  const isEligible = levelMet && xpMet && walletMet
+
+  // DB-Spalte aktualisieren falls nötig
+  if (isEligible && !(user as any)?.referral_eligible) {
+    await supabase.from('users')
+      .update({ referral_eligible: true })
+      .eq('id', ctx.userId)
+  }
+
   return ok({
     referralCode,
     referralLink,
-    referralEligible: (user as any)?.referral_eligible,
+    referralEligible: isEligible,
     totalReferrals:   list.length,
     validReferrals:   list.filter((r: any) => r.isValid).length,
     referrals:        list,
     requirements: {
       level: {
-        current:  (user as any)?.level     ?? 1,
+        current:  userLevel,
         required: 5,
-        met:      ((user as any)?.level    ?? 1) >= 5,
+        met:      levelMet,
       },
       xp: {
-        current:  (user as any)?.xp_total  ?? 0,
+        current:  userXp,
         required: 2000,
-        met:      ((user as any)?.xp_total ?? 0) >= 2000,
+        met:      xpMet,
+      },
+      wallet: {
+        met: walletMet,
       },
     },
   })
