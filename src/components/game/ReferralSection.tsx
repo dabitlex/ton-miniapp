@@ -30,8 +30,8 @@ export function ReferralSection() {
     if (!data?.referralLink) return
 
     const shareData = {
-      title: 'TON MiniApp',
-      text:  `🎮 Play VEXALGO with me! Earn XP, level up and win TON tokens. Use my link:`,
+      title: 'VEXALGO',
+      text:  `🎮 Play VEXALGO with me! Earn XP, level up and win TON Tokens. Use my link:`,
       url:   data.referralLink,
     }
 
@@ -77,18 +77,18 @@ export function ReferralSection() {
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Lock size={14} className="text-white/30" />
-          <h3 className="text-sm font-bold text-white/60">Freunde einladen</h3>
+          <h3 className="text-sm font-bold text-white/60">Invite Friends</h3>
         </div>
         <p className="text-xs text-white/35">
-          Schalte das Referral-System frei und verdiene 500 XP pro erfolgreichem Freund!
+          Unlock the referral system and earn 500 XP for every successful friend!
         </p>
         <div className="space-y-2">
           {reqs && [
             { label: 'Reach Level 5', met: reqs.level.met,
               current: `Lv. ${reqs.level.current}` },
-            { label: '2.000 XP sammeln', met: reqs.xp.met,
+            { label: 'Collect 2,000 XP', met: reqs.xp.met,
               current: `${reqs.xp.current.toLocaleString()} XP` },
-            { label: 'TON Wallet verbinden', met: !!profile?.wallet,
+            { label: 'Connect TON Wallet', met: !!profile?.wallet,
               current: profile?.wallet ? '✓' : '✗' },
           ].map(({ label, met, current }) => (
             <div key={label} className="flex items-center justify-between">
@@ -115,13 +115,13 @@ export function ReferralSection() {
     <div className="space-y-3">
       <div className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.04] p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white">Freunde einladen</h3>
-          <span className="text-xs text-violet-300 font-semibold">+500 XP pro Freund</span>
+          <h3 className="text-sm font-bold text-white">Invite Friends</h3>
+          <span className="text-xs text-violet-300 font-semibold">+500 XP per friend</span>
         </div>
 
         <p className="text-xs text-white/40 leading-relaxed">
-          Teile deinen persönlichen Link. Du erhältst 500 XP sobald dein Freund
-          Reach Level 5 and 2,000 XP.
+          Share your personal link. You earn 500 XP once your friend
+          reaches Level 5 and 2,000 XP.
         </p>
 
         {/* Link anzeigen */}
@@ -146,8 +146,8 @@ export function ReferralSection() {
                      bg-violet-500 hover:bg-violet-400 active:scale-[0.98]
                      text-white text-sm font-semibold transition-all">
           {shared
-            ? <><CheckCircle size={15} /> Geteilt!</>
-            : <><Share2 size={15} /> Link teilen</>
+            ? <><CheckCircle size={15} /> Shared!</>
+            : <><Share2 size={15} /> Share Link</>
           }
         </button>
 
@@ -156,7 +156,7 @@ export function ReferralSection() {
           onClick={() => {
             const tg = (window as any).Telegram?.WebApp
             const url = encodeURIComponent(data?.referralLink ?? '')
-            const text = encodeURIComponent('🎮 Play with me on VEXALGO and earn TON Tokens!')
+            const text = encodeURIComponent('🎮 Play VEXALGO with me and earn TON Tokens!')
             if (tg?.openTelegramLink) {
               tg.openTelegramLink(`https://t.me/share/url?url=${url}&text=${text}`)
             }
@@ -164,7 +164,7 @@ export function ReferralSection() {
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl
                      bg-blue-500/10 border border-blue-500/20 text-blue-300
                      text-xs font-semibold active:scale-[0.98] transition-all">
-          <span>✈️</span> In Telegram teilen
+          <span>✈️</span> Share on Telegram
         </button>
       </div>
 
@@ -175,7 +175,7 @@ export function ReferralSection() {
             <Users size={12} className="text-violet-400" />
             <p className="text-lg font-black text-white">{data?.totalReferrals ?? 0}</p>
           </div>
-          <p className="text-[10px] text-white/35">Eingeladen</p>
+          <p className="text-[10px] text-white/35">Invited</p>
         </div>
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
           <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -192,7 +192,7 @@ export function ReferralSection() {
       {(data?.referrals ?? []).length > 0 && (
         <div className="space-y-2">
           <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider">
-            Deine Freunde ({data.referrals.length})
+            Your Friends ({data.referrals.length})
           </h4>
           {data.referrals.map((r: any) => (
             <div key={r.id}
@@ -214,7 +214,7 @@ export function ReferralSection() {
                   )}
                 </p>
                 <p className="text-[10px] text-white/30">
-                  Lv.{r.referee.level} · {new Date(r.createdAt).toLocaleDateString('de-DE')}
+                  Lv.{r.referee.level} · {new Date(r.createdAt).toLocaleDateString('en-US')}
                 </p>
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
