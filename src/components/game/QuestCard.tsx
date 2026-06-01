@@ -4,10 +4,11 @@ import { Zap, Star, CheckCircle2 } from 'lucide-react'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
 
 interface QuestCardProps {
-  quest:      DailyQuest | WeeklyQuest
-  onComplete: (id: string) => void
-  completing: boolean
-  index?:     number
+  quest:             DailyQuest | WeeklyQuest
+  onComplete:        (id: string) => void
+  completing:        boolean
+  activeBoostPct?:   number   // aktiver Ecosystem Boost in %
+  index?:            number
 }
 
 const DIFF_CONFIG = {
@@ -16,7 +17,10 @@ const DIFF_CONFIG = {
   hard:   { label: 'HARD', color: '#F43F5E', glow: 'rgba(244,63,94,0.3)',  bg: 'rgba(244,63,94,0.08)'  },
 }
 
-export function QuestCard({ quest, onComplete, completing }: QuestCardProps) {
+export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0 }: QuestCardProps) {
+  const boostedXp = activeBoostPct > 0
+    ? Math.floor(quest.template.xpReward * (1 + activeBoostPct / 100))
+    : quest.template.xpReward
   const diff   = DIFF_CONFIG[quest.template.difficulty] ?? DIFF_CONFIG.easy
   const isDone = quest.status === 'completed'
 
@@ -79,7 +83,19 @@ export function QuestCard({ quest, onComplete, completing }: QuestCardProps) {
               <span className="flex items-center gap-1 text-[11px] font-bold"
                 style={{ color: 'rgba(168,85,247,0.9)' }}>
                 <Star size={10} fill="currentColor" />
-                +{quest.template.xpReward.toLocaleString()} XP
+                {activeBoostPct > 0 ? (
+                  <>
+                    <span style={{ color: 'rgba(168,85,247,0.5)', textDecoration: 'line-through', fontSize: 9 }}>
+                      +{quest.template.xpReward}
+                    </span>
+                    <span style={{ color: '#10B981' }}>+{boostedXp} XP</span>
+                    <span style={{ fontSize: 9, color: '#10B981', opacity: 0.8 }}>
+                      +{activeBoostPct}%
+                    </span>
+                  </>
+                ) : (
+                  <>+{quest.template.xpReward.toLocaleString()} XP</>
+                )}
               </span>
             </div>
 
