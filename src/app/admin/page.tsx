@@ -36,9 +36,9 @@ export default function AdminDashboard() {
   }
 
   const TABS: { key: Tab; label: string; icon: string }[] = [
-    { key: 'overview',     label: 'Übersicht',   icon: '📊' },
+    { key: 'overview',     label: 'Overview',   icon: '📊' },
     { key: 'quests',       label: 'Quests',      icon: '⚔️' },
-    { key: 'users',        label: 'Nutzer',      icon: '👥' },
+    { key: 'users',        label: 'Users',      icon: '👥' },
     { key: 'transactions', label: 'TON TXs',     icon: '💎' },
   ]
 
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {stats && (
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
-              🟢 Live · {new Date(stats.timestamp).toLocaleTimeString('de-DE')}
+              🟢 Live · {new Date(stats.timestamp).toLocaleTimeString('en-US')}
             </span>
           )}
           <button onClick={logout}
@@ -104,24 +104,24 @@ export default function AdminDashboard() {
         {/* ── OVERVIEW ───────────────────────────────────── */}
         {tab === 'overview' && (
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Live Übersicht</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Live Overview</h2>
 
             {loading ? (
               <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: 40 }}>
-                Lade Daten...
+                Loading data...
               </div>
             ) : stats && (
               <>
                 {/* KPI Cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
                   {[
-                    { label: 'Nutzer gesamt', value: formatNumber(stats.users.total),       icon: '👥', color: '#A855F7' },
-                    { label: 'Aktiv heute',   value: formatNumber(stats.users.activeToday), icon: '🟢', color: '#10B981' },
-                    { label: 'Neu heute',     value: formatNumber(stats.users.newToday),    icon: '✨', color: '#3B82F6' },
-                    { label: 'Neu (7 Tage)',  value: formatNumber(stats.users.newLast7d),   icon: '📈', color: '#F59E0B' },
-                    { label: 'XP heute',      value: formatNumber(stats.xp.totalToday),     icon: '⭐', color: '#F59E0B' },
-                    { label: 'TX pending',    value: stats.transactions.pending,            icon: '⏳', color: stats.transactions.pending > 0 ? '#F59E0B' : '#10B981' },
-                    { label: 'TX bestätigt',  value: stats.transactions.confirmed,          icon: '✅', color: '#10B981' },
+                    { label: 'Total Users', value: formatNumber(stats.users.total),       icon: '👥', color: '#A855F7' },
+                    { label: 'Active Today',   value: formatNumber(stats.users.activeToday), icon: '🟢', color: '#10B981' },
+                    { label: 'New Today',     value: formatNumber(stats.users.newToday),    icon: '✨', color: '#3B82F6' },
+                    { label: 'New (7 Days)',  value: formatNumber(stats.users.newLast7d),   icon: '📈', color: '#F59E0B' },
+                    { label: 'XP Today',      value: formatNumber(stats.xp.totalToday),     icon: '⭐', color: '#F59E0B' },
+                    { label: 'TX Pending',    value: stats.transactions.pending,            icon: '⏳', color: stats.transactions.pending > 0 ? '#F59E0B' : '#10B981' },
+                    { label: 'TX Confirmed',  value: stats.transactions.confirmed,          icon: '✅', color: '#10B981' },
                   ].map(({ label, value, icon, color }) => (
                     <div key={label} style={{
                       background: 'rgba(255,255,255,0.03)',
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
                     border: '1px solid rgba(255,255,255,0.07)',
                     borderRadius: 12, padding: 16, marginTop: 16,
                   }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>💎 Letzte TON Transaktionen</h3>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>💎 Recent TON Transactions</h3>
                     {stats.transactions.recent.map((tx: any, i: number) => (
                       <div key={i} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -300,7 +300,7 @@ function QuestManager() {
             border: 'none', borderRadius: 8, padding: '8px 16px',
             color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
           }}>
-          + Neue Quest
+          + New Quest
         </button>
       </div>
 
@@ -311,11 +311,11 @@ function QuestManager() {
           border: '1px solid rgba(124,58,237,0.3)',
           borderRadius: 12, padding: 20, marginBottom: 20,
         }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Neue Quest erstellen</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Create New Quest</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {[
-              { key: 'internal_code', label: 'Code (z.B. daily_easy_login)' },
-              { key: 'title',         label: 'Titel' },
+              { key: 'internal_code', label: 'Code (e.g. daily_easy_login)' },
+              { key: 'title',         label: 'Title' },
               { key: 'icon_key',      label: 'Icon (Emoji)' },
             ].map(({ key, label }) => (
               <div key={key}>
@@ -333,7 +333,7 @@ function QuestManager() {
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Schwierigkeit</label>
+              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Difficulty</label>
               <select value={form.difficulty} onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))} style={inputStyle}>
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
@@ -341,28 +341,28 @@ function QuestManager() {
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Energie Kosten</label>
+              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Energy Cost</label>
               <input type="number" value={form.energy_cost} onChange={e => setForm(f => ({ ...f, energy_cost: parseInt(e.target.value) }))} style={inputStyle} />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>XP Belohnung</label>
+              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>XP Reward</label>
               <input type="number" value={form.xp_reward} onChange={e => setForm(f => ({ ...f, xp_reward: parseInt(e.target.value) }))} style={inputStyle} />
             </div>
             <div>
-              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Verifikation</label>
+              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Verification</label>
               <select value={form.verification_type} onChange={e => setForm(f => ({ ...f, verification_type: e.target.value }))} style={inputStyle}>
-                <option value="none">Keine</option>
-                <option value="telegram_channel">Telegram Kanal folgen</option>
-                <option value="streak">Streak Anzahl</option>
-                <option value="energy_used">Energie verbraucht</option>
-                <option value="quests_done">Quests abgeschlossen</option>
-                <option value="xp_earned">XP verdient</option>
+                <option value="none">None</option>
+                <option value="telegram_channel">Follow Telegram Channel</option>
+                <option value="streak">Streak Count</option>
+                <option value="energy_used">Energy Used</option>
+                <option value="quests_done">Quests Completed</option>
+                <option value="xp_earned">XP Earned</option>
               </select>
             </div>
             {form.verification_type !== 'none' && (
               <div>
                 <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>
-                  {form.verification_type === 'telegram_channel' ? 'Kanal Username (z.B. @vexalgo)' : 'Zielwert'}
+                  {form.verification_type === 'telegram_channel' ? 'Channel Username (e.g. @vexalgo)' : 'Target Value'}
                 </label>
                 <input value={form.verification_value}
                   onChange={e => setForm(f => ({ ...f, verification_value: e.target.value }))}
@@ -370,7 +370,7 @@ function QuestManager() {
               </div>
             )}
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Beschreibung</label>
+              <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Description</label>
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
@@ -382,7 +382,7 @@ function QuestManager() {
                 border: 'none', borderRadius: 8, padding: '8px 16px',
                 color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               }}>
-              {creating ? 'Erstelle...' : '✓ Quest erstellen'}
+              {creating ? 'Creating...' : '✓ Create Quest'}
             </button>
             <button onClick={() => setShowForm(false)}
               style={{
@@ -398,7 +398,7 @@ function QuestManager() {
 
       {/* Quest List */}
       {loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: 40 }}>Lade...</p>
+        <p style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: 40 }}>Loading...</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {quests.map(q => (
@@ -457,11 +457,11 @@ function UserManager() {
 
   return (
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Nutzer suchen</h2>
+      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Search Users</h2>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <input value={search} onChange={e => setSearch(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && searchUsers()}
-          placeholder="Username oder Name..."
+          placeholder="Username or name..."
           style={{
             flex: 1, background: 'rgba(255,255,255,0.05)',
             border: '1px solid rgba(255,255,255,0.1)',
@@ -522,9 +522,9 @@ function TxManager() {
 
   return (
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>TON Transaktionen</h2>
+      <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>TON Transactions</h2>
       {loading ? (
-        <p style={{ color: 'rgba(255,255,255,0.3)' }}>Lade...</p>
+        <p style={{ color: 'rgba(255,255,255,0.3)' }}>Loading...</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {txs.map((tx: any) => (
