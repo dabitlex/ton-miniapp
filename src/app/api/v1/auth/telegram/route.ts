@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
 
   const tgUser     = parsed.user
   const email      = `tg${tgUser.id}@telegram-user.com`
-  const password   = `Tg!${tgUser.id}${botToken.slice(-6)}`
+  // Stabiles Passwort — unabhängig vom Bot-Token
+  const password   = `Tg!${tgUser.id}!vxalgo`
   const photoUrl   = body.photoUrl   ?? tgUser.photo_url ?? null
 
   // start_param: kommt vom Client UND auch direkt aus initData prüfen
@@ -69,13 +70,23 @@ export async function POST(req: NextRequest) {
   let authUserId: string | null = null
   let isNewUser = false
 
-  const { data: signInData } = await db.auth.signInWithPassword({ email, password })
+  const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({ email, password })
 
   if (signInData?.user?.id) {
     authUserId = signInData.user.id
   } else {
-    isNewUser = true
-    const { data: newAuth, error: createErr } = await db.auth.admin.createUser({
+    // Login fehlgeschlagen — prüfen ob User bereits existiert (z.B. nach Bot-Wechsel)
+    const { data: existingUser } = await db.auth.admin.listUsers()
+    const found = existingUser?.users?.find(u => u.email === email)
+
+    if (found?.id) {
+      // User existiert → Passwort auf neues stabiles Format updaten
+      await db.auth.admin.updateUserById(found.id, { password })
+      authUserId = found.id
+      console.log('[Auth] Passwort nach Bot-Wechsel aktualisiert für:', tgUser.id)
+    } else {
+      isNewUser = true
+      const { data: newAuth, error: createErr } = await db.auth.admin.createUser({
       email, password, email_confirm: true,
       user_metadata: {
         telegram_id:         tgUser.id,
@@ -84,20 +95,21 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    if (!createErr && newAuth?.user?.id) {
-      authUserId = newAuth.user.id
-    } else {
-      const { data: signUpData, error: signUpErr } = await db.auth.signUp({
-        email, password,
-        options: { data: { telegram_id: tgUser.id } },
-      })
-      if (!signUpErr && signUpData?.user?.id) {
-        authUserId = signUpData.user.id
+      if (!createErr && newAuth?.user?.id) {
+        authUserId = newAuth.user.id
       } else {
-        return err(
-          `Auth failed: "${createErr?.message}" | "${signUpErr?.message}"`,
-          'AUTH_CREATE_ERROR', 500
-        )
+        const { data: signUpData, error: signUpErr } = await db.auth.signUp({
+          email, password,
+          options: { data: { telegram_id: tgUser.id } },
+        })
+        if (!signUpErr && signUpData?.user?.id) {
+          authUserId = signUpData.user.id
+        } else {
+          return err(
+            `Auth failed: "${createErr?.message}" | "${signUpErr?.message}"`,
+            'AUTH_CREATE_ERROR', 500
+          )
+        }
       }
     }
   }
