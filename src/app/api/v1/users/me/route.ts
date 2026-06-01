@@ -22,7 +22,7 @@ export const GET = withAuth(async (ctx) => {
     .eq('id', ctx.userId)
     .single()
 
-  if (error || !user) return err('User nicht gefunden', 'NOT_FOUND', 404)
+  if (error || !user) return err('User not found', 'NOT_FOUND', 404)
 
   // Energie berechnen ohne DB-Schreibzugriff
   const now          = Date.now()
@@ -41,6 +41,18 @@ export const GET = withAuth(async (ctx) => {
     .select('address, address_friendly, status, connected_at')
     .eq('user_id', ctx.userId)
     .eq('status', 'connected')
+    .maybeSingle()
+
+  // Aktiven Ecosystem Boost laden
+  const { data: activeBoost } = await supabase
+    .from('ecosystem_support')
+    .select('xp_boost_percent')
+    .eq('user_id', ctx.userId)
+    .eq('is_active', true)
+    .lte('boost_active_from', new Date().toISOString())
+    .gte('boost_active_until', new Date().toISOString())
+    .order('xp_boost_percent', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   // Clan-Mitgliedschaft laden
@@ -88,6 +100,8 @@ export const GET = withAuth(async (ctx) => {
       addressFriendly: wallet.address_friendly,
       connectedAt:     wallet.connected_at,
     } : null,
+    // Ecosystem Boost (für QuestCard Anzeige)
+    ecosystemBoost: activeBoost?.xp_boost_percent ?? 0,
     // Clan
     clan: clanMember ? {
       clanId:        (clanMember.clan as any)?.id,
