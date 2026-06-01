@@ -128,12 +128,10 @@ export default function EcosystemPage() {
       setPendingTierKey(null)
       if (e?.message?.includes('User rejects') || e?.message?.includes('Reject')) {
         toast('info', 'Transaction cancelled')
-      } else {
-        if (e?.message?.includes('verifiziert werden')) {
+      } else if (e?.message?.includes('verifiziert werden') || e?.message?.includes('not verified')) {
         toast('error', '⚠️ TX not verified — check your wallet. Support: @vexalgo_support')
       } else {
-        toast('error', e?.message ?? 'Transaktion fehlgeschlagen')
-      }
+        toast('error', e?.message ?? 'Transaction failed')
       }
     }
   }
@@ -244,13 +242,13 @@ export default function EcosystemPage() {
                 <Clock size={14} /> Boost confirming...
               </p>
               <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                +{pending.boostPercent}% XP — Waiting for TON Blockchain (~30 Sek)
+                +{pending.boostPercent}% XP — Waiting for TON Blockchain (~30 sec)
               </p>
             </div>
           </div>
         )}
 
-        {/* ── Tiers ────────────────────────────────────────── */}}
+        {/* ── Tiers ────────────────────────────────────────── */}
         <div>
           <h3 className="text-[11px] font-black tracking-widest mb-3"
             style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-display)' }}>
