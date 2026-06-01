@@ -31,8 +31,16 @@ export default function LeaderboardPage() {
     }
   }, [profile?.league]) // eslint-disable-line
 
-  const { entries, userRank, userEntry, isLoading, hasMore, refreshedAt, loadMore } =
+  const { entries, userRank, userLeagueRank, userEntry, isLoading, hasMore, refreshedAt, loadMore } =
     useLeaderboard(league)
+
+  // Zeige Liga-Rang wenn Liga aktiv, sonst globalen Rang
+  const displayRank = (league !== null && userLeagueRank !== null)
+    ? userLeagueRank
+    : userRank
+  const rankLabel = (league !== null && userLeagueRank !== null)
+    ? 'LEAGUE RANK'
+    : 'GLOBAL RANK'
 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const lastItemRef = useCallback((node: HTMLDivElement | null) => {
