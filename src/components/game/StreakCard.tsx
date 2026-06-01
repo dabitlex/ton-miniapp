@@ -3,7 +3,7 @@
 import { useStreak } from '@/features/hooks'
 
 export function StreakCard() {
-  // useStreak ist der korrekte Hook-Name
+  // useStreak is the correct hook name
   const { streakCurrent, streakLongest, canClaim, isClaiming, claimStreak } = useStreak()
 
   return (
@@ -49,11 +49,11 @@ export function StreakCard() {
                 {streakCurrent}
               </span>
               <span className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                TAGE
+                DAYS
               </span>
             </div>
             <p className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              Bester: {streakLongest} Tage
+              Best: {streakLongest} days
             </p>
           </div>
         </div>
@@ -67,7 +67,7 @@ export function StreakCard() {
             }}>
             <span className="text-[11px]">✓</span>
             <span className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              Heute claimed
+              Claimed today
             </span>
           </div>
         ) : (
@@ -82,7 +82,7 @@ export function StreakCard() {
             }}>
             {isClaiming
               ? <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              : <>🎁 Claimen</>
+              : <>🎁 Claim</>
             }
           </button>
         )}
