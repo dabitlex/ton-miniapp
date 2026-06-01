@@ -28,7 +28,7 @@ export function GameHeader() {
         )}
         <span className="text-[11px] font-semibold"
           style={{ color: 'rgba(168,85,247,0.8)' }}>
-          {profile ? `${formatNumber(profile.seasonXp)} XP` : '—'}
+          {profile ? `${profile.seasonXp.toLocaleString()} XP` : '—'}
         </span>
       </div>
 
