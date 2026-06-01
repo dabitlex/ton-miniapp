@@ -4,7 +4,6 @@ import { useCallback, useRef, forwardRef, useEffect } from 'react'
 import { Medal, Crown, Trophy } from 'lucide-react'
 import { useLeaderboard }   from '@/features/leaderboard/hooks'
 import { useUserStore }     from '@/stores/useUserStore'
-import { LeagueBadge }      from '@/components/game/LeagueBadge'
 import type { LeagueTier, LeaderboardEntry } from '@/types/game'
 
 export default function LeaderboardPage() {
@@ -78,16 +77,7 @@ export default function LeaderboardPage() {
                   #{userRank ?? '—'}
                 </span>
               </div>
-              {/* Liga Badge */}
-              {profile?.league && (
-                <div className="flex flex-col items-start gap-0.5">
-                  <span className="text-[9px] font-bold tracking-widest"
-                    style={{ color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-display)' }}>
-                    LEAGUE
-                  </span>
-                  <LeagueBadge league={profile.league as LeagueTier} />
-                </div>
-              )}
+
             </div>
 
             {/* XP */}
@@ -279,7 +269,6 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
           }}>
           {entry.seasonXp.toLocaleString()}
         </span>
-        <LeagueBadge league={entry.league} compact />
       </div>
     </div>
   )
