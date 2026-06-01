@@ -87,7 +87,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
         const profileJson = await profileRes.json()
         if (profileJson.success) setProfile(profileJson.data as UserProfile)
 
-        toast('success', '✅ Wallet verbunden!')
+        toast('success', '✅ Wallet connected!')
         haptic('success')
         onConnected?.()
       } catch {
@@ -179,16 +179,16 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
           <div>
             <p className="text-sm font-bold text-white">TON Wallet verbinden</p>
             <p className="text-xs text-white/40 mt-0.5 leading-relaxed">
-              Verbinde deine Wallet um Saison-Belohnungen zu empfangen
+              Connect your wallet to receive season rewards
             </p>
           </div>
         </div>
 
         <div className="space-y-1.5 text-left">
           {[
-            { icon: '💰', text: 'Token-Belohnungen am Saison-Ende' },
-            { icon: '🔓', text: 'Referral-System freischalten (ab 2.000 XP)' },
-            { icon: '⚡', text: 'Ecosystem XP-Boost aktivieren' },
+            { icon: '💰', text: 'Token rewards at season end' },
+            { icon: '🔓', text: 'Unlock referral system (from 2,000 XP)' },
+            { icon: '⚡', text: 'Activate Ecosystem XP Boost' },
           ].map(({ icon, text }) => (
             <div key={text} className="flex items-center gap-2 text-xs text-white/40">
               <span>{icon}</span><span>{text}</span>
