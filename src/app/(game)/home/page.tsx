@@ -9,7 +9,6 @@ import { TelegramAvatar }  from '@/components/layout/GameHeader'
 import { XPBar }           from '@/components/game/XPBar'
 import { QuestCard }       from '@/components/game/QuestCard'
 import { StreakCard }       from '@/components/game/StreakCard'
-import { LeagueBadge }     from '@/components/game/LeagueBadge'
 import Link from 'next/link'
 import { Flame, Zap, Star, Trophy, ChevronRight } from 'lucide-react'
 
@@ -59,7 +58,6 @@ export default function HomePage() {
                 {profile.telegramFirstName}
               </h1>
             </div>
-            <LeagueBadge league={profile.league} />
           </div>
         )}
 
