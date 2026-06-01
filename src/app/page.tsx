@@ -49,7 +49,7 @@ function SplashContent() {
     )
   }
 
-  const statusText = isInitializing ? 'INITIALISIERUNG...' : 'VERBINDEN...'
+  const statusText = isInitializing ? 'INITIALIZING...' : 'CONNECTING...'
 
   return (
     <div className="h-dvh flex flex-col items-center justify-center overflow-hidden relative"
