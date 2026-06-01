@@ -53,7 +53,7 @@ export default function EcosystemPage() {
       return json.data
     },
     onSuccess: () => {
-      toast('success', '✅ Transaktion bestätigt! Boost aktiviert sich in ~30 Sekunden.')
+      toast('success', '✅ Transaction confirmed! Boost activates in ~30 seconds.')
       qc.invalidateQueries({ queryKey: ['ecosystem'] })
       setPendingTierKey(null)
     },
@@ -110,7 +110,7 @@ export default function EcosystemPage() {
       if (hashRes.status === 202) {
         // TX gesendet aber noch nicht auf Chain sichtbar
         // TONapi Webhook wird Boost automatisch aktivieren
-        toast('success', '✅ Zahlung gesendet! Boost aktiviert sich automatisch in ~30 Sekunden.')
+        toast('success', '✅ Payment sent! Boost will activate automatically in ~30 seconds.')
         qc.invalidateQueries({ queryKey: ['ecosystem'] })
         setPendingTierKey(null)
         return
@@ -127,10 +127,10 @@ export default function EcosystemPage() {
     } catch (e: any) {
       setPendingTierKey(null)
       if (e?.message?.includes('User rejects') || e?.message?.includes('Reject')) {
-        toast('info', 'Transaktion abgebrochen')
+        toast('info', 'Transaction cancelled')
       } else {
         if (e?.message?.includes('verifiziert werden')) {
-        toast('error', '⚠️ TX nicht verifiziert — prüfe deine Wallet. Support: @vexalgo_support')
+        toast('error', '⚠️ TX not verified — check your wallet. Support: @vexalgo_support')
       } else {
         toast('error', e?.message ?? 'Transaktion fehlgeschlagen')
       }
@@ -157,7 +157,7 @@ export default function EcosystemPage() {
           BOOST
         </h1>
         <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
-          Unterstütze das Ecosystem und erhalte XP-Boosts für die gesamte Saison
+          Support the ecosystem and earn XP boosts for the entire season
         </p>
       </div>
 
@@ -174,10 +174,10 @@ export default function EcosystemPage() {
             <Wallet size={16} style={{ color: '#3B82F6' }} />
             <div className="flex-1 text-left">
               <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                Wallet verbinden
+                Connect Wallet
               </p>
               <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                TON Wallet erforderlich für Ecosystem Support
+                TON wallet required for Ecosystem Support
               </p>
             </div>
             <span className="text-xs font-bold" style={{ color: '#3B82F6' }}>→</span>
@@ -200,7 +200,7 @@ export default function EcosystemPage() {
                   <span className="w-2 h-2 rounded-full" style={{ background: '#10B981' }} />
                   <span className="text-[11px] font-black tracking-widest"
                     style={{ color: '#10B981', fontFamily: 'var(--font-display)' }}>
-                    AKTIVER BOOST
+                    ACTIVE BOOST
                   </span>
                 </div>
                 <p className="text-3xl font-black"
@@ -225,10 +225,10 @@ export default function EcosystemPage() {
             }}>
             <p className="text-2xl mb-1">🚀</p>
             <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Kein aktiver Boost
+              No active boost
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>
-              Wähle einen Support-Tier unten
+              Choose a support tier below
             </p>
           </div>
         )}
@@ -243,10 +243,10 @@ export default function EcosystemPage() {
             <span className="w-4 h-4 rounded-full border-2 border-amber-400/60 border-t-amber-400 animate-spin shrink-0" />
             <div>
               <p className="text-sm font-bold" style={{ color: '#F59E0B' }}>
-                Boost wird bestätigt...
+                Boost confirming...
               </p>
               <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                +{pending.boostPercent}% XP — Warte auf TON Blockchain (~30 Sek)
+                +{pending.boostPercent}% XP — Waiting for TON Blockchain (~30 Sek)
               </p>
             </div>
           </div>
@@ -349,13 +349,13 @@ export default function EcosystemPage() {
                         }}>
                         {isPendingThis ? (
                           <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                          Wird verarbeitet...</>
+                          Processing...</>
                         ) : isCurrent ? (
-                          '✓ Aktiv'
+                          '✓ Active'
                         ) : isLowerTier ? (
-                          '— Nicht verfügbar'
+                          '— Unavailable'
                         ) : (
-                          <><Zap size={14} fill="currentColor" /> {tier.tonAmount} TON senden</>
+                          <><Zap size={14} fill="currentColor" /> {tier.tonAmount} TON send</>
                         )}
                       </button>
                     </div>
@@ -372,8 +372,8 @@ export default function EcosystemPage() {
             border: '1px solid rgba(59,130,246,0.15)',
           }}>
           <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            ℹ️ Nach dem Senden wird deine Transaktion automatisch verifiziert.
-            Der Boost aktiviert sich sobald die TON-Blockchain die TX bestätigt (~30 Sekunden).
+            ℹ️ Your transaction will be verified automatically after sending.
+            Boost activates once the TON blockchain confirms the TX (~30 seconds).
           </p>
         </div>
 
@@ -382,7 +382,7 @@ export default function EcosystemPage() {
           <div>
             <h3 className="text-[11px] font-black tracking-widest mb-3"
               style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-display)' }}>
-              VERLAUF
+              HISTORY
             </h3>
             <div className="space-y-2">
               {data!.history.map((h: any) => (
@@ -415,8 +415,8 @@ export default function EcosystemPage() {
 
         <p className="text-[10px] text-center leading-relaxed"
           style={{ color: 'rgba(255,255,255,0.15)' }}>
-          Dies ist Ecosystem Support — kein Investitionsprodukt.
-          Keine finanziellen Erträge werden impliziert oder garantiert.
+          This is Ecosystem Support — not an investment product.
+          No financial returns are implied or guaranteed.
         </p>
       </div>
     </div>
