@@ -87,7 +87,7 @@ export default function ProfilePage() {
           {profile.level < 30 && (
             <p className="text-[10px] text-center mt-2"
               style={{ color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-display)', letterSpacing: '0.1em' }}>
-              {levelsToNext} LEVEL BIS ZUR NÄCHSTEN LIGA
+              {levelsToNext} LEVELS TO NEXT LEAGUE
             </p>
           )}
         </div>
@@ -107,7 +107,7 @@ export default function ProfilePage() {
               <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
                 {profile.clan.role === 'leader' ? '👑 Leader'
                   : profile.clan.role === 'officer' ? '⚔️ Officer'
-                  : '🎮 Mitglied'}
+                  : '🎮 Member'}
               </p>
             </div>
             <span className="text-[11px] font-bold" style={{ color: 'rgba(168,85,247,0.6)', fontFamily: 'var(--font-display)' }}>
@@ -120,11 +120,11 @@ export default function ProfilePage() {
         <div className="grid grid-cols-2 gap-2">
           {[
             { icon: '⭐', label: 'GESAMT XP',  value: formatNumber(profile.xpTotal),      color: '#F59E0B' },
-            { icon: '🗓', label: 'SAISON XP',  value: formatNumber(profile.seasonXp),      color: '#A855F7' },
+            { icon: '🗓', label: 'SEASON XP',  value: formatNumber(profile.seasonXp),      color: '#A855F7' },
             { icon: '🔥', label: 'STREAK',     value: `${profile.streakCurrent}d`,         color: '#F97316' },
             { icon: '🏆', label: 'BEST STREAK',value: `${profile.streakLongest}d`,         color: '#F59E0B' },
-            { icon: '⚡', label: 'ENERGIE',    value: `${energy.current}/100`,             color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
-            { icon: '📈', label: 'XP HEUTE',   value: formatNumber(profile.xpEarnedToday), color: '#10B981' },
+            { icon: '⚡', label: 'ENERGY',    value: `${energy.current}/100`,             color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
+            { icon: '📈', label: 'TODAY XP',   value: formatNumber(profile.xpEarnedToday), color: '#10B981' },
           ].map(({ icon, label, value, color }) => (
             <div key={label} className="rounded-xl p-3 flex items-center gap-2.5"
               style={{
