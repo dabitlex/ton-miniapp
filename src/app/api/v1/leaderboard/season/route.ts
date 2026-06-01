@@ -59,8 +59,7 @@ export const GET = withAuth(async (ctx) => {
   if (league) countQuery = countQuery.eq('metadata->>league', league)
   const { count } = await countQuery
 
-  // Eigenen Rang IMMER aus Global-Cache holen
-  // (unabhängig vom Liga-Filter)
+  // Globalen Rang immer laden
   const { data: myGlobalEntry } = await supabase
     .from('leaderboard_cache')
     .select('rank, entity_id, display_name, avatar_url, score, level, metadata')
@@ -68,6 +67,20 @@ export const GET = withAuth(async (ctx) => {
     .eq('season_id', season.id)
     .eq('entity_id', ctx.userId)
     .maybeSingle()
+
+  // Liga-Rang laden wenn Liga-Filter aktiv
+  let myLeagueEntry = null
+  if (league) {
+    const { data: leagueEntry } = await supabase
+      .from('leaderboard_cache')
+      .select('rank, entity_id, score')
+      .eq('cache_type', cacheType)
+      .eq('season_id', season.id)
+      .eq('entity_id', ctx.userId)
+      .eq('metadata->>league', league)
+      .maybeSingle()
+    myLeagueEntry = leagueEntry
+  }
 
   const mappedEntries = (entries ?? []).map(e => ({
     rank:          e.rank,
@@ -89,8 +102,10 @@ export const GET = withAuth(async (ctx) => {
     {
       entries:    mappedEntries,
       refreshedAt,
-      // Eigener Rang kommt IMMER aus dem Global-Cache
-      userRank:   myGlobalEntry?.rank   ?? null,
+      // Globaler Rang (immer)
+      userRank:      myGlobalEntry?.rank ?? null,
+      // Liga-Rang (nur wenn Liga-Filter aktiv)
+      userLeagueRank: myLeagueEntry?.rank ?? null,
       userEntry:  myGlobalEntry ? {
         rank:      myGlobalEntry.rank,
         userId:    myGlobalEntry.entity_id,
