@@ -49,11 +49,11 @@ export function XPBar() {
 
       <div className="flex justify-between items-center">
         <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
-          {pct}% abgeschlossen
+          {pct}% complete
         </span>
         <span className="text-[10px] font-semibold"
           style={{ color: 'rgba(168,85,247,0.5)' }}>
-          +{(needed - profile.xpCurrentLevel).toLocaleString()} bis Level {profile.level + 1}
+          +{(needed - profile.xpCurrentLevel).toLocaleString()} to Level {profile.level + 1}
         </span>
       </div>
     </div>
