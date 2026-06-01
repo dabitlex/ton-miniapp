@@ -9,6 +9,7 @@ import { TelegramAvatar }  from '@/components/layout/GameHeader'
 import { WalletConnect }   from '@/components/ton/WalletConnect'
 import { ReferralSection } from '@/components/game/ReferralSection'
 import { formatNumber }    from '@/lib/utils'
+import { Flame, Star, Zap, TrendingUp, Trophy, Calendar } from 'lucide-react'
 import { xpForLevel, LEAGUES } from '@/lib/constants/game'
 
 export default function ProfilePage() {
@@ -119,19 +120,19 @@ export default function ProfilePage() {
         {/* ── Stats Grid ───────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-2">
           {[
-            { icon: '⭐', label: 'GESAMT XP',  value: formatNumber(profile.xpTotal),      color: '#F59E0B' },
-            { icon: '🗓', label: 'SEASON XP',  value: formatNumber(profile.seasonXp),      color: '#A855F7' },
-            { icon: '🔥', label: 'STREAK',     value: `${profile.streakCurrent}d`,         color: '#F97316' },
-            { icon: '🏆', label: 'BEST STREAK',value: `${profile.streakLongest}d`,         color: '#F59E0B' },
-            { icon: '⚡', label: 'ENERGY',    value: `${energy.current}/100`,             color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
-            { icon: '📈', label: 'TODAY XP',   value: formatNumber(profile.xpEarnedToday), color: '#10B981' },
+            { icon: <Star size={18} fill='#F59E0B' style={{ color: '#F59E0B' }} />, label: 'TOTAL XP',  value: formatNumber(profile.xpTotal),      color: '#F59E0B' },
+            { icon: <Calendar size={18} style={{ color: '#A855F7' }} />, label: 'SEASON XP',  value: formatNumber(profile.seasonXp),      color: '#A855F7' },
+            { icon: <Flame size={18} fill='#F97316' style={{ color: '#F97316' }} />, label: 'STREAK',     value: `${profile.streakCurrent}d`,         color: '#F97316' },
+            { icon: <Trophy size={18} style={{ color: '#F59E0B' }} />, label: 'BEST STREAK',value: `${profile.streakLongest}d`,         color: '#F59E0B' },
+            { icon: <Zap size={18} fill={energy.current < 20 ? '#F43F5E' : '#06B6D4'} style={{ color: energy.current < 20 ? '#F43F5E' : '#06B6D4' }} />, label: 'ENERGY',    value: `${energy.current}/100`,             color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
+            { icon: <TrendingUp size={18} style={{ color: '#10B981' }} />, label: 'TODAY XP',   value: formatNumber(profile.xpEarnedToday), color: '#10B981' },
           ].map(({ icon, label, value, color }) => (
             <div key={label} className="rounded-xl p-3 flex items-center gap-2.5"
               style={{
                 background: 'rgba(255,255,255,0.03)',
                 border: '1px solid rgba(255,255,255,0.06)',
               }}>
-              <span className="text-xl">{icon}</span>
+              <div className="flex items-center justify-center w-6">{icon}</div>
               <div className="min-w-0">
                 <p className="text-sm font-black tabular-nums leading-tight"
                   style={{ color, fontFamily: 'var(--font-display)' }}>
