@@ -1,5 +1,6 @@
 // src/components/game/StreakCard.tsx
 'use client'
+import { Flame, Gift, Check } from 'lucide-react'
 import { useStreak } from '@/features/hooks'
 
 export function StreakCard() {
@@ -29,13 +30,18 @@ export function StreakCard() {
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3">
           {/* Flames */}
-          <div className="flex">
-            {Array.from({ length: Math.min(streakCurrent || 1, 3) }).map((_, i) => (
-              <span key={i} className={canClaim ? 'flame' : ''}
-                style={{ fontSize: 20 + i * 2, marginLeft: i > 0 ? -4 : 0 }}>
-                🔥
-              </span>
-            ))}
+          <div className="flex items-center gap-1">
+            <Flame
+              size={28}
+              style={{
+                color: canClaim ? '#F59E0B' : 'rgba(255,255,255,0.3)',
+                filter: canClaim ? 'drop-shadow(0 0 8px rgba(245,158,11,0.6))' : 'none',
+              }}
+              fill={canClaim ? '#F59E0B' : 'none'}
+              className={canClaim ? 'flame' : ''}
+            />
+            {streakCurrent >= 7 && <Flame size={20} style={{ color: '#F97316' }} fill="#F97316" />}
+            {streakCurrent >= 14 && <Flame size={16} style={{ color: '#EF4444' }} fill="#EF4444" />}
           </div>
 
           <div>
@@ -65,7 +71,7 @@ export function StreakCard() {
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}>
-            <span className="text-[11px]">✓</span>
+            <Check size={12} style={{ color: "rgba(255,255,255,0.4)" }} />
             <span className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>
               Claimed today
             </span>
@@ -82,7 +88,7 @@ export function StreakCard() {
             }}>
             {isClaiming
               ? <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              : <>🎁 Claim</>
+              : <><Gift size={14} /> Claim</>
             }
           </button>
         )}
