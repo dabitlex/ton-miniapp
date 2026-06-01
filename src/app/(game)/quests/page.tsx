@@ -4,6 +4,7 @@ import { useState }    from 'react'
 import { useQuests }   from '@/features/quests/hooks'
 import { useEnergy }   from '@/features/hooks'
 import { QuestCard }   from '@/components/game/QuestCard'
+import { ClipboardList } from 'lucide-react'
 
 type Tab = 'daily' | 'weekly'
 
@@ -117,7 +118,7 @@ export default function QuestsPage() {
           ))
         ) : quests.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-center">
-            <p className="text-4xl mb-2">📋</p>
+            <ClipboardList size={40} className="mx-auto mb-2" style={{ color: "rgba(255,255,255,0.15)" }} />
             <p className="text-sm font-bold text-white/40">No quests available</p>
           </div>
         ) : (
