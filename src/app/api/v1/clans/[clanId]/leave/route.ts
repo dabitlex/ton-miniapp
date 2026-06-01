@@ -12,7 +12,7 @@ function db() {
 
 export const POST = withAuth(async (ctx) => {
   const clanId = ctx.params?.clanId
-  if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
+  if (!clanId) return err('Clan ID missing', 'MISSING_ID')
 
   const supabase = db()
 
@@ -20,7 +20,7 @@ export const POST = withAuth(async (ctx) => {
     .from('clan_members').select('role')
     .eq('clan_id', clanId).eq('user_id', ctx.userId).single()
 
-  if (!membership) return err('Du bist nicht in diesem Clan', 'NOT_MEMBER')
+  if (!membership) return err('You are not in this clan', 'NOT_MEMBER')
 
   if (membership.role === 'leader') {
     const { count } = await supabase
@@ -28,7 +28,7 @@ export const POST = withAuth(async (ctx) => {
       .eq('clan_id', clanId).neq('user_id', ctx.userId)
 
     if ((count ?? 0) > 0) {
-      return err('Übertrage die Leader-Rolle bevor du gehst', 'TRANSFER_FIRST')
+      return err('Transfer the leader role before leaving', 'TRANSFER_FIRST')
     }
   }
 
