@@ -1,46 +1,24 @@
 // src/app/(game)/leaderboard/page.tsx
 'use client'
-import { useState, useCallback, useRef, forwardRef, useEffect } from 'react'
+import { useCallback, useRef, forwardRef, useEffect } from 'react'
 import { Medal, Crown, Trophy } from 'lucide-react'
 import { useLeaderboard }   from '@/features/leaderboard/hooks'
 import { useUserStore }     from '@/stores/useUserStore'
 import { LeagueBadge }      from '@/components/game/LeagueBadge'
 import type { LeagueTier, LeaderboardEntry } from '@/types/game'
 
-const LEAGUES = [
-  { key: 'legendary', label: 'Legend',   icon: '👑' },
-  { key: 'diamond',   label: 'Diamond',  icon: '💠' },
-  { key: 'platinum',  label: 'Platinum', icon: '💎' },
-  { key: 'gold',      label: 'Gold',     icon: '🥇' },
-  { key: 'silver',    label: 'Silver',   icon: '🥈' },
-  { key: 'bronze',    label: 'Bronze',   icon: '🥉' },
-  { key: null,        label: 'Global',   icon: '🌍' },
-] as const
-
 export default function LeaderboardPage() {
   const profile = useUserStore(s => s.profile)
 
   // Standard: eigene Liga des Nutzers
-  const defaultLeague = (profile?.league ?? 'bronze') as LeagueTier
-  const [league, setLeague] = useState<LeagueTier | null>(defaultLeague)
+  const league = null // Liga-Filter deaktiviert bis Saison 2
 
-  // Wenn Profil geladen wird und noch kein Override → eigene Liga setzen
-  useEffect(() => {
-    if (profile?.league && league === 'bronze' && !profile.league.startsWith('b')) {
-      setLeague(profile.league as LeagueTier)
-    }
-  }, [profile?.league]) // eslint-disable-line
-
-  const { entries, userRank, userLeagueRank, userEntry, isLoading, hasMore, refreshedAt, loadMore } =
+  const { entries, userRank, userEntry, isLoading, hasMore, refreshedAt, loadMore } =
     useLeaderboard(league)
 
-  // Zeige Liga-Rang wenn Liga aktiv, sonst globalen Rang
-  const displayRank = (league !== null && userLeagueRank !== null)
-    ? userLeagueRank
-    : userRank
-  const rankLabel = (league !== null && userLeagueRank !== null)
-    ? 'LEAGUE RANK'
-    : 'GLOBAL RANK'
+  const displayRank = userRank
+  const rankLabel = 'GLOBAL RANK'
+  const showRankBanner = displayRank !== null
 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const lastItemRef = useCallback((node: HTMLDivElement | null) => {
@@ -53,7 +31,6 @@ export default function LeaderboardPage() {
     observerRef.current.observe(node)
   }, [hasMore, loadMore])
 
-  const currentLeagueLabel = LEAGUES.find(l => l.key === league)
 
   return (
     <div className="flex flex-col h-full">
@@ -67,42 +44,16 @@ export default function LeaderboardPage() {
         </h1>
       </div>
 
-      {/* ── League Filter ─────────────────────────────────────── */}
-      <div className="shrink-0 flex gap-2 px-4 py-2.5 overflow-x-auto [scrollbar-width:none]"
+      {/* ── Subtitle ─────────────────────────────────────────── */}
+      <div className="shrink-0 px-4 pb-2"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        {LEAGUES.map(({ key, label, icon }) => {
-          const active   = league === key
-          const isMyLeague = key === profile?.league
-          return (
-            <button key={key ?? 'global'}
-              onClick={() => setLeague(key as LeagueTier | null)}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl
-                         text-xs font-bold transition-all duration-200 active:scale-95 relative"
-              style={{
-                background: active
-                  ? 'linear-gradient(135deg, rgba(124,58,237,0.25), rgba(168,85,247,0.12))'
-                  : 'rgba(255,255,255,0.04)',
-                border: active
-                  ? '1px solid rgba(124,58,237,0.45)'
-                  : '1px solid rgba(255,255,255,0.07)',
-                color: active ? 'rgba(216,180,254,0.95)' : 'rgba(255,255,255,0.4)',
-                boxShadow: active ? '0 0 16px rgba(124,58,237,0.2)' : 'none',
-                fontFamily: 'var(--font-display)', letterSpacing: '0.03em',
-              }}>
-              <span>{icon}</span>
-              {label}
-              {/* Dot indicator für eigene Liga */}
-              {isMyLeague && !active && (
-                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full"
-                  style={{ background: '#A855F7', boxShadow: '0 0 4px rgba(168,85,247,0.8)' }} />
-              )}
-            </button>
-          )
-        })}
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          Global Season Rankings
+        </p>
       </div>
 
       {/* ── Your Rank Banner ──────────────────────────────────── */}
-      {(userRank || userEntry) && (
+      {showRankBanner && (userRank || userEntry) && (
         <div className="shrink-0 mx-4 mt-3 px-4 py-3 rounded-2xl"
           style={{
             background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(168,85,247,0.08))',
@@ -155,16 +106,7 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      {/* ── Current View Label ────────────────────────────────── */}
-      {currentLeagueLabel && (
-        <div className="shrink-0 px-4 pt-2.5 pb-1 flex items-center gap-2">
-          <span className="text-sm">{currentLeagueLabel.icon}</span>
-          <span className="text-[11px] font-black tracking-widest"
-            style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-display)' }}>
-            {currentLeagueLabel.label.toUpperCase()} RANKINGS
-          </span>
-        </div>
-      )}
+
 
       {/* ── Entries ───────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-1.5">
