@@ -1,6 +1,7 @@
 // src/app/(game)/leaderboard/page.tsx
 'use client'
 import { useState, useCallback, useRef, forwardRef } from 'react'
+import { Medal, Crown, Trophy } from 'lucide-react'
 import { useLeaderboard }   from '@/features/leaderboard/hooks'
 import { LeagueBadge }      from '@/components/game/LeagueBadge'
 import { LevelBadge }       from '@/components/game/LevelBadge'
@@ -144,7 +145,11 @@ export default function LeaderboardPage() {
 }
 
 const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entry }, ref) => {
-  const MEDALS = ['🥇', '🥈', '🥉']
+  const MEDAL_ICONS = [
+    <Trophy key={0} size={16} style={{ color: '#F59E0B', filter: 'drop-shadow(0 0 6px rgba(245,158,11,0.6))' }} fill="#F59E0B" />,
+    <Medal  key={1} size={16} style={{ color: '#9CA3AF', filter: 'drop-shadow(0 0 6px rgba(156,163,175,0.5))' }} fill="#9CA3AF" />,
+    <Medal  key={2} size={16} style={{ color: '#CD7F32', filter: 'drop-shadow(0 0 6px rgba(205,127,50,0.5))'  }} fill="#CD7F32" />,
+  ]
   const isTop3 = entry.rank <= 3
 
   return (
@@ -163,7 +168,7 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
       {/* Rank */}
       <div className="w-7 text-center shrink-0">
         {entry.rank <= 3 ? (
-          <span className="text-base">{MEDALS[entry.rank - 1]}</span>
+          <span className="flex items-center justify-center">{MEDAL_ICONS[entry.rank - 1]}</span>
         ) : (
           <span className="text-xs font-black tabular-nums"
             style={{
