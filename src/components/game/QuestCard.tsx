@@ -86,7 +86,7 @@ export function QuestCard({ quest, onComplete, completing }: QuestCardProps) {
             {isDone ? (
               <span className="flex items-center gap-1 text-[11px] font-semibold"
                 style={{ color: '#10B981' }}>
-                <CheckCircle2 size={12} /> Erledigt
+                <CheckCircle2 size={12} /> Done
               </span>
             ) : quest.status === 'available' ? (
               <button
@@ -103,7 +103,7 @@ export function QuestCard({ quest, onComplete, completing }: QuestCardProps) {
                 }}>
                 {completing
                   ? <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  : '✓ Starten'
+                  : '✓ Start'
                 }
               </button>
             ) : null}
