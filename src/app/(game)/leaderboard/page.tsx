@@ -41,7 +41,7 @@ export default function LeaderboardPage() {
         style={{ background: 'linear-gradient(180deg, rgba(124,58,237,0.06) 0%, transparent 100%)' }}>
         <h1 className="text-xl font-black text-white"
           style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-          RANGLISTE
+          LEADERBOARD
         </h1>
       </div>
 
@@ -84,7 +84,7 @@ export default function LeaderboardPage() {
             <div className="flex flex-col">
               <span className="text-[10px] font-bold tracking-widest"
                 style={{ color: 'rgba(168,85,247,0.6)', fontFamily: 'var(--font-display)' }}>
-                DEIN RANG
+                YOUR RANK
               </span>
               <span className="text-2xl font-black"
                 style={{
@@ -135,7 +135,7 @@ export default function LeaderboardPage() {
           <p className="text-center text-[10px] py-2"
             style={{ color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--font-display)',
               letterSpacing: '0.1em' }}>
-            AKTUALISIERT {new Date(refreshedAt).toLocaleTimeString()}
+            UPDATED {new Date(refreshedAt).toLocaleTimeString()}
           </p>
         )}
       </div>
