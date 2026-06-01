@@ -103,7 +103,7 @@ export default function ClansPage() {
       return json.data
     },
     onSuccess: async () => {
-      toast('info', 'Leave Clan')
+      toast('info', 'Left clan')
       await invalidateAll()
       setView('browse')
     },
@@ -124,7 +124,7 @@ export default function ClansPage() {
     onSuccess: (data) => {
       toast('success', `+${data.xpGranted} XP · Clan +${data.xpClanReward} XP`)
       haptic('success')
-      // Energy sofort im Store aktualisieren
+      // Immediately update energy in store
       if (data.energyAfter !== undefined) {
         useEnergyStore.setState(s => ({ ...s, current: data.energyAfter }))
       }
@@ -135,8 +135,8 @@ export default function ClansPage() {
   })
 
   const TABS = [
-    { key: 'browse',   label: 'Entdecken', icon: Search  },
-    { key: 'mine',     label: 'Mein Clan', icon: Shield  },
+    { key: 'browse',   label: 'Discover', icon: Search  },
+    { key: 'mine',     label: 'My Clan', icon: Shield  },
     ...(hasClan ? [{ key: 'missions', label: 'Missions', icon: Swords }] : []),
     { key: 'create',   label: '+',         icon: null    },
   ] as const
@@ -169,7 +169,7 @@ export default function ClansPage() {
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
               <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Clan suchen…"
+                placeholder="Search clans…"
                 className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl
                            pl-8 pr-3 py-2.5 text-sm text-white placeholder-white/25
                            focus:outline-none focus:border-violet-500/50" />
@@ -179,8 +179,8 @@ export default function ClansPage() {
               : (clansData ?? []).length === 0
               ? <div className="text-center py-10 space-y-2">
                   <p className="text-3xl">🏰</p>
-                  <p className="text-sm text-white/40">Noch keine Clans vorhanden</p>
-                  <p className="text-xs text-white/25">Erstelle den ersten Clan!</p>
+                  <p className="text-sm text-white/40">No clans yet</p>
+                  <p className="text-xs text-white/25">Create the first clan!</p>
                 </div>
               : (clansData ?? []).map((clan: any) => (
                 <div key={clan.id} className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
@@ -201,7 +201,7 @@ export default function ClansPage() {
                           className="h-8 text-xs px-3 shrink-0">Join</Button>
                       : myMembership?.clan?.id === clan.id &&
                         <span className="text-[10px] font-bold text-violet-400 border border-violet-500/30
-                                         bg-violet-500/10 px-2 py-1 rounded-lg shrink-0">DEIN CLAN</span>
+                                         bg-violet-500/10 px-2 py-1 rounded-lg shrink-0">YOUR CLAN</span>
                     }
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export default function ClansPage() {
              : !hasClan ? (
               <div className="text-center py-10 space-y-3">
                 <p className="text-4xl">🛡️</p>
-                <p className="text-sm text-white/40">You're not in a clan</p>
+                <p className="text-sm text-white/40">You are not in a clan</p>
                 <div className="flex gap-2 justify-center">
                   <Button size="sm" variant="secondary" onClick={() => setView('browse')}>Join</Button>
                   {canCreate && <Button size="sm" onClick={() => setView('create')}>Create</Button>}
@@ -245,20 +245,20 @@ export default function ClansPage() {
                   </div>
                 </div>
 
-                {/* Missions Button */}
+                {/* Missionen Button */}
                 <button onClick={() => setView('missions')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl
                              border border-white/[0.07] bg-white/[0.02]
                              active:scale-[0.98] transition-transform">
                   <Swords size={18} className="text-violet-400 shrink-0" />
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-bold text-white">Clan-Missions</p>
-                    <p className="text-xs text-white/35">3 Missions täglich · 15⚡ · Clan XP</p>
+                    <p className="text-sm font-bold text-white">Clan Missions</p>
+                    <p className="text-xs text-white/35">3 missions daily · 15⚡ · Clan XP</p>
                   </div>
                   <span className="text-white/30 text-xs">→</span>
                 </button>
 
-                {/* Members */}
+                {/* Mitglieder */}
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">
                     Members ({(myMembership.members ?? []).length})
@@ -279,7 +279,7 @@ export default function ClansPage() {
                         <p className="text-xs font-semibold text-white/80 truncate">
                           {m.telegramFirstName}
                           {m.userId === profile?.id && (
-                            <span className="ml-1 text-[9px] text-violet-400 font-black">DU</span>
+                            <span className="ml-1 text-[9px] text-violet-400 font-black">YOU</span>
                           )}
                         </p>
                         <p className="text-[10px] text-white/30">
@@ -294,7 +294,7 @@ export default function ClansPage() {
                 </div>
 
                 <Button variant="destructive" fullWidth loading={leaving}
-                  onClick={() => { if (window.confirm('Leave Clan?')) leaveClan(myMembership.clan.id) }}>
+                  onClick={() => { if (window.confirm('Leave clan?')) leaveClan(myMembership.clan.id) }}>
                   <LogOut size={14} /> Leave Clan
                 </Button>
               </>
@@ -307,7 +307,7 @@ export default function ClansPage() {
           <>
             <div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.04] px-3 py-2.5">
               <p className="text-xs text-white/40 leading-relaxed">
-                🛡️ Schließe Clan-Missions ab um deinen Clan mit XP zu unterstützen.
+                🛡️ Complete clan missions to support your clan with XP.
                 Kosten: <span className="text-yellow-400">15⚡</span> pro Mission.
               </p>
             </div>
@@ -317,7 +317,7 @@ export default function ClansPage() {
               : (missions ?? []).length === 0
               ? <div className="text-center py-10">
                   <p className="text-3xl mb-2">⚔️</p>
-                  <p className="text-sm text-white/40">Keine Missions verfügbar</p>
+                  <p className="text-sm text-white/40">No missions available</p>
                 </div>
               : (missions ?? []).map((m: any) => (
                 <div key={m.id}
@@ -357,7 +357,7 @@ export default function ClansPage() {
                       <Button size="sm" loading={completing && completingId === m.id}
                         onClick={() => completeMission(m.id)}
                         className="h-7 text-[11px] px-3">
-                        Abschließen
+                        Complete
                       </Button>
                     </div>
                   )}
@@ -410,24 +410,24 @@ function CreateClanForm({ canCreate, hasClan, userLevel, token, onCreated }: {
   if (hasClan) return (
     <div className="text-center py-10 space-y-2">
       <p className="text-3xl">🛡️</p>
-      <p className="text-sm text-white/40">Du bist bereits in einem Clan</p>
+      <p className="text-sm text-white/40">You are already in a clan</p>
     </div>
   )
 
   if (!canCreate) return (
     <div className="text-center py-10 space-y-2">
       <p className="text-3xl">🔒</p>
-      <p className="text-sm font-bold text-white">Level {GAME_CONSTANTS.CLAN_UNLOCK_LEVEL} erforderlich</p>
-      <p className="text-xs text-white/40">Noch {GAME_CONSTANTS.CLAN_UNLOCK_LEVEL - userLevel} Level</p>
+      <p className="text-sm font-bold text-white">Level {GAME_CONSTANTS.CLAN_UNLOCK_LEVEL} required</p>
+      <p className="text-xs text-white/40">{GAME_CONSTANTS.CLAN_UNLOCK_LEVEL - userLevel} more levels</p>
     </div>
   )
 
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-white/50">Clan-Name *</label>
+        <label className="text-xs font-semibold text-white/50">Clan Name *</label>
         <input value={name} onChange={e => setName(e.target.value)}
-          placeholder="z.B. Crypto Warriors" maxLength={32}
+          placeholder="e.g. Crypto Warriors" maxLength={32}
           className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl
                      px-3 py-2.5 text-sm text-white placeholder-white/25
                      focus:outline-none focus:border-violet-500/50" />
@@ -444,8 +444,8 @@ function CreateClanForm({ canCreate, hasClan, userLevel, token, onCreated }: {
       <div className="flex items-center justify-between px-3 py-3 rounded-xl
                       border border-white/[0.08] bg-white/[0.03]">
         <div>
-          <p className="text-xs font-semibold text-white/70">Publicer Clan</p>
-          <p className="text-[10px] text-white/30">Jeder kann beitreten</p>
+          <p className="text-xs font-semibold text-white/70">Public Clan</p>
+          <p className="text-[10px] text-white/30">Anyone can join</p>
         </div>
         <button onClick={() => setIsPublic(p => !p)}
           className={cn('w-11 h-6 rounded-full transition-colors relative',
