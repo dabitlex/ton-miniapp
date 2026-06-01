@@ -229,7 +229,7 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
             color: entry.isCurrentUser ? 'white' : 'rgba(255,255,255,0.75)',
             fontFamily: 'var(--font-display)',
           }}>
-          {formatNumber(entry.seasonXp)}
+          {entry.seasonXp.toLocaleString()}
         </span>
         <div className="flex items-center gap-1">
           <LevelBadge level={entry.level} />
