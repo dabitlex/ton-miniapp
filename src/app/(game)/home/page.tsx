@@ -190,7 +190,7 @@ export default function HomePage() {
               border: '1px solid rgba(16,185,129,0.2)',
             }}>
             <div className="text-4xl mb-2">🎉</div>
-            <p className="font-bold text-white text-sm">Alle Quests completed!</p>
+            <p className="font-bold text-white text-sm">All Quests completed!</p>
             <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
               New quests at midnight UTC
             </p>
