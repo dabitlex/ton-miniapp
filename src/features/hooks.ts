@@ -30,7 +30,7 @@ export function useEnergyTicker() {
       addNotification({
         type:    'energy_full',
         title:   'Energie voll ⚡',
-        message: 'Deine Energie ist vollständig aufgeladen!',
+        message: 'Your energy is fully recharged!',
       })
     } else if (current < GAME_CONSTANTS.MAX_ENERGY) {
       wasFullRef.current = false
@@ -96,8 +96,8 @@ export function useStreak() {
       })
       showXPGain(data.xpGranted)
       haptic('success')
-      if (data.missUsed) toast('info', '🛡️ Fehltagschutz verwendet — Streak gerettet!')
-      toast('success', `🔥 Tag ${data.streakCurrent} Streak!`)
+      if (data.missUsed) toast('info', '🛡️ Miss day protection used — streak saved!')
+      toast('success', `🔥 Day ${data.streakCurrent} Streak!`)
       qc.invalidateQueries({ queryKey: ['user', 'profile'] })
     },
     onError: (e: Error) => {
