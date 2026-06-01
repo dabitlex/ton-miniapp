@@ -8,7 +8,7 @@ import { useUIStore }        from '@/stores/useUIStore'
 import { formatNumber }      from '@/lib/utils'
 import { ECOSYSTEM_TIERS }   from '@/lib/constants/game'
 import type { EcosystemSupportTier, ActiveEcosystemBoost } from '@/types/game'
-import { Zap, Wallet } from 'lucide-react'
+import { Zap, Wallet, Rocket, CheckCircle, Clock } from 'lucide-react'
 
 // TON zu Nano konvertieren
 function toNano(amount: number): string {
@@ -211,10 +211,8 @@ export default function EcosystemPage() {
                   Bis {new Date(active.boostActiveUntil).toLocaleDateString('de-DE')}
                 </p>
               </div>
-              <div className="text-4xl"
-                style={{ filter: 'drop-shadow(0 0 12px rgba(16,185,129,0.5))' }}>
-                ⚡
-              </div>
+              <Zap size={36} fill="#34D399"
+                style={{ color: '#34D399', filter: 'drop-shadow(0 0 12px rgba(16,185,129,0.5))' }} />
             </div>
           </div>
         ) : !isLoading && (
@@ -223,7 +221,7 @@ export default function EcosystemPage() {
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.07)',
             }}>
-            <p className="text-2xl mb-1">🚀</p>
+            <Rocket size={28} className="mx-auto mb-2" style={{ color: "rgba(255,255,255,0.2)" }} />
             <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.5)' }}>
               No active boost
             </p>
@@ -242,8 +240,8 @@ export default function EcosystemPage() {
             }}>
             <span className="w-4 h-4 rounded-full border-2 border-amber-400/60 border-t-amber-400 animate-spin shrink-0" />
             <div>
-              <p className="text-sm font-bold" style={{ color: '#F59E0B' }}>
-                Boost confirming...
+              <p className="text-sm font-bold flex items-center gap-1.5" style={{ color: '#F59E0B' }}>
+                <Clock size={14} /> Boost confirming...
               </p>
               <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
                 +{pending.boostPercent}% XP — Waiting for TON Blockchain (~30 Sek)
