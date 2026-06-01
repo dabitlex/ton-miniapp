@@ -3,7 +3,6 @@
 import { useUserStore }    from '@/stores/useUserStore'
 import { useEnergy }       from '@/features/hooks'
 import { XPBar }           from '@/components/game/XPBar'
-import { LeagueBadge }     from '@/components/game/LeagueBadge'
 import { LevelBadge }      from '@/components/game/LevelBadge'
 import { TelegramAvatar }  from '@/components/layout/GameHeader'
 import { WalletConnect }   from '@/components/ton/WalletConnect'
@@ -27,8 +26,6 @@ export default function ProfilePage() {
     )
   }
 
-  const leagueRange  = LEAGUES[profile.league]
-  const levelsToNext = leagueRange.max - profile.level
 
   return (
     <div className="overflow-y-auto pb-8">
@@ -85,12 +82,7 @@ export default function ProfilePage() {
             border: '1px solid rgba(255,255,255,0.07)',
           }}>
           <XPBar />
-          {profile.level < 30 && (
-            <p className="text-[10px] text-center mt-2"
-              style={{ color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-display)', letterSpacing: '0.1em' }}>
-              {levelsToNext} LEVELS TO NEXT LEAGUE
-            </p>
-          )}
+
         </div>
 
         {/* ── Clan Badge ───────────────────────────────────────── */}
