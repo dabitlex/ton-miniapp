@@ -38,18 +38,20 @@ export function useLeaderboard(league: LeagueTier | null = null) {
       if (!json.success) throw new Error(json.error)
 
       const entries     = json.data?.entries    ?? []
-      const userRank    = json.data?.userRank    ?? null
-      const userEntry   = json.data?.userEntry   ?? null
+      const userRank      = json.data?.userRank      ?? null
+      const userLeagueRank = json.data?.userLeagueRank ?? null
+      const userEntry      = json.data?.userEntry      ?? null
       const refreshedAt = json.data?.refreshedAt ?? new Date().toISOString()
       const total       = json.meta?.total       ?? 0
       const hasMore     = json.meta?.hasMore     ?? false
 
       store.setEntries(entries, { total, hasMore, refreshedAt })
 
-      // userRank immer setzen — API gibt immer globalen Rang zurück
+      // Rang setzen
       if (userRank !== null || store.userRank === null) {
         store.setUserRank(userRank, userEntry)
       }
+      store.setLeagueRank?.(userLeagueRank)
 
       return json.data
     },
@@ -61,7 +63,8 @@ export function useLeaderboard(league: LeagueTier | null = null) {
 
   return {
     entries:     store.entries,
-    userRank:    store.userRank,
+    userRank:      store.userRank,
+    userLeagueRank: store.leagueRank ?? null,
     userEntry:   store.userEntry,
     isLoading,
     hasMore:     store.hasMore,
