@@ -121,11 +121,11 @@ export default function ProfilePage() {
         <div className="grid grid-cols-2 gap-2">
           {[
             { icon: <Star size={18} fill='#F59E0B' style={{ color: '#F59E0B' }} />, label: 'TOTAL XP',  value: formatNumber(profile.xpTotal),      color: '#F59E0B' },
-            { icon: <Calendar size={18} style={{ color: '#A855F7' }} />, label: 'SEASON XP',  value: formatNumber(profile.seasonXp),      color: '#A855F7' },
+            { icon: <Calendar size={18} style={{ color: '#A855F7' }} />, label: 'SEASON XP',  value: profile.seasonXp.toLocaleString(),      color: '#A855F7' },
             { icon: <Flame size={18} fill='#F97316' style={{ color: '#F97316' }} />, label: 'STREAK',     value: `${profile.streakCurrent}d`,         color: '#F97316' },
             { icon: <Trophy size={18} style={{ color: '#F59E0B' }} />, label: 'BEST STREAK',value: `${profile.streakLongest}d`,         color: '#F59E0B' },
             { icon: <Zap size={18} fill={energy.current < 20 ? '#F43F5E' : '#06B6D4'} style={{ color: energy.current < 20 ? '#F43F5E' : '#06B6D4' }} />, label: 'ENERGY',    value: `${energy.current}/100`,             color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
-            { icon: <TrendingUp size={18} style={{ color: '#10B981' }} />, label: 'TODAY XP',   value: formatNumber(profile.xpEarnedToday), color: '#10B981' },
+            { icon: <TrendingUp size={18} style={{ color: '#10B981' }} />, label: 'TODAY XP',   value: profile.xpEarnedToday.toLocaleString(), color: '#10B981' },
           ].map(({ icon, label, value, color }) => (
             <div key={label} className="rounded-xl p-3 flex items-center gap-2.5"
               style={{
