@@ -2,6 +2,7 @@
 'use client'
 import { useState }    from 'react'
 import { useQuests }   from '@/features/quests/hooks'
+import { useUserStore } from '@/stores/useUserStore'
 import { useEnergy }   from '@/features/hooks'
 import { QuestCard }   from '@/components/game/QuestCard'
 import { ClipboardList } from 'lucide-react'
@@ -11,7 +12,9 @@ type Tab = 'daily' | 'weekly'
 export default function QuestsPage() {
   const [tab, setTab] = useState<Tab>('daily')
   const { daily, weekly, isLoadingDaily, isLoadingWeekly, completeQuest, completingId } = useQuests()
-  const energy = useEnergy()
+  const energy      = useEnergy()
+  const profile     = useUserStore(s => s.profile)
+  const activeBoost = profile?.ecosystemBoost ?? 0
 
   const quests    = tab === 'daily' ? daily   : weekly
   const isLoading = tab === 'daily' ? isLoadingDaily : isLoadingWeekly
@@ -128,6 +131,7 @@ export default function QuestsPage() {
               quest={q}
               onComplete={() => completeQuest(q.id, tab)}
               completing={completingId === q.id}
+              activeBoostPct={activeBoost}
             />
           ))
         )}
