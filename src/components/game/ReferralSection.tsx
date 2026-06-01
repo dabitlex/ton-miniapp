@@ -31,18 +31,18 @@ export function ReferralSection() {
 
     const shareData = {
       title: 'TON MiniApp',
-      text:  `🎮 Spiele mit mir bei TON MiniApp! Sammle XP, level auf und verdiene TON Tokens. Benutze meinen Link:`,
+      text:  `🎮 Play VEXALGO with me! Earn XP, level up and win TON tokens. Use my link:`,
       url:   data.referralLink,
     }
 
-    // Web Share API — öffnet natives Teilen-Menü (WhatsApp, Telegram, X, Email...)
+    // Web Share API — opens native share menu (WhatsApp, Telegram, X, Email...)
     if (navigator.share) {
       try {
         await navigator.share(shareData)
         setShared(true)
         setTimeout(() => setShared(false), 2000)
       } catch (e: any) {
-        // Nutzer hat abgebrochen — kein Fehler
+        // User cancelled — no error
         if (e.name !== 'AbortError') {
           // Fallback auf Kopieren
           copyLink()
@@ -52,7 +52,7 @@ export function ReferralSection() {
       // Fallback: Direkt in Telegram teilen
       const tg = (window as any).Telegram?.WebApp
       if (tg?.openTelegramLink) {
-        const text = encodeURIComponent(`🎮 Spiele mit mir bei TON MiniApp!\n\n${data.referralLink}`)
+        const text = encodeURIComponent(`🎮 Join me on VEXALGO!\n\n${data.referralLink}`)
         tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(data.referralLink)}&text=${text}`)
       } else {
         copyLink()
@@ -84,7 +84,7 @@ export function ReferralSection() {
         </p>
         <div className="space-y-2">
           {reqs && [
-            { label: 'Level 5 erreichen', met: reqs.level.met,
+            { label: 'Reach Level 5', met: reqs.level.met,
               current: `Lv. ${reqs.level.current}` },
             { label: '2.000 XP sammeln', met: reqs.xp.met,
               current: `${reqs.xp.current.toLocaleString()} XP` },
@@ -121,7 +121,7 @@ export function ReferralSection() {
 
         <p className="text-xs text-white/40 leading-relaxed">
           Teile deinen persönlichen Link. Du erhältst 500 XP sobald dein Freund
-          Level 5 und 2.000 XP erreicht.
+          Reach Level 5 and 2,000 XP.
         </p>
 
         {/* Link anzeigen */}
@@ -156,7 +156,7 @@ export function ReferralSection() {
           onClick={() => {
             const tg = (window as any).Telegram?.WebApp
             const url = encodeURIComponent(data?.referralLink ?? '')
-            const text = encodeURIComponent('🎮 Spiele mit mir bei TON MiniApp und verdiene TON Tokens!')
+            const text = encodeURIComponent('🎮 Play with me on VEXALGO and earn TON Tokens!')
             if (tg?.openTelegramLink) {
               tg.openTelegramLink(`https://t.me/share/url?url=${url}&text=${text}`)
             }
@@ -183,7 +183,7 @@ export function ReferralSection() {
             <p className="text-lg font-black text-white">{data?.validReferrals ?? 0}</p>
           </div>
           <p className="text-[10px] text-white/35">
-            Bestätigt · +{(data?.validReferrals ?? 0) * 500} XP
+            Confirmed · +{(data?.validReferrals ?? 0) * 500} XP
           </p>
         </div>
       </div>
@@ -222,7 +222,7 @@ export function ReferralSection() {
                   ? 'bg-emerald-500/15 text-emerald-400'
                   : 'bg-white/[0.06] text-white/30'
               }`}>
-                {r.isValid ? '+500 XP ✓' : 'Ausstehend'}
+                {r.isValid ? '+500 XP ✓' : 'Pending'}
               </span>
             </div>
           ))}
