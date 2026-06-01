@@ -6,6 +6,7 @@ import type { LeaderboardEntry, LeagueTier } from '@/types/game'
 interface LeaderboardState {
   entries:      LeaderboardEntry[]
   userRank:     number | null
+  leagueRank:   number | null
   userEntry:    LeaderboardEntry | null
   total:        number
   page:         number
@@ -17,6 +18,7 @@ interface LeaderboardState {
   setEntries:    (entries: LeaderboardEntry[], meta: { total: number; hasMore: boolean; refreshedAt: string }) => void
   appendEntries: (more: LeaderboardEntry[]) => void
   setUserRank:   (rank: number | null, entry: LeaderboardEntry | null) => void
+  setLeagueRank: (rank: number | null) => void
   setLoading:    (v: boolean) => void
   setPage:       (p: number) => void
   setLeague:     (l: LeagueTier | null) => void
@@ -30,6 +32,7 @@ export const useLeaderboardStore = create<LeaderboardState>()(
   devtools((set) => ({
     entries:      [],
     userRank:     null,
+    leagueRank:   null,
     userEntry:    null,
     total:        0,
     page:         1,
@@ -43,6 +46,7 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     appendEntries: (more) =>
       set(s => ({ entries: [...s.entries, ...more], page: s.page + 1, isLoading: false })),
     setUserRank:   (userRank, userEntry) => set({ userRank, userEntry }),
+    setLeagueRank: (leagueRank) => set({ leagueRank }),
     setLoading:    (isLoading)   => set({ isLoading }),
     setPage:       (page)        => set({ page }),
     setLeague:     (activeLeague)=> set({ activeLeague }),
@@ -62,6 +66,8 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     fullReset: () => set({
       entries:      [],
       userRank:     null,
+      leagueRank:   null,
+    leagueRank:   null,
       userEntry:    null,
       total:        0,
       page:         1,
