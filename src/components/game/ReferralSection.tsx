@@ -31,7 +31,7 @@ export function ReferralSection() {
 
     const shareData = {
       title: 'VEXALGO',
-      text:  `🎮 Play VEXALGO with me! Earn XP, level up and win TON Tokens. Use my link:`,
+      text:  `🎮 Join me on VEXALGO! Earn XP, climb the leaderboard and be ready for the token launch. Use my link:`,
       url:   data.referralLink,
     }
 
@@ -156,7 +156,7 @@ export function ReferralSection() {
           onClick={() => {
             const tg = (window as any).Telegram?.WebApp
             const url = encodeURIComponent(data?.referralLink ?? '')
-            const text = encodeURIComponent('🎮 Play VEXALGO with me and earn TON Tokens!')
+            const text = encodeURIComponent('🎮 Join me on VEXALGO! Earn XP, climb the leaderboard and be ready for the token launch.')
             if (tg?.openTelegramLink) {
               tg.openTelegramLink(`https://t.me/share/url?url=${url}&text=${text}`)
             }
