@@ -77,7 +77,7 @@ export function AuthProvider({ children }: Props) {
 
       let json: any
       try { json = JSON.parse(text) }
-      catch { auth.setAuthError(`Server-Fehler: ${text.slice(0, 150)}`); return }
+      catch { auth.setAuthError(`Server error: ${text.slice(0, 150)}`); return }
 
       if (!json.success) {
         auth.setAuthError(json.error ?? 'Authentifizierung fehlgeschlagen')
