@@ -11,6 +11,7 @@ import { QuestCard }       from '@/components/game/QuestCard'
 import { StreakCard }       from '@/components/game/StreakCard'
 import { LeagueBadge }     from '@/components/game/LeagueBadge'
 import Link from 'next/link'
+import { Flame, Zap, Star, Trophy, ChevronRight } from 'lucide-react'
 
 export default function HomePage() {
   const profile  = useUserStore(s => s.profile)
@@ -108,16 +109,16 @@ export default function HomePage() {
         {/* Micro Stats Row */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { icon: '🔥', value: `${profile?.streakCurrent ?? 0}d`,     label: 'Streak',   color: '#F59E0B' },
-            { icon: '⭐', value: formatNumber(profile?.xpEarnedToday ?? 0), label: 'Today XP', color: '#A855F7' },
-            { icon: '⚡', value: `${energy.current}/100`,               label: 'Energy',  color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
+            { icon: <Flame size={16} fill='#F59E0B' style={{ color: '#F59E0B' }} />, value: `${profile?.streakCurrent ?? 0}d`, label: 'Streak', color: '#F59E0B' },
+            { icon: <Star size={16} fill='#A855F7' style={{ color: '#A855F7' }} />, value: formatNumber(profile?.xpEarnedToday ?? 0), label: 'Today XP', color: '#A855F7' },
+            { icon: <Zap size={16} fill={energy.current < 20 ? '#F43F5E' : '#06B6D4'} style={{ color: energy.current < 20 ? '#F43F5E' : '#06B6D4' }} />, value: `${energy.current}/100`, label: 'Energy', color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
           ].map(({ icon, value, label, color }) => (
             <div key={label} className="rounded-xl p-3 text-center"
               style={{
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.07)',
               }}>
-              <div className="text-lg mb-0.5">{icon}</div>
+              <div className="flex justify-center mb-0.5">{icon}</div>
               <p className="text-sm font-black tabular-nums"
                 style={{ color, fontFamily: 'var(--font-display)' }}>
                 {value}
@@ -190,7 +191,7 @@ export default function HomePage() {
               border: '1px solid rgba(16,185,129,0.2)',
             }}>
             <div className="text-4xl mb-2">🎉</div>
-            <p className="font-bold text-white text-sm">All Quests completed!</p>
+            <p className="font-bold text-white text-sm">Alle Quests completed!</p>
             <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
               New quests at midnight UTC
             </p>
