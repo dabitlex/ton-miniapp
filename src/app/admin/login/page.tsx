@@ -23,11 +23,11 @@ export default function AdminLoginPage() {
       if (res.ok && json.success) {
         router.replace('/admin')
       } else {
-        setError(json.error ?? 'Zugriff verweigert')
+        setError(json.error ?? 'Access denied')
         setLoading(false)
       }
     } catch {
-      setError('Verbindungsfehler')
+      setError('Connection error')
       setLoading(false)
     }
   }, [router])
@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
             color: 'rgba(255,255,255,0.5)', fontSize: 13,
             textAlign: 'center', marginBottom: 20, marginTop: 0,
           }}>
-            Mit Telegram anmelden
+            Sign in with Telegram
           </p>
 
           {/* Widget Container */}
@@ -117,7 +117,7 @@ export default function AdminLoginPage() {
                 animation: 'spin 0.8s linear infinite',
               }} />
               <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                Prüfe Berechtigung...
+                Checking authorization...
               </span>
             </div>
           )}
@@ -136,7 +136,7 @@ export default function AdminLoginPage() {
           color: 'rgba(255,255,255,0.15)', fontSize: 11,
           textAlign: 'center', marginTop: 16,
         }}>
-          Zugriff nur für autorisierte Administratoren
+          Access restricted to authorized administrators
         </p>
       </div>
 
