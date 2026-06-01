@@ -51,7 +51,7 @@ export default function HomePage() {
             />
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                Willkommen zurück
+                Welcome back
               </p>
               <h1 className="text-base font-bold text-white leading-tight truncate">
                 {profile.telegramFirstName}
@@ -109,8 +109,8 @@ export default function HomePage() {
         <div className="grid grid-cols-3 gap-2">
           {[
             { icon: '🔥', value: `${profile?.streakCurrent ?? 0}d`,     label: 'Streak',   color: '#F59E0B' },
-            { icon: '⭐', value: formatNumber(profile?.xpEarnedToday ?? 0), label: 'Heute XP', color: '#A855F7' },
-            { icon: '⚡', value: `${energy.current}/100`,               label: 'Energie',  color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
+            { icon: '⭐', value: formatNumber(profile?.xpEarnedToday ?? 0), label: 'Today XP', color: '#A855F7' },
+            { icon: '⚡', value: `${energy.current}/100`,               label: 'Energy',  color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
           ].map(({ icon, value, label, color }) => (
             <div key={label} className="rounded-xl p-3 text-center"
               style={{
@@ -142,10 +142,10 @@ export default function HomePage() {
           <div>
             <h2 className="text-sm font-bold tracking-wide text-white"
               style={{ fontFamily: 'var(--font-display)' }}>
-              TÄGLICHE QUESTS
+              DAILY QUESTS
             </h2>
             <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              {completed}/{total} abgeschlossen
+              {completed}/{total} completed
             </p>
           </div>
           <Link href="/quests"
@@ -155,7 +155,7 @@ export default function HomePage() {
               border: '1px solid rgba(124,58,237,0.2)',
               color: 'rgba(168,85,247,0.8)',
             }}>
-            Alle →
+            All →
           </Link>
         </div>
 
@@ -190,9 +190,9 @@ export default function HomePage() {
               border: '1px solid rgba(16,185,129,0.2)',
             }}>
             <div className="text-4xl mb-2">🎉</div>
-            <p className="font-bold text-white text-sm">Alle Quests abgeschlossen!</p>
+            <p className="font-bold text-white text-sm">Alle Quests completed!</p>
             <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              Neue Quests um Mitternacht UTC
+              New quests at midnight UTC
             </p>
           </div>
         ) : (
