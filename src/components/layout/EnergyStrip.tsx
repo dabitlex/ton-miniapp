@@ -1,6 +1,7 @@
 // src/components/layout/EnergyStrip.tsx
 'use client'
 import { useEnergy } from '@/features/hooks'
+import { Zap } from 'lucide-react'
 
 export function EnergyStrip() {
   const energy = useEnergy()
@@ -19,11 +20,17 @@ export function EnergyStrip() {
       style={{ background: 'rgba(6,6,16,0.8)' }}>
 
       {/* Energy icon */}
-      <span className="text-[11px]" style={{
-        filter: isLow
-          ? 'drop-shadow(0 0 4px rgba(244,63,94,0.8))'
-          : 'drop-shadow(0 0 4px rgba(168,85,247,0.8))'
-      }}>⚡</span>
+      <Zap
+        size={12}
+        fill={isLow ? '#F43F5E' : '#A855F7'}
+        style={{
+          color: isLow ? '#F43F5E' : '#A855F7',
+          filter: isLow
+            ? 'drop-shadow(0 0 4px rgba(244,63,94,0.8))'
+            : 'drop-shadow(0 0 4px rgba(168,85,247,0.8))',
+          flexShrink: 0,
+        }}
+      />
 
       {/* Progress track */}
       <div className="flex-1 h-[3px] rounded-full"
