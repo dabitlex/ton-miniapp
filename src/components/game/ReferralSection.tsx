@@ -135,11 +135,12 @@ function ShareModal({ isOpen, onClose, referralLink, shareText }: ShareModalProp
 
       {/* Bottom Sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-8 pt-4"
+        className="fixed bottom-0 left-0 right-0 z-50 px-4 pt-4"
         style={{
           background: 'linear-gradient(180deg, rgba(12,10,28,0.98) 0%, rgba(6,6,16,1) 100%)',
           borderTop: '1px solid rgba(124,58,237,0.25)',
           borderRadius: '20px 20px 0 0',
+          paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
           boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
           animation: 'slideUp 0.25s cubic-bezier(0.34, 1.2, 0.64, 1)',
         }}>
