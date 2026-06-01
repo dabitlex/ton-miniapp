@@ -30,7 +30,7 @@ export default function QuestsPage() {
           QUESTS
         </h1>
         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-          Schließe Quests ab und sammle XP
+          Complete quests and earn XP
         </p>
       </div>
 
@@ -118,7 +118,7 @@ export default function QuestsPage() {
         ) : quests.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-center">
             <p className="text-4xl mb-2">📋</p>
-            <p className="text-sm font-bold text-white/40">Keine Quests verfügbar</p>
+            <p className="text-sm font-bold text-white/40">No quests available</p>
           </div>
         ) : (
           quests.map(q => (
