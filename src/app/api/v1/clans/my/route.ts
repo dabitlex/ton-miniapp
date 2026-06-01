@@ -37,7 +37,7 @@ export const GET = withAuth(async (ctx) => {
     .from('clan_members')
     .select(`
       user_id, role, contributed_xp, joined_at,
-      user:users(id, telegram_first_name, telegram_username, telegram_photo_url, level, league)
+      user:users(id, telegram_first_name, telegram_username, telegram_photo_url, level, league, last_active_at)
     `)
     .eq('clan_id', membership.clan_id)
     .order('contributed_xp', { ascending: false })
@@ -71,6 +71,7 @@ export const GET = withAuth(async (ctx) => {
       telegramPhotoUrl: m.user?.telegram_photo_url,
       level:            m.user?.level,
       league:           m.user?.league,
+      lastActiveAt:     m.user?.last_active_at ?? null,
     })),
   })
 })
