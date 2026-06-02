@@ -55,6 +55,13 @@ export const GET = withAuth(async (ctx) => {
     .limit(1)
     .maybeSingle()
 
+  // Aktive Saison laden (für Countdown)
+  const { data: activeSeason } = await supabase
+    .from('seasons')
+    .select('season_number, ends_at, starts_at, status')
+    .eq('status', 'active')
+    .maybeSingle()
+
   // Clan-Mitgliedschaft laden
   const { data: clanMember } = await supabase
     .from('clan_members')
@@ -102,6 +109,12 @@ export const GET = withAuth(async (ctx) => {
     } : null,
     // Ecosystem Boost (für QuestCard Anzeige)
     ecosystemBoost: activeBoost?.xp_boost_percent ?? 0,
+    // Saison-Info (für Countdown)
+    season: activeSeason ? {
+      number:  activeSeason.season_number,
+      endsAt:  activeSeason.ends_at,
+      startsAt: activeSeason.starts_at,
+    } : null,
     // Clan
     clan: clanMember ? {
       clanId:        (clanMember.clan as any)?.id,
