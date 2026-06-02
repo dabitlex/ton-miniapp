@@ -55,12 +55,12 @@ function SplashContent() {
     <div className="h-dvh flex flex-col items-center justify-center overflow-hidden relative"
       style={{ background: 'var(--bg-void)' }}>
 
-      {/* Ambient glow */}
+      {/* Ambient aurora glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2
-                      w-80 h-80 rounded-full pointer-events-none"
+                      w-80 h-80 rounded-full pointer-events-none pulse-glow"
         style={{
-          background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%)',
-          filter: 'blur(40px)',
+          background: 'radial-gradient(circle, rgba(139,92,246,0.22) 0%, rgba(91,141,239,0.06) 45%, transparent 72%)',
+          filter: 'blur(36px)',
         }} />
 
       {/* Logo */}
@@ -73,25 +73,25 @@ function SplashContent() {
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icon-192.png" alt="VEXALGO" width={80} height={80}
-          className="rounded-2xl mb-5"
+          className="rounded-[22px] mb-5 float"
           style={{
-            boxShadow: '0 0 40px rgba(124,58,237,0.5), 0 0 80px rgba(124,58,237,0.15)',
+            boxShadow: '0 0 44px rgba(139,92,246,0.5), 0 0 90px rgba(91,141,239,0.16)',
           }} />
 
         <h1 style={{
           fontFamily: 'var(--font-display)',
-          fontSize: 36, fontWeight: 900,
-          letterSpacing: '0.15em', color: 'white', marginBottom: 4,
+          fontSize: 38, fontWeight: 800,
+          letterSpacing: '0.06em', color: 'white', marginBottom: 6,
         }}>
           VEX<span style={{
-            background: 'linear-gradient(135deg, #A855F7, #3B82F6)',
+            background: 'linear-gradient(120deg, #C4B5FD, #93C5FD 55%, #99F6E4)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>ALGO</span>
         </h1>
 
         <p style={{
-          fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 600,
-          letterSpacing: '0.3em', color: 'rgba(255,255,255,0.3)',
+          fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+          letterSpacing: '0.32em', color: 'var(--text-faint)',
         }}>
           EARN · LEVEL · DOMINATE
         </p>
@@ -107,7 +107,7 @@ function SplashContent() {
           style={{ background: 'rgba(255,255,255,0.08)' }}>
           <div className="h-full rounded-full"
             style={{
-              background: 'linear-gradient(90deg, #7C3AED, #A855F7, #06B6D4)',
+              background: 'var(--aurora)',
               width: '100%',
               animation: isInitializing
                 ? 'shimmer 1.4s ease-in-out infinite'
