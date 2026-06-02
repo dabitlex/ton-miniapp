@@ -154,7 +154,7 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
     3: { ring: 'linear-gradient(135deg,#E0A06A,#CD7F32)', glow: 'rgba(205,127,50,0.4)',   size: 52, h: 62, label: '#E0A06A' },
   }[place]
 
-  const relicTier = (entry as any).relicTier as string | null
+  const relicTier = entry.relicTier as string | null
 
   return (
     <div className="flex flex-col items-center flex-1 max-w-[110px]">
@@ -191,7 +191,7 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
 // ── Entry row ─────────────────────────────────────────────────
 const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entry }, ref) => {
   const me        = entry.isCurrentUser
-  const relicTier = (entry as any).relicTier as string | null
+  const relicTier = entry.relicTier as string | null
 
   return (
     <div ref={ref}
