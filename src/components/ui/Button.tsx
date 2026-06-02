@@ -1,4 +1,4 @@
-// src/components/ui/Button.tsx
+// src/components/ui/Button.tsx — Redesigned (Aurora OS)
 'use client'
 import { forwardRef, ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
@@ -16,42 +16,42 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   fullWidth = false, children, className, disabled, ...props
 }, ref) => {
 
-  const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none'
+  const base = 'relative inline-flex items-center justify-center gap-2 font-bold rounded-2xl transition-transform duration-200 active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none overflow-hidden'
 
   const sizes = {
-    sm: 'h-8 px-3 text-xs',
-    md: 'h-10 px-4 text-sm',
-    lg: 'h-12 px-6 text-base',
+    sm: 'h-9 px-3.5 text-xs',
+    md: 'h-11 px-5 text-sm',
+    lg: 'h-[52px] px-6 text-base',
   }
 
   const variants = {
     primary:     'text-white',
-    secondary:   'text-white/80',
+    secondary:   'text-white/85',
     ghost:       'text-white/60',
-    destructive: 'text-rose-300',
-    gold:        'text-amber-100',
+    destructive: 'text-rose-200',
+    gold:        'text-amber-50',
   }
 
   const styles: Record<string, React.CSSProperties> = {
     primary: {
-      background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
-      boxShadow:  '0 4px 20px rgba(124,58,237,0.35)',
+      background: 'var(--aurora)',
+      boxShadow:  '0 8px 24px rgba(124,58,237,0.34), inset 0 1px 0 rgba(255,255,255,0.22)',
     },
     secondary: {
-      background: 'rgba(255,255,255,0.07)',
-      border:     '1px solid rgba(255,255,255,0.1)',
+      background: 'var(--surface-2)',
+      boxShadow:  'inset 0 1px 0 var(--edge-light)',
     },
     ghost: {
       background: 'transparent',
-      border:     '1px solid rgba(255,255,255,0.08)',
+      boxShadow:  'inset 0 0 0 1px var(--border)',
     },
     destructive: {
-      background: 'rgba(244,63,94,0.12)',
-      border:     '1px solid rgba(244,63,94,0.25)',
+      background: 'rgba(244,63,94,0.14)',
+      boxShadow:  'inset 0 0 0 1px rgba(244,63,94,0.28)',
     },
     gold: {
-      background: 'linear-gradient(135deg, #D97706 0%, #F59E0B 100%)',
-      boxShadow:  '0 4px 20px rgba(245,158,11,0.3)',
+      background: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+      boxShadow:  '0 8px 24px rgba(245,158,11,0.3), inset 0 1px 0 rgba(255,255,255,0.25)',
     },
   }
 
