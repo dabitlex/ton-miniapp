@@ -1,4 +1,4 @@
-// src/components/game/LevelBadge.tsx — Redesigned (Aurora OS)
+// src/components/game/LevelBadge.tsx — Redesigned (Aurora OS) 
 interface Props { level: number; size?: 'sm' | 'md' | 'lg' }
 
 export function LevelBadge({ level, size = 'sm' }: Props) {
