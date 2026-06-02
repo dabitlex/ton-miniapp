@@ -1,4 +1,4 @@
-// src/components/layout/EnergyStrip.tsx
+// src/components/layout/EnergyStrip.tsx — Redesigned (Aurora OS)
 'use client'
 import { useEnergy } from '@/features/hooks'
 import { Zap } from 'lucide-react'
@@ -9,55 +9,43 @@ export function EnergyStrip() {
   const isLow  = energy.current < 20
   const isFull = energy.current >= 100
 
-  const color = isLow
+  const fill = isLow
     ? 'linear-gradient(90deg, #F43F5E, #FB7185)'
     : isFull
-    ? 'linear-gradient(90deg, #10B981, #34D399)'
-    : 'linear-gradient(90deg, #7C3AED, #A855F7, #06B6D4)'
+    ? 'linear-gradient(90deg, #10B981, #5EEAD4)'
+    : 'var(--aurora)'
+
+  const accent = isLow ? '#FB7185' : isFull ? '#34D399' : 'var(--violet-bright)'
 
   return (
-    <div className="shrink-0 flex items-center gap-2.5 px-4 h-8 relative"
-      style={{ background: 'rgba(6,6,16,0.8)' }}>
-
-      {/* Energy icon */}
+    <div className="shrink-0 flex items-center gap-3 px-4 h-[34px] relative z-10">
       <Zap
-        size={12}
-        fill={isLow ? '#F43F5E' : '#A855F7'}
+        size={13}
+        fill={isLow ? '#FB7185' : '#A78BFA'}
         style={{
-          color: isLow ? '#F43F5E' : '#A855F7',
-          filter: isLow
-            ? 'drop-shadow(0 0 4px rgba(244,63,94,0.8))'
-            : 'drop-shadow(0 0 4px rgba(168,85,247,0.8))',
+          color: isLow ? '#FB7185' : '#A78BFA',
+          filter: `drop-shadow(0 0 5px ${isLow ? 'rgba(251,113,133,0.7)' : 'rgba(167,139,250,0.7)'})`,
           flexShrink: 0,
         }}
       />
 
-      {/* Progress track */}
-      <div className="flex-1 h-[3px] rounded-full"
-        style={{ background: 'rgba(255,255,255,0.06)' }}>
+      <div className="flex-1 h-[4px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
         <div className="h-full rounded-full transition-all duration-700"
           style={{
             width: `${pct}%`,
-            background: color,
-            boxShadow: isLow
-              ? '0 0 8px rgba(244,63,94,0.5)'
-              : '0 0 8px rgba(168,85,247,0.5)',
+            background: fill,
+            boxShadow: `0 0 10px ${isLow ? 'rgba(251,113,133,0.5)' : 'rgba(139,92,246,0.55)'}`,
           }} />
       </div>
 
-      {/* Value */}
-      <span className="text-[11px] font-bold tabular-nums shrink-0"
-        style={{
-          color: isLow ? '#F43F5E' : isFull ? '#10B981' : 'rgba(168,85,247,0.9)',
-          minWidth: '44px', textAlign: 'right',
-        }}>
-        {energy.current}/100
+      <span className="text-[12px] font-bold tabular-nums shrink-0"
+        style={{ color: accent, minWidth: '46px', textAlign: 'right', fontFamily: 'var(--font-display)' }}>
+        {energy.current}<span style={{ color: 'var(--text-faint)' }}>/100</span>
       </span>
 
-      {/* Regen timer */}
       {!isFull && energy.nextRegenAt && (
-        <span className="text-[10px] shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
-          {formatRegen(energy.nextRegenAt)}
+        <span className="text-[10px] shrink-0 font-medium" style={{ color: 'var(--text-faint)' }}>
+          +1 {formatRegen(energy.nextRegenAt)}
         </span>
       )}
     </div>

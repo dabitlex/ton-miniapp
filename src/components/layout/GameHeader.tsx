@@ -1,55 +1,60 @@
-// src/components/layout/GameHeader.tsx
+// src/components/layout/GameHeader.tsx — Redesigned (Aurora OS)
 'use client'
 import Link             from 'next/link'
 import { useState }     from 'react'
 import { useUserStore } from '@/stores/useUserStore'
-import { formatNumber } from '@/lib/utils'
 
 export function GameHeader() {
   const profile = useUserStore(s => s.profile)
 
   return (
-    <header className="shrink-0 relative z-20 flex items-center justify-between
-                       px-4 h-[52px] border-b border-white/[0.05]"
-      style={{ background: 'rgba(6,6,16,0.95)', backdropFilter: 'blur(20px)' }}>
+    <header className="shrink-0 relative z-20 flex items-center justify-between px-4 h-[56px]"
+      style={{
+        background: 'linear-gradient(180deg, rgba(8,8,14,0.92) 0%, rgba(8,8,14,0.62) 100%)',
+        backdropFilter: 'blur(22px)',
+        WebkitBackdropFilter: 'blur(22px)',
+      }}>
 
-      {/* Left: Level + XP */}
+      {/* Left: Level + Season XP cluster */}
       <div className="flex items-center gap-2.5">
-        {profile && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
-            style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)' }}>
-            <span className="font-display text-[10px] font-bold text-violet-300 tracking-wider">
-              LV
+        <Link href="/profile" className="press">
+          <div className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full"
+            style={{ background: 'var(--surface-2)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
+            <span className="flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-extrabold text-white"
+              style={{
+                fontFamily: 'var(--font-display)',
+                background: 'var(--aurora)',
+                boxShadow: '0 2px 10px rgba(139,92,246,0.5)',
+              }}>
+              {profile?.level ?? '—'}
             </span>
-            <span className="font-display text-sm font-black text-white">
-              {profile.level}
+            <span className="text-[12px] font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+              {profile ? profile.seasonXp.toLocaleString() : '—'}
+              <span className="text-[10px] font-semibold ml-1" style={{ color: 'var(--text-faint)' }}>XP</span>
             </span>
           </div>
-        )}
-        <span className="text-[11px] font-semibold"
-          style={{ color: 'rgba(168,85,247,0.8)' }}>
-          {profile ? `${profile.seasonXp.toLocaleString()} XP` : '—'}
-        </span>
+        </Link>
       </div>
 
-      {/* Center: Brand */}
-      <div className="absolute left-1/2 -translate-x-1/2">
-        <span className="font-display text-sm font-black tracking-[0.15em] text-white/90">
-          VEX<span style={{
-            background: 'linear-gradient(135deg, #A855F7, #3B82F6)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>ALGO</span>
+      {/* Center: Wordmark */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--violet-bright)', boxShadow: '0 0 8px var(--violet-bright)' }} />
+        <span className="display text-[15px] tracking-[0.08em] text-white/95">
+          VEX<span className="gradient-text">ALGO</span>
         </span>
       </div>
 
       {/* Right: Avatar */}
-      <Link href="/profile" className="active:scale-90 transition-transform">
-        <TelegramAvatar
-          photoUrl={profile?.telegramPhotoUrl ?? null}
-          firstName={profile?.telegramFirstName ?? '?'}
-          size={30}
-        />
+      <Link href="/profile" className="press">
+        <div className="rounded-full p-[2px]" style={{ background: 'var(--aurora)' }}>
+          <div className="rounded-full p-[1.5px]" style={{ background: 'var(--bg-void)' }}>
+            <TelegramAvatar
+              photoUrl={profile?.telegramPhotoUrl ?? null}
+              firstName={profile?.telegramFirstName ?? '?'}
+              size={30}
+            />
+          </div>
+        </div>
       </Link>
     </header>
   )
@@ -71,18 +76,17 @@ export function TelegramAvatar({ photoUrl, firstName, size = 32, className = '' 
       <img src={photoUrl} alt={firstName} width={size} height={size}
         onError={() => setImgError(true)}
         className={`rounded-full object-cover ${className}`}
-        style={{ width: size, height: size,
-          boxShadow: '0 0 0 2px rgba(124,58,237,0.4)' }} />
+        style={{ width: size, height: size }} />
     )
   }
 
   return (
-    <div className={`rounded-full flex items-center justify-center font-black ${className}`}
+    <div className={`rounded-full flex items-center justify-center font-extrabold text-white ${className}`}
       style={{
         width: size, height: size,
         fontSize: Math.round(size * 0.42),
-        background: 'linear-gradient(135deg, #7C3AED, #A855F7)',
-        boxShadow: '0 0 12px rgba(124,58,237,0.5)',
+        fontFamily: 'var(--font-display)',
+        background: 'var(--aurora)',
       }}>
       {(firstName[0] ?? '?').toUpperCase()}
     </div>

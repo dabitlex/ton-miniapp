@@ -1,4 +1,4 @@
-// src/components/layout/MobileNav.tsx
+// src/components/layout/MobileNav.tsx — Redesigned (Aurora OS · floating bar)
 'use client'
 import Link            from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -10,53 +10,56 @@ const NAV = [
   { href: '/leaderboard', icon: Trophy,   label: 'Ranks'  },
   { href: '/clans',       icon: Shield,   label: 'Clans'  },
   { href: '/ecosystem',   icon: Sparkles, label: 'Boost'  },
-  { href: '/profile',     icon: User,     label: 'Profile'},
+  { href: '/profile',     icon: User,     label: 'You'    },
 ] as const
 
 export function MobileNav() {
   const path = usePathname()
 
   return (
-    <nav className="shrink-0 relative z-20 safe-bottom"
+    <nav className="shrink-0 relative z-20 safe-bottom px-3 pt-2 pb-2"
       style={{
-        background: 'rgba(6,6,16,0.97)',
-        backdropFilter: 'blur(24px)',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        background: 'linear-gradient(0deg, rgba(8,8,14,0.96) 30%, rgba(8,8,14,0.6) 100%)',
+        backdropFilter: 'blur(26px)',
+        WebkitBackdropFilter: 'blur(26px)',
       }}>
 
-      {/* Top glow line */}
-      <div className="absolute top-0 left-1/4 right-1/4 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.4), transparent)' }} />
-
-      <div className="flex items-center justify-around h-16 px-1">
+      <div className="flex items-center justify-between rounded-[20px] px-2 py-2"
+        style={{
+          background: 'var(--surface-2)',
+          boxShadow: 'inset 0 1px 0 var(--edge-light), 0 12px 32px rgba(0,0,0,0.5)',
+        }}>
         {NAV.map(({ href, icon: Icon, label }) => {
           const active = path.startsWith(href)
           return (
             <Link key={href} href={href}
-              className="flex flex-col items-center justify-center gap-1 w-12 h-12
-                         rounded-xl transition-all duration-200 active:scale-90"
-              style={{
-                background: active ? 'rgba(124,58,237,0.12)' : 'transparent',
-              }}>
-              <div className="relative">
-                <Icon
-                  size={18}
-                  strokeWidth={active ? 2.5 : 1.8}
+              className="relative flex flex-col items-center justify-center gap-1 flex-1 h-[46px] rounded-2xl press">
+
+              {/* Active pill background */}
+              {active && (
+                <span className="absolute inset-x-1 inset-y-0 rounded-2xl nav-pill"
                   style={{
-                    color: active ? '#A855F7' : 'rgba(255,255,255,0.28)',
-                    filter: active ? 'drop-shadow(0 0 6px rgba(168,85,247,0.7))' : 'none',
+                    background: 'linear-gradient(160deg, rgba(139,92,246,0.22), rgba(91,141,239,0.10))',
+                    boxShadow: 'inset 0 1px 0 rgba(167,139,250,0.3)',
+                  }} />
+              )}
+
+              <span className="relative z-10">
+                <Icon
+                  size={19}
+                  strokeWidth={active ? 2.4 : 1.9}
+                  style={{
+                    color: active ? '#C4B5FD' : 'rgba(255,255,255,0.34)',
+                    filter: active ? 'drop-shadow(0 0 7px rgba(167,139,250,0.65))' : 'none',
+                    transition: 'all 0.25s var(--spring)',
                   }}
                 />
-                {/* Active dot */}
-                {active && (
-                  <span className="nav-active-dot absolute -bottom-1 left-1/2 -translate-x-1/2
-                                   w-1 h-1 rounded-full"
-                    style={{ background: '#A855F7',
-                      boxShadow: '0 0 6px rgba(168,85,247,0.8)' }} />
-                )}
-              </div>
-              <span className="text-[9px] font-semibold tracking-wide transition-colors"
-                style={{ color: active ? 'rgba(168,85,247,0.9)' : 'rgba(255,255,255,0.22)' }}>
+              </span>
+              <span className="relative z-10 text-[9px] font-bold tracking-wide"
+                style={{
+                  color: active ? 'rgba(196,181,253,0.95)' : 'rgba(255,255,255,0.26)',
+                  fontFamily: 'var(--font-display)',
+                }}>
                 {label}
               </span>
             </Link>
