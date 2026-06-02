@@ -90,8 +90,9 @@ export const GET = withAuth(async (ctx) => {
     seasonXp:      e.score,
     level:         e.level,
     league:        (e.metadata as any)?.league   ?? 'bronze',
-    clanName:      (e.metadata as any)?.clan_name ?? null,
-    username:      (e.metadata as any)?.username  ?? null,
+    clanName:      (e.metadata as any)?.clan_name  ?? null,
+    username:      (e.metadata as any)?.username   ?? null,
+    relicTier:     (e.metadata as any)?.relic_tier ?? null,
     isCurrentUser: e.entity_id === ctx.userId,
     refreshedAt:   e.refreshed_at,
   }))
