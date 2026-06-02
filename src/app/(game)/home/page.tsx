@@ -25,6 +25,15 @@ export default function HomePage() {
   const levelPct = profile ? Math.min(100, (profile.xpCurrentLevel / needed) * 100) : 0
   const R = 78, C = 2 * Math.PI * R
 
+  // Verbleibende Saison-Tage berechnen
+  const seasonDaysLeft = (() => {
+    const endsAt = profile?.season?.endsAt
+    if (!endsAt) return null
+    const diff = new Date(endsAt).getTime() - Date.now()
+    if (diff <= 0) return 0
+    return Math.ceil(diff / 86400000)
+  })()
+
   return (
     <div className="flex flex-col min-h-full pb-6 relative z-10">
 
@@ -37,7 +46,9 @@ export default function HomePage() {
           </div>
           <div className="chip" style={{ color: 'var(--text-secondary)' }}>
             <span className="w-1.5 h-1.5 rounded-full pulse-glow" style={{ background: 'var(--cyan-soft)' }} />
-            Season · {GAME_CONSTANTS.SEASON_DURATION_DAYS}d
+            {seasonDaysLeft !== null
+              ? `Season · ${seasonDaysLeft}d left`
+              : `Season · ${GAME_CONSTANTS.SEASON_DURATION_DAYS}d`}
           </div>
         </div>
       )}
