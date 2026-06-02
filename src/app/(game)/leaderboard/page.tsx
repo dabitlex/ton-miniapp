@@ -7,6 +7,55 @@ import { useUserStore }     from '@/stores/useUserStore'
 import { TelegramAvatar }   from '@/components/layout/GameHeader'
 import type { LeaderboardEntry } from '@/types/game'
 
+// Relic crystal colors — identical to Boost tab
+const RELIC: Record<string, { c1: string; c2: string; c3: string; glow: string }> = {
+  tier_1:   { c1: '#BCC4FF', c2: '#6E7BFF', c3: '#4A5AE8', glow: 'rgba(110,123,255,0.55)' },
+  tier_5:   { c1: '#9CF0FF', c2: '#06B6D4', c3: '#0891B2', glow: 'rgba(6,182,212,0.55)'   },
+  tier_20:  { c1: '#D7B3FF', c2: '#A855F7', c3: '#7C3AED', glow: 'rgba(168,85,247,0.55)'  },
+  tier_50:  { c1: '#FFD0B3', c2: '#F97316', c3: '#EA580C', glow: 'rgba(249,115,22,0.55)'  },
+  tier_100: { c1: '#FFF0C8', c2: '#FBBF24', c3: '#F59E0B', glow: 'rgba(251,191,36,0.65)'  },
+}
+
+// Exact same faceted crystal SVG as Boost tab — just scaled to 14×18px
+function MiniGem({ tier }: { tier: string }) {
+  const r = RELIC[tier]
+  if (!r) return null
+  const uid = `lbrelic-${tier}`
+  return (
+    <svg
+      width={14} height={18}
+      viewBox="0 0 60 76"
+      style={{
+        flexShrink: 0,
+        filter: `drop-shadow(0 0 3px ${r.glow}) drop-shadow(0 1px 4px rgba(0,0,0,0.5))`,
+      }}>
+      <defs>
+        <linearGradient id={`${uid}-a`} x1="0" y1="0" x2="0.8" y2="1">
+          <stop offset="0%"   stopColor={r.c1} />
+          <stop offset="60%"  stopColor={r.c2} />
+          <stop offset="100%" stopColor={r.c3} />
+        </linearGradient>
+        <linearGradient id={`${uid}-b`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"  stopColor="#fff" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Main body */}
+      <path d="M30 2 L56 22 L30 74 L4 22 Z" fill={`url(#${uid}-a)`} />
+      {/* Top-left facet — bright */}
+      <path d="M30 2 L4 22 L30 38 Z"  fill="white" opacity="0.28" />
+      {/* Top-right facet — highlight */}
+      <path d="M30 2 L56 22 L30 38 Z" fill={`url(#${uid}-b)`} />
+      {/* Bottom-left facet — shadow */}
+      <path d="M4 22 L30 38 L30 74 Z" fill="black" opacity="0.18" />
+      {/* Center spine */}
+      <line x1="30" y1="2" x2="30" y2="74" stroke="white" strokeOpacity="0.08" strokeWidth="1" />
+      {/* Top edge sparkle */}
+      <circle cx="30" cy="4" r="2" fill="white" opacity="0.7" />
+    </svg>
+  )
+}
+
 export default function LeaderboardPage() {
   useUserStore(s => s.profile)
   const league = null // League filter disabled until Season 2
