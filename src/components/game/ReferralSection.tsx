@@ -137,12 +137,11 @@ function ShareModal({ isOpen, onClose, referralLink, shareText }: ShareModalProp
       <div
         className="fixed bottom-0 left-0 right-0 z-50 px-4 pt-4"
         style={{
-          background: 'linear-gradient(180deg, rgba(12,10,28,0.98) 0%, rgba(6,6,16,1) 100%)',
-          borderTop: '1px solid rgba(124,58,237,0.25)',
-          borderRadius: '20px 20px 0 0',
-          paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
-          boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
-          animation: 'slideUp 0.25s cubic-bezier(0.34, 1.2, 0.64, 1)',
+          background: 'linear-gradient(180deg, rgba(12,11,24,0.99) 0%, rgba(8,8,14,1) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(167,139,250,0.25), 0 -8px 44px rgba(0,0,0,0.55)',
+          borderRadius: '24px 24px 0 0',
+          paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))',
+          animation: 'slideUp 0.28s cubic-bezier(0.34, 1.2, 0.64, 1)',
         }}>
 
         {/* Handle */}
@@ -153,9 +152,8 @@ function ShareModal({ isOpen, onClose, referralLink, shareText }: ShareModalProp
         {/* Title */}
         <div className="flex items-center justify-between mb-4 px-1">
           <div>
-            <h3 className="text-sm font-black text-white"
-              style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-              SHARE YOUR LINK
+            <h3 className="display text-sm text-white" style={{ letterSpacing: '0.02em' }}>
+              Share your link
             </h3>
             <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
               Choose where to share your referral link
@@ -258,12 +256,12 @@ export function ReferralSection() {
   if (!data?.referralEligible) {
     const reqs = data?.requirements
     return (
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+      <div className="surface p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Lock size={14} className="text-white/30" />
-          <h3 className="text-sm font-bold text-white/60">Invite Friends</h3>
+          <Lock size={14} style={{ color: 'var(--text-faint)' }} />
+          <h3 className="display text-sm" style={{ color: 'var(--text-secondary)' }}>Invite Friends</h3>
         </div>
-        <p className="text-xs text-white/35">
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
           Unlock the referral system and earn 500 XP for every successful friend!
         </p>
         <div className="space-y-2">
@@ -295,28 +293,27 @@ export function ReferralSection() {
   return (
     <>
       <div className="space-y-3">
-        <div className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.04] p-4 space-y-3">
+        <div className="surface-accent p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Invite Friends</h3>
-            <span className="text-xs text-violet-300 font-semibold">+500 XP per friend</span>
+            <h3 className="display text-sm text-white">Invite Friends</h3>
+            <span className="text-xs font-bold" style={{ color: 'var(--violet-bright)' }}>+500 XP / friend</span>
           </div>
 
-          <p className="text-xs text-white/40 leading-relaxed">
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             Share your personal link. You earn 500 XP once your friend
             reaches Level 5 and 2,000 XP.
           </p>
 
           {/* Link preview */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl
-                          bg-white/[0.04] border border-white/[0.08]">
-            <span className="text-xs font-mono text-white/40 truncate flex-1">
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+            style={{ background: 'var(--surface-press)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
+            <span className="text-xs font-mono truncate flex-1" style={{ color: 'var(--text-muted)' }}>
               {data?.referralLink}
             </span>
-            <button onClick={copyLink}
-              className="shrink-0 text-white/30 hover:text-white/60 transition-colors p-1">
+            <button onClick={copyLink} className="shrink-0 p-1 transition-colors" style={{ color: 'var(--text-faint)' }}>
               {copied
-                ? <CheckCircle size={13} className="text-emerald-400" />
-                : <Copy size={13} />
+                ? <CheckCircle size={14} style={{ color: 'var(--emerald)' }} />
+                : <Copy size={14} />
               }
             </button>
           </div>
@@ -324,11 +321,10 @@ export function ReferralSection() {
           {/* Share Button — opens Custom Share Modal */}
           <button
             onClick={openShareModal}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                       text-white text-sm font-semibold transition-all active:scale-[0.97]"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white text-sm font-bold press"
             style={{
-              background: 'linear-gradient(135deg, #7C3AED, #A855F7)',
-              boxShadow: '0 4px 16px rgba(124,58,237,0.3)',
+              background: 'var(--aurora)',
+              boxShadow: '0 6px 18px rgba(124,58,237,0.34), inset 0 1px 0 rgba(255,255,255,0.2)',
             }}>
             <Share2 size={15} /> Share Link
           </button>
@@ -336,14 +332,14 @@ export function ReferralSection() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+          <div className="surface p-3 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <Users size={12} className="text-violet-400" />
               <p className="text-lg font-black text-white">{data?.totalReferrals ?? 0}</p>
             </div>
             <p className="text-[10px] text-white/35">Invited</p>
           </div>
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-center">
+          <div className="surface p-3 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <Gift size={12} className="text-emerald-400" />
               <p className="text-lg font-black text-white">{data?.validReferrals ?? 0}</p>
@@ -362,8 +358,7 @@ export function ReferralSection() {
             </h4>
             {data.referrals.map((r: any) => (
               <div key={r.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl
-                           border border-white/[0.05] bg-white/[0.02]">
+                className="surface flex items-center gap-3 px-3.5 py-3">
                 {r.referee.photoUrl
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={r.referee.photoUrl} alt=""

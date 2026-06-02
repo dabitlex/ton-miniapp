@@ -1,4 +1,4 @@
-// src/components/game/XPBar.tsx
+// src/components/game/XPBar.tsx — Redesigned (Aurora OS)
 'use client'
 import { useUserStore } from '@/stores/useUserStore'
 import { xpForLevel }   from '@/lib/constants/game'
@@ -11,36 +11,30 @@ export function XPBar() {
   const pct    = Math.min(100, Math.round((profile.xpCurrentLevel / needed) * 100))
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold tracking-widest uppercase"
-          style={{ color: 'rgba(168,85,247,0.6)', fontFamily: 'var(--font-display)' }}>
-          Lv {profile.level}
+        <span className="eyebrow" style={{ color: 'var(--violet-bright)' }}>
+          Level {profile.level}
         </span>
-        <span className="text-[10px] font-semibold tabular-nums"
-          style={{ color: 'rgba(255,255,255,0.35)' }}>
-          {profile.xpCurrentLevel.toLocaleString()} / {needed.toLocaleString()}
+        <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
+          {profile.xpCurrentLevel.toLocaleString()} <span style={{ color: 'var(--text-faint)' }}>/ {needed.toLocaleString()}</span>
         </span>
       </div>
 
       {/* Track */}
-      <div className="relative h-[5px] rounded-full overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.06)' }}>
-        {/* Shimmer */}
-        <div className="absolute inset-0 shimmer opacity-50" />
-        {/* Fill */}
+      <div className="relative h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="absolute inset-0 shimmer opacity-40" />
         <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000"
           style={{
             width: `${pct}%`,
-            background: 'linear-gradient(90deg, #7C3AED, #A855F7, #06B6D4)',
-            boxShadow: '0 0 8px rgba(168,85,247,0.7)',
+            background: 'var(--aurora)',
+            boxShadow: '0 0 14px rgba(139,92,246,0.7)',
           }}>
-          {/* Leading dot */}
-          {pct > 3 && (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
+          {pct > 4 && (
+            <div className="absolute right-0 top-1/2 w-2.5 h-2.5 rounded-full"
               style={{
                 background: 'white',
-                boxShadow: '0 0 6px rgba(255,255,255,0.9)',
+                boxShadow: '0 0 8px rgba(255,255,255,0.95)',
                 transform: 'translate(50%, -50%)',
               }} />
           )}
@@ -48,12 +42,11 @@ export function XPBar() {
       </div>
 
       <div className="flex justify-between items-center">
-        <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
-          {pct}% complete
+        <span className="text-[10px] font-medium" style={{ color: 'var(--text-faint)' }}>
+          {pct}% to next
         </span>
-        <span className="text-[10px] font-semibold"
-          style={{ color: 'rgba(168,85,247,0.5)' }}>
-          +{(needed - profile.xpCurrentLevel).toLocaleString()} to Level {profile.level + 1}
+        <span className="text-[10px] font-semibold" style={{ color: 'var(--violet-bright)' }}>
+          +{(needed - profile.xpCurrentLevel).toLocaleString()} → Lv {profile.level + 1}
         </span>
       </div>
     </div>
