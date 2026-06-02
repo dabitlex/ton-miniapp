@@ -133,6 +133,7 @@ export interface LeaderboardEntry {
   seasonXp: number
   clanName?: string
   streakCurrent?: number
+  relicTier?: string | null
   isCurrentUser: boolean
 }
 
