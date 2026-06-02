@@ -49,6 +49,11 @@ export interface UserProfile {
   wallet?: WalletInfo
   clan?: UserClanInfo
   ecosystemBoost?: number
+  season?: {
+    number:   number
+    endsAt:   string
+    startsAt: string
+  } | null
 }
 
 export interface EnergyState {
