@@ -1,4 +1,4 @@
-// src/app/(game)/leaderboard/page.tsx — Redesigned (Aurora OS · League Arena)
+// src/app/(game)/leaderboard/page.tsx — Redesigned + Relic Gem
 'use client'
 import { useCallback, useRef, forwardRef } from 'react'
 import { Crown } from 'lucide-react'
@@ -7,51 +7,46 @@ import { useUserStore }     from '@/stores/useUserStore'
 import { TelegramAvatar }   from '@/components/layout/GameHeader'
 import type { LeaderboardEntry } from '@/types/game'
 
-// Relic crystal colors — identical to Boost tab
-const RELIC: Record<string, { c1: string; c2: string; c3: string; glow: string }> = {
-  tier_1:   { c1: '#BCC4FF', c2: '#6E7BFF', c3: '#4A5AE8', glow: 'rgba(110,123,255,0.55)' },
-  tier_5:   { c1: '#9CF0FF', c2: '#06B6D4', c3: '#0891B2', glow: 'rgba(6,182,212,0.55)'   },
-  tier_20:  { c1: '#D7B3FF', c2: '#A855F7', c3: '#7C3AED', glow: 'rgba(168,85,247,0.55)'  },
-  tier_50:  { c1: '#FFD0B3', c2: '#F97316', c3: '#EA580C', glow: 'rgba(249,115,22,0.55)'  },
-  tier_100: { c1: '#FFF0C8', c2: '#FBBF24', c3: '#F59E0B', glow: 'rgba(251,191,36,0.65)'  },
+// ── Relic Crystal — exact same SVG as Boost tab, scaled small ─
+const RELIC_CFG: Record<string, { c1: string; c2: string; c3: string; glow: string }> = {
+  tier_1:   { c1: '#BCC4FF', c2: '#6E7BFF', c3: '#4A5AE8', glow: 'rgba(110,123,255,0.6)' },
+  tier_5:   { c1: '#9CF0FF', c2: '#06B6D4', c3: '#0891B2', glow: 'rgba(6,182,212,0.6)'   },
+  tier_20:  { c1: '#D7B3FF', c2: '#A855F7', c3: '#7C3AED', glow: 'rgba(168,85,247,0.6)'  },
+  tier_50:  { c1: '#FFD0B3', c2: '#F97316', c3: '#EA580C', glow: 'rgba(249,115,22,0.6)'  },
+  tier_100: { c1: '#FFF0C8', c2: '#FBBF24', c3: '#F59E0B', glow: 'rgba(251,191,36,0.7)'  },
 }
 
-// Exact same faceted crystal SVG as Boost tab — just scaled to 14×18px
-function MiniGem({ tier }: { tier: string }) {
-  const r = RELIC[tier]
+function RelicGem({ tier, size = 14 }: { tier: string; size?: number }) {
+  const r = RELIC_CFG[tier]
   if (!r) return null
-  const uid = `lbrelic-${tier}`
+  const h   = Math.round(size * 1.3)
+  const uid = `rg-${tier}`
   return (
-    <svg
-      width={14} height={18}
-      viewBox="0 0 60 76"
-      style={{
-        flexShrink: 0,
-        filter: `drop-shadow(0 0 3px ${r.glow}) drop-shadow(0 1px 4px rgba(0,0,0,0.5))`,
-      }}>
+    <svg width={size} height={h} viewBox="0 0 60 78" style={{ flexShrink: 0,
+      filter: `drop-shadow(0 0 3px ${r.glow}) drop-shadow(0 1px 5px rgba(0,0,0,0.55))` }}>
       <defs>
-        <linearGradient id={`${uid}-a`} x1="0" y1="0" x2="0.8" y2="1">
+        <linearGradient id={`${uid}-a`} x1="0" y1="0" x2="0.6" y2="1">
           <stop offset="0%"   stopColor={r.c1} />
-          <stop offset="60%"  stopColor={r.c2} />
+          <stop offset="55%"  stopColor={r.c2} />
           <stop offset="100%" stopColor={r.c3} />
         </linearGradient>
-        <linearGradient id={`${uid}-b`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"  stopColor="#fff" stopOpacity="0.55" />
+        <linearGradient id={`${uid}-b`} x1="0" y1="0" x2="1" y2="0.5">
+          <stop offset="0%"   stopColor="#fff" stopOpacity="0.6" />
           <stop offset="100%" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
       </defs>
       {/* Main body */}
-      <path d="M30 2 L56 22 L30 74 L4 22 Z" fill={`url(#${uid}-a)`} />
-      {/* Top-left facet — bright */}
-      <path d="M30 2 L4 22 L30 38 Z"  fill="white" opacity="0.28" />
-      {/* Top-right facet — highlight */}
-      <path d="M30 2 L56 22 L30 38 Z" fill={`url(#${uid}-b)`} />
-      {/* Bottom-left facet — shadow */}
-      <path d="M4 22 L30 38 L30 74 Z" fill="black" opacity="0.18" />
-      {/* Center spine */}
-      <line x1="30" y1="2" x2="30" y2="74" stroke="white" strokeOpacity="0.08" strokeWidth="1" />
-      {/* Top edge sparkle */}
-      <circle cx="30" cy="4" r="2" fill="white" opacity="0.7" />
+      <path d="M30 2 L57 23 L30 76 L3 23 Z" fill={`url(#${uid}-a)`} />
+      {/* Left facet — highlight */}
+      <path d="M30 2 L3 23 L30 40 Z"  fill="white" opacity="0.22" />
+      {/* Right facet — shimmer */}
+      <path d="M30 2 L57 23 L30 40 Z" fill={`url(#${uid}-b)`} />
+      {/* Bottom-left shadow */}
+      <path d="M3 23 L30 40 L30 76 Z" fill="black" opacity="0.14" />
+      {/* Center line */}
+      <line x1="30" y1="2" x2="30" y2="76" stroke="white" strokeOpacity="0.07" strokeWidth="1" />
+      {/* Top sparkle */}
+      <circle cx="30" cy="4" r="2.5" fill="white" opacity="0.75" />
     </svg>
   )
 }
@@ -119,7 +114,13 @@ export default function LeaderboardPage() {
               </div>
               {userEntry && (
                 <div className="text-right">
-                  <p className="display text-[19px] text-white tabular-nums">{userEntry.seasonXp.toLocaleString()}</p>
+                  <div className="flex items-center justify-end gap-1.5">
+                    {/* Relic gem in YOUR RANK banner */}
+                    {(userEntry as any).relicTier && (
+                      <RelicGem tier={(userEntry as any).relicTier} size={13} />
+                    )}
+                    <p className="display text-[19px] text-white tabular-nums">{userEntry.seasonXp.toLocaleString()}</p>
+                  </div>
                   <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Season XP</p>
                 </div>
               )}
@@ -159,6 +160,8 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
     3: { ring: 'linear-gradient(135deg,#E0A06A,#CD7F32)', glow: 'rgba(205,127,50,0.4)',   size: 52, h: 62, label: '#E0A06A' },
   }[place]
 
+  const relicTier = (entry as any).relicTier as string | null
+
   return (
     <div className="flex flex-col items-center flex-1 max-w-[110px]">
       {place === 1 && <Crown size={20} fill="#FBBF24" style={{ color: '#FBBF24', filter: 'drop-shadow(0 0 8px rgba(251,191,36,0.7))', marginBottom: 2 }} />}
@@ -167,7 +170,13 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
           <TelegramAvatar photoUrl={entry.photoUrl ?? null} firstName={entry.firstName} size={cfg.size} />
         </div>
       </div>
-      <p className="text-[12px] font-bold truncate max-w-full mt-1.5" style={{ color: 'var(--text-primary)' }}>{entry.firstName}</p>
+      {/* Name + Relic gem */}
+      <div className="flex items-center gap-1 mt-1.5">
+        <p className="text-[12px] font-bold truncate max-w-[80px]" style={{ color: 'var(--text-primary)' }}>
+          {entry.firstName}
+        </p>
+        {relicTier && <RelicGem tier={relicTier} size={10} />}
+      </div>
       <p className="text-[11px] font-extrabold tabular-nums" style={{ color: cfg.label, fontFamily: 'var(--font-display)' }}>
         {entry.seasonXp.toLocaleString()}
       </p>
@@ -187,7 +196,9 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
 
 // ── Entry row ─────────────────────────────────────────────────
 const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entry }, ref) => {
-  const me = entry.isCurrentUser
+  const me        = entry.isCurrentUser
+  const relicTier = (entry as any).relicTier as string | null
+
   return (
     <div ref={ref}
       className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl"
@@ -214,6 +225,8 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
               YOU
             </span>
           )}
+          {/* Relic gem neben dem Namen */}
+          {relicTier && <RelicGem tier={relicTier} size={12} />}
         </div>
         {entry.clanName && (
           <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--text-faint)' }}>🛡️ {entry.clanName}</p>
