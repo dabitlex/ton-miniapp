@@ -114,13 +114,7 @@ export default function LeaderboardPage() {
               </div>
               {userEntry && (
                 <div className="text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    {/* Relic gem in YOUR RANK banner */}
-                    {(userEntry as any).relicTier && (
-                      <RelicGem tier={(userEntry as any).relicTier} size={13} />
-                    )}
-                    <p className="display text-[19px] text-white tabular-nums">{userEntry.seasonXp.toLocaleString()}</p>
-                  </div>
+                  <p className="display text-[19px] text-white tabular-nums">{userEntry.seasonXp.toLocaleString()}</p>
                   <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Season XP</p>
                 </div>
               )}
