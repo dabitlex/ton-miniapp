@@ -114,6 +114,7 @@ export const GET = withAuth(async (ctx) => {
         seasonXp:  myGlobalEntry.score,
         level:     myGlobalEntry.level,
         league:    (myGlobalEntry.metadata as any)?.league ?? 'bronze',
+        relicTier: (myGlobalEntry.metadata as any)?.relic_tier ?? null,
       } : null,
     },
     {
