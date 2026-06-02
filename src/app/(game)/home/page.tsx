@@ -1,202 +1,163 @@
-// src/app/(game)/home/page.tsx
+// src/app/(game)/home/page.tsx — Redesigned (Aurora OS · Progression Hub)
 'use client'
 import { useUserStore }  from '@/stores/useUserStore'
 import { useEnergy }     from '@/features/hooks'
-import { useQuests }     from '@/features/quests/hooks'   // ← korrekter Import
+import { useQuests }     from '@/features/quests/hooks'
 import { formatNumber }  from '@/lib/utils'
-import { LEAGUES, xpForLevel } from '@/lib/constants/game'
-import { TelegramAvatar }  from '@/components/layout/GameHeader'
-import { XPBar }           from '@/components/game/XPBar'
-import { QuestCard }       from '@/components/game/QuestCard'
-import { StreakCard }       from '@/components/game/StreakCard'
+import { xpForLevel, GAME_CONSTANTS } from '@/lib/constants/game'
+import { QuestCard }     from '@/components/game/QuestCard'
+import { StreakCard }    from '@/components/game/StreakCard'
 import Link from 'next/link'
-import { Flame, Zap, Star, Trophy, ChevronRight } from 'lucide-react'
+import { Flame, Zap, Star, Shield, ArrowRight } from 'lucide-react'
 
 export default function HomePage() {
   const profile  = useUserStore(s => s.profile)
   const energy   = useEnergy()
-
-  // useQuests ist der korrekte Hook (nicht useDailyQuests)
   const { daily, completingId, completeQuest, isLoadingDaily } = useQuests()
 
-  const completed = daily.filter(q => q.status === 'completed').length
-  const total     = daily.length
+  const completed   = daily.filter(q => q.status === 'completed').length
+  const total       = daily.length
   const allDone     = total > 0 && completed === total
   const activeBoost = profile?.ecosystemBoost ?? 0
 
+  // Level ring progress (mirror XPBar clamp logic)
+  const needed   = profile ? xpForLevel(Math.min(profile.level, 29)) : 1
+  const levelPct = profile ? Math.min(100, (profile.xpCurrentLevel / needed) * 100) : 0
+  const R = 78, C = 2 * Math.PI * R
+
   return (
-    <div className="flex flex-col min-h-full pb-4">
+    <div className="flex flex-col min-h-full pb-6 relative z-10">
 
-      {/* ── HERO SECTION ─────────────────────────────────────── */}
-      <div className="relative px-4 pt-5 pb-6 overflow-hidden"
-        style={{
-          background: 'linear-gradient(180deg, rgba(124,58,237,0.08) 0%, transparent 100%)',
-        }}>
-
-        {/* Ambient orb */}
-        <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)',
-            filter: 'blur(20px)',
-            transform: 'translate(20%, -20%)',
-          }} />
-
-        {/* Welcome row */}
-        {profile && (
-          <div className="flex items-center gap-3 mb-5">
-            <TelegramAvatar
-              photoUrl={profile.telegramPhotoUrl}
-              firstName={profile.telegramFirstName}
-              size={44}
-              className="shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                Welcome back
-              </p>
-              <h1 className="text-base font-bold text-white leading-tight truncate">
-                {profile.telegramFirstName}
-              </h1>
-            </div>
+      {/* ── TOP: greeting + season ─────────────────────────────── */}
+      {profile && (
+        <div className="flex items-center justify-between px-5 pt-4 animate-rise">
+          <div>
+            <p className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>Welcome back</p>
+            <h1 className="display text-[19px] text-white leading-tight">{profile.telegramFirstName}</h1>
           </div>
-        )}
-
-        {/* Hero Stats Card */}
-        <div className="rounded-2xl p-4 mb-4 relative overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(168,85,247,0.06) 100%)',
-            border: '1px solid rgba(124,58,237,0.25)',
-            boxShadow: '0 8px 32px rgba(124,58,237,0.12)',
-          }}>
-
-          <div className="absolute top-0 right-0 w-20 h-20 opacity-30"
-            style={{
-              background: 'radial-gradient(circle at top right, rgba(168,85,247,0.4), transparent)',
-            }} />
-
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-[10px] font-bold tracking-[0.2em] mb-1"
-                style={{ color: 'rgba(168,85,247,0.6)', fontFamily: 'var(--font-display)' }}>
-                SEASON XP
-              </p>
-              <p className="text-3xl font-black text-white"
-                style={{ fontFamily: 'var(--font-display)' }}>
-                {profile ? profile.seasonXp.toLocaleString() : '—'}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-bold tracking-[0.2em] mb-1"
-                style={{ color: 'rgba(168,85,247,0.6)', fontFamily: 'var(--font-display)' }}>
-                LEVEL
-              </p>
-              <p className="text-3xl font-black"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  background: 'linear-gradient(135deg, #A855F7, #3B82F6)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}>
-                {profile?.level ?? '—'}
-              </p>
-            </div>
+          <div className="chip" style={{ color: 'var(--text-secondary)' }}>
+            <span className="w-1.5 h-1.5 rounded-full pulse-glow" style={{ background: 'var(--cyan-soft)' }} />
+            Season · {GAME_CONSTANTS.SEASON_DURATION_DAYS}d
           </div>
+        </div>
+      )}
 
-          <XPBar />
+      {/* ── PROGRESSION HUB ────────────────────────────────────── */}
+      <div className="relative flex flex-col items-center pt-6 pb-2 animate-rise" style={{ animationDelay: '60ms' }}>
+        {/* ambient halo */}
+        <div className="absolute top-2 w-64 h-64 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.22), transparent 68%)', filter: 'blur(8px)' }} />
+
+        <div className="relative" style={{ width: 200, height: 200 }}>
+          <svg width="200" height="200" viewBox="0 0 200 200" className="ring-spin" style={{ position: 'absolute', inset: 0, opacity: 0.18 }}>
+            <defs>
+              <linearGradient id="hubGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#8B5CF6" />
+                <stop offset="55%" stopColor="#5B8DEF" />
+                <stop offset="100%" stopColor="#5EEAD4" />
+              </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r={R} fill="none" stroke="url(#hubGrad)" strokeWidth="2" strokeDasharray="3 9" strokeLinecap="round" />
+          </svg>
+
+          <svg width="200" height="200" viewBox="0 0 200 200" style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
+            <circle cx="100" cy="100" r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="9" />
+            <circle cx="100" cy="100" r={R} fill="none" stroke="url(#hubGrad)" strokeWidth="9" strokeLinecap="round"
+              strokeDasharray={C} strokeDashoffset={C - (levelPct / 100) * C}
+              style={{ transition: 'stroke-dashoffset 1.1s var(--ease-out)', filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.6))' }} />
+          </svg>
+
+          {/* center */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="eyebrow" style={{ color: 'var(--violet-bright)' }}>Level</span>
+            <span className="display-xl text-[58px] leading-none gradient-text">{profile?.level ?? '—'}</span>
+            <span className="text-[11px] font-semibold tabular-nums mt-1" style={{ color: 'var(--text-muted)' }}>
+              {Math.round(levelPct)}% to {(profile?.level ?? 0) + 1}
+            </span>
+          </div>
         </div>
 
-        {/* Micro Stats Row */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { icon: <Flame size={16} fill='#F59E0B' style={{ color: '#F59E0B' }} />, value: `${profile?.streakCurrent ?? 0}d`, label: 'Streak', color: '#F59E0B' },
-            { icon: <Star size={16} fill='#A855F7' style={{ color: '#A855F7' }} />, value: formatNumber(profile?.xpEarnedToday ?? 0), label: 'Today XP', color: '#A855F7' },
-            { icon: <Zap size={16} fill={energy.current < 20 ? '#F43F5E' : '#06B6D4'} style={{ color: energy.current < 20 ? '#F43F5E' : '#06B6D4' }} />, value: `${energy.current}/100`, label: 'Energy', color: energy.current < 20 ? '#F43F5E' : '#06B6D4' },
-          ].map(({ icon, value, label, color }) => (
-            <div key={label} className="rounded-xl p-3 text-center"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.07)',
-              }}>
-              <div className="flex justify-center mb-0.5">{icon}</div>
-              <p className="text-sm font-black tabular-nums"
-                style={{ color, fontFamily: 'var(--font-display)' }}>
-                {value}
-              </p>
-              <p className="text-[9px] font-medium mt-0.5"
-                style={{ color: 'rgba(255,255,255,0.3)' }}>
-                {label}
-              </p>
-            </div>
-          ))}
+        {/* Season XP headline */}
+        <div className="text-center mt-3">
+          <p className="display-xl text-[30px] text-white leading-none tabular-nums">
+            {profile ? profile.seasonXp.toLocaleString() : '—'}
+          </p>
+          <p className="eyebrow mt-1.5">Season XP</p>
         </div>
       </div>
 
-      {/* ── STREAK ───────────────────────────────────────────── */}
-      <div className="px-4 mb-4">
+      {/* ── FLOATING STATUS CHIPS ──────────────────────────────── */}
+      <div className="px-5 mt-4 grid grid-cols-2 gap-2.5 animate-rise" style={{ animationDelay: '120ms' }}>
+        <StatChip icon={<Flame size={15} fill="#FBBF24" style={{ color: '#FBBF24' }} />} label="Streak"
+          value={`${profile?.streakCurrent ?? 0}d`} tint="#FBBF24" />
+        <StatChip icon={<Star size={15} fill="#A78BFA" style={{ color: '#A78BFA' }} />} label="Today XP"
+          value={formatNumber(profile?.xpEarnedToday ?? 0)} tint="#A78BFA" />
+        <StatChip icon={<Zap size={15} fill={energy.current < 20 ? '#FB7185' : '#5EEAD4'} style={{ color: energy.current < 20 ? '#FB7185' : '#5EEAD4' }} />} label="Energy"
+          value={`${energy.current}/100`} tint={energy.current < 20 ? '#FB7185' : '#5EEAD4'} />
+        {profile?.clan ? (
+          <Link href="/clans" className="press">
+            <StatChip icon={<Shield size={15} style={{ color: '#5B8DEF' }} />} label="Clan"
+              value={profile.clan.name} tint="#5B8DEF" truncate />
+          </Link>
+        ) : (
+          <Link href="/clans" className="press">
+            <StatChip icon={<Shield size={15} style={{ color: 'rgba(255,255,255,0.4)' }} />} label="Clan"
+              value="Join one" tint="rgba(255,255,255,0.5)" truncate />
+          </Link>
+        )}
+      </div>
+
+      {/* ── STREAK ─────────────────────────────────────────────── */}
+      <div className="px-5 mt-4 animate-rise" style={{ animationDelay: '160ms' }}>
         <StreakCard />
       </div>
 
-      {/* ── DAILY QUESTS ─────────────────────────────────────── */}
-      <div className="px-4 flex-1">
+      {/* ── DAILY MISSION FEED ─────────────────────────────────── */}
+      <div className="px-5 mt-5 flex-1 animate-rise" style={{ animationDelay: '200ms' }}>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-sm font-bold tracking-wide text-white"
-              style={{ fontFamily: 'var(--font-display)' }}>
-              DAILY QUESTS
-            </h2>
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              {completed}/{total} completed
+            <h2 className="display text-[15px] text-white">Today's Missions</h2>
+            <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {completed} of {total} complete
             </p>
           </div>
-          <Link href="/quests"
-            className="text-[11px] font-semibold px-3 py-1.5 rounded-lg"
-            style={{
-              background: 'rgba(124,58,237,0.1)',
-              border: '1px solid rgba(124,58,237,0.2)',
-              color: 'rgba(168,85,247,0.8)',
-            }}>
-            All →
+          <Link href="/quests" className="chip press" style={{ color: 'var(--violet-bright)' }}>
+            All <ArrowRight size={12} />
           </Link>
         </div>
 
-        {/* Quest progress bar */}
+        {/* segmented progress */}
         {total > 0 && (
-          <div className="mb-4 h-1 rounded-full overflow-hidden"
-            style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <div className="h-full rounded-full transition-all duration-700"
-              style={{
-                width: `${Math.round((completed / total) * 100)}%`,
-                background: allDone
-                  ? 'linear-gradient(90deg, #10B981, #34D399)'
-                  : 'linear-gradient(90deg, #7C3AED, #A855F7)',
-                boxShadow: allDone
-                  ? '0 0 8px rgba(16,185,129,0.6)'
-                  : '0 0 8px rgba(168,85,247,0.5)',
-              }} />
+          <div className="flex gap-1 mb-4">
+            {daily.map((q, i) => (
+              <div key={q.id} className="flex-1 h-1.5 rounded-full transition-all duration-500"
+                style={{
+                  background: q.status === 'completed'
+                    ? (allDone ? 'linear-gradient(90deg,#10B981,#5EEAD4)' : 'var(--aurora)')
+                    : 'rgba(255,255,255,0.07)',
+                  boxShadow: q.status === 'completed' ? '0 0 8px rgba(139,92,246,0.5)' : 'none',
+                  animationDelay: `${i * 60}ms`,
+                }} />
+            ))}
           </div>
         )}
 
         {isLoadingDaily ? (
           <div className="space-y-2.5">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-20 rounded-2xl shimmer"
-                style={{ background: 'rgba(255,255,255,0.04)' }} />
+              <div key={i} className="h-[88px] shimmer ml-[30px]" />
             ))}
           </div>
         ) : allDone ? (
-          <div className="rounded-2xl p-6 text-center"
-            style={{
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.04))',
-              border: '1px solid rgba(16,185,129,0.2)',
-            }}>
+          <div className="surface-accent p-6 text-center">
             <div className="text-4xl mb-2">🎉</div>
-            <p className="font-bold text-white text-sm">Alle Quests completed!</p>
-            <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              New quests at midnight UTC
+            <p className="display text-[15px] text-white">All missions complete</p>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
+              Fresh missions arrive at midnight UTC
             </p>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div>
             {daily.slice(0, 4).map((q, i) => (
               <QuestCard
                 key={q.id}
@@ -209,6 +170,27 @@ export default function HomePage() {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function StatChip({ icon, label, value, tint, truncate }: {
+  icon: React.ReactNode; label: string; value: string; tint: string; truncate?: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-[18px] px-3.5 py-3"
+      style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)' }}>
+      <div className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
+        style={{ background: `${tint}1a`, boxShadow: `inset 0 0 0 1px ${tint}26` }}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className={`text-[14px] font-extrabold leading-tight ${truncate ? 'truncate' : 'tabular-nums'}`}
+          style={{ color: tint, fontFamily: 'var(--font-display)' }}>
+          {value}
+        </p>
+        <p className="text-[10px] font-semibold mt-0.5" style={{ color: 'var(--text-faint)' }}>{label}</p>
       </div>
     </div>
   )
