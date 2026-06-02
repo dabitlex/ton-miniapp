@@ -1,11 +1,11 @@
-// src/app/(game)/quests/page.tsx
+// src/app/(game)/quests/page.tsx — Redesigned (Aurora OS · Mission Interface)
 'use client'
-import { useState }    from 'react'
-import { useQuests }   from '@/features/quests/hooks'
+import { useState }     from 'react'
+import { useQuests }    from '@/features/quests/hooks'
 import { useUserStore } from '@/stores/useUserStore'
-import { useEnergy }   from '@/features/hooks'
-import { QuestCard }   from '@/components/game/QuestCard'
-import { ClipboardList } from 'lucide-react'
+import { useEnergy }    from '@/features/hooks'
+import { QuestCard }    from '@/components/game/QuestCard'
+import { Swords, CalendarDays, ClipboardList, Zap } from 'lucide-react'
 
 type Tab = 'daily' | 'weekly'
 
@@ -22,118 +22,109 @@ export default function QuestsPage() {
   const doneW     = weekly.filter(q => q.status === 'completed').length
   const totalD    = daily.length
   const totalW    = weekly.length
+  const done      = tab === 'daily' ? doneD : doneW
+  const total     = tab === 'daily' ? totalD : totalW
+  const pct       = total > 0 ? Math.round((done / total) * 100) : 0
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative z-10">
 
-      {/* ── Header ───────────────────────────────────────────── */}
-      <div className="shrink-0 px-4 pt-4 pb-3"
-        style={{ background: 'linear-gradient(180deg, rgba(124,58,237,0.06) 0%, transparent 100%)' }}>
-        <h1 className="text-xl font-black text-white mb-0.5"
-          style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-          QUESTS
-        </h1>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-          Complete quests and earn XP
-        </p>
+      {/* ── Header with progress ───────────────────────────────── */}
+      <div className="shrink-0 px-5 pt-4 pb-3 animate-rise">
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="display-xl text-[24px] text-white leading-none">Missions</h1>
+            <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Complete to earn XP</p>
+          </div>
+          <div className="text-right">
+            <span className="display-xl text-[22px] gradient-text tabular-nums">{pct}%</span>
+            <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{done}/{total} done</p>
+          </div>
+        </div>
+        <div className="progress-bar mt-3">
+          <div className="progress-fill" style={{ width: `${pct}%` }} />
+        </div>
       </div>
 
-      {/* ── Tabs ─────────────────────────────────────────────── */}
-      <div className="shrink-0 flex px-4 gap-2 pb-3">
-        {([
-          { key: 'daily'  as Tab, label: 'Daily',  icon: '⚔️', done: doneD, total: totalD },
-          { key: 'weekly' as Tab, label: 'Weekly', icon: '📅', done: doneW, total: totalW },
-        ]).map(({ key, label, icon, done, total }) => {
-          const active   = tab === key
-          const allDone  = total > 0 && done === total
-          return (
-            <button key={key} onClick={() => setTab(key)}
-              className="flex-1 flex items-center justify-between px-3 py-2.5 rounded-xl
-                         transition-all duration-200 active:scale-95"
-              style={{
-                background: active
-                  ? 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(168,85,247,0.1))'
-                  : 'rgba(255,255,255,0.04)',
-                border: active
-                  ? '1px solid rgba(124,58,237,0.4)'
-                  : '1px solid rgba(255,255,255,0.07)',
-                boxShadow: active ? '0 0 20px rgba(124,58,237,0.15)' : 'none',
-              }}>
-              <div className="flex items-center gap-2">
-                <span className="text-base">{icon}</span>
-                <span className="text-sm font-bold"
-                  style={{
-                    color: active ? 'white' : 'rgba(255,255,255,0.5)',
-                    fontFamily: 'var(--font-display)', letterSpacing: '0.05em',
-                  }}>
+      {/* ── Segmented tabs ─────────────────────────────────────── */}
+      <div className="shrink-0 px-5 pb-3 animate-rise" style={{ animationDelay: '60ms' }}>
+        <div className="flex p-1 rounded-2xl gap-1" style={{ background: 'var(--surface-press)' }}>
+          {([
+            { key: 'daily'  as Tab, label: 'Daily',  icon: Swords,       done: doneD, total: totalD },
+            { key: 'weekly' as Tab, label: 'Weekly', icon: CalendarDays, done: doneW, total: totalW },
+          ]).map(({ key, label, icon: Icon, done, total }) => {
+            const active  = tab === key
+            const allDone = total > 0 && done === total
+            return (
+              <button key={key} onClick={() => setTab(key)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all press"
+                style={{
+                  background: active ? 'var(--surface-2)' : 'transparent',
+                  boxShadow: active ? 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)' : 'none',
+                }}>
+                <Icon size={15} style={{ color: active ? 'var(--violet-bright)' : 'var(--text-faint)' }} />
+                <span className="text-sm font-bold" style={{ color: active ? 'white' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
                   {label}
                 </span>
-              </div>
-              {total > 0 && (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg"
-                  style={{
-                    background: allDone ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.08)',
-                    color: allDone ? '#10B981' : 'rgba(255,255,255,0.4)',
-                    fontFamily: 'var(--font-display)',
-                  }}>
-                  {done}/{total}
-                </span>
-              )}
-            </button>
-          )
-        })}
+                {total > 0 && (
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-lg"
+                    style={{
+                      background: allDone ? 'rgba(52,211,153,0.16)' : 'rgba(255,255,255,0.07)',
+                      color: allDone ? 'var(--emerald)' : 'var(--text-muted)',
+                    }}>
+                    {done}/{total}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* ── Energy bar ───────────────────────────────────────── */}
-      <div className="shrink-0 mx-4 mb-3 px-3 py-2 rounded-xl flex items-center gap-2"
+      {/* ── Energy meter ───────────────────────────────────────── */}
+      <div className="shrink-0 mx-5 mb-3 px-3.5 py-2.5 rounded-2xl flex items-center gap-2.5 animate-rise"
         style={{
-          background: energy.isLow ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)',
-          border: energy.isLow ? '1px solid rgba(244,63,94,0.2)' : '1px solid rgba(255,255,255,0.05)',
+          animationDelay: '90ms',
+          background: energy.isLow ? 'rgba(244,63,94,0.10)' : 'var(--surface-1)',
+          boxShadow: energy.isLow ? 'inset 0 0 0 1px rgba(244,63,94,0.25)' : 'inset 0 1px 0 var(--edge-light)',
         }}>
-        <span className="text-sm">⚡</span>
-        <div className="flex-1 h-1.5 rounded-full overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <Zap size={14} fill={energy.isLow ? '#FB7185' : '#A78BFA'} style={{ color: energy.isLow ? '#FB7185' : '#A78BFA' }} />
+        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
           <div className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${energy.pct}%`,
-              background: energy.isLow
-                ? 'linear-gradient(90deg, #F43F5E, #FB7185)'
-                : 'linear-gradient(90deg, #7C3AED, #06B6D4)',
-            }} />
+            style={{ width: `${energy.pct}%`, background: energy.isLow ? 'linear-gradient(90deg,#F43F5E,#FB7185)' : 'var(--aurora)' }} />
         </div>
-        <span className="text-[11px] font-bold tabular-nums"
-          style={{ color: energy.isLow ? '#F43F5E' : 'rgba(168,85,247,0.8)' }}>
+        <span className="text-[11px] font-bold tabular-nums" style={{ color: energy.isLow ? '#FB7185' : 'var(--violet-bright)' }}>
           {energy.current}/100
         </span>
-        {!energy.isFull && (
-          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
-            {energy.timeToFull}
-          </span>
-        )}
+        {!energy.isFull && <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{energy.timeToFull}</span>}
       </div>
 
-      {/* ── Quest List ───────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2.5">
+      {/* ── Mission timeline ───────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-5 pb-6">
         {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-2xl shimmer"
-              style={{ background: 'rgba(255,255,255,0.04)' }} />
-          ))
+          <div className="space-y-2.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-[92px] shimmer ml-[30px]" />
+            ))}
+          </div>
         ) : quests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center">
-            <ClipboardList size={40} className="mx-auto mb-2" style={{ color: "rgba(255,255,255,0.15)" }} />
-            <p className="text-sm font-bold text-white/40">No quests available</p>
+          <div className="flex flex-col items-center justify-center h-44 text-center">
+            <ClipboardList size={42} className="mb-3" style={{ color: 'var(--text-ultra)' }} />
+            <p className="display text-sm" style={{ color: 'var(--text-muted)' }}>No missions available</p>
           </div>
         ) : (
-          quests.map(q => (
-            <QuestCard
-              key={q.id}
-              quest={q}
-              onComplete={() => completeQuest(q.id, tab)}
-              completing={completingId === q.id}
-              activeBoostPct={activeBoost}
-            />
-          ))
+          <div>
+            {quests.map((q, i) => (
+              <QuestCard
+                key={q.id}
+                quest={q}
+                onComplete={() => completeQuest(q.id, tab)}
+                completing={completingId === q.id}
+                activeBoostPct={activeBoost}
+                index={i}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
