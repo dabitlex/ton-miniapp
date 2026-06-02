@@ -1,23 +1,18 @@
-// src/app/(game)/leaderboard/page.tsx
+// src/app/(game)/leaderboard/page.tsx — Redesigned (Aurora OS · League Arena)
 'use client'
-import { useCallback, useRef, forwardRef, useEffect } from 'react'
-import { Medal, Crown, Trophy } from 'lucide-react'
+import { useCallback, useRef, forwardRef } from 'react'
+import { Crown } from 'lucide-react'
 import { useLeaderboard }   from '@/features/leaderboard/hooks'
 import { useUserStore }     from '@/stores/useUserStore'
-import type { LeagueTier, LeaderboardEntry } from '@/types/game'
+import { TelegramAvatar }   from '@/components/layout/GameHeader'
+import type { LeaderboardEntry } from '@/types/game'
 
 export default function LeaderboardPage() {
-  const profile = useUserStore(s => s.profile)
-
-  // Standard: eigene Liga des Nutzers
-  const league = null // Liga-Filter deaktiviert bis Saison 2
+  useUserStore(s => s.profile)
+  const league = null // League filter disabled until Season 2
 
   const { entries, userRank, userEntry, isLoading, hasMore, refreshedAt, loadMore } =
     useLeaderboard(league)
-
-  const displayRank = userRank
-  const rankLabel = 'GLOBAL RANK'
-  const showRankBanner = displayRank !== null
 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const lastItemRef = useCallback((node: HTMLDivElement | null) => {
@@ -30,103 +25,76 @@ export default function LeaderboardPage() {
     observerRef.current.observe(node)
   }, [hasMore, loadMore])
 
+  const podium = entries.slice(0, 3)
+  const rest   = entries.slice(3)
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative z-10">
 
-      {/* ── Header ───────────────────────────────────────────── */}
-      <div className="shrink-0 px-4 pt-4 pb-2"
-        style={{ background: 'linear-gradient(180deg, rgba(124,58,237,0.06) 0%, transparent 100%)' }}>
-        <h1 className="text-xl font-black text-white"
-          style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-          LEADERBOARD
-        </h1>
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="shrink-0 px-5 pt-4 pb-2 animate-rise">
+        <h1 className="display-xl text-[24px] text-white leading-none">Arena</h1>
+        <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Global season rankings</p>
       </div>
 
-      {/* ── Subtitle ─────────────────────────────────────────── */}
-      <div className="shrink-0 px-4 pb-2"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-          Global Season Rankings
-        </p>
-      </div>
+      <div className="flex-1 overflow-y-auto px-5 pb-6">
 
-      {/* ── Your Rank Banner ──────────────────────────────────── */}
-      {showRankBanner && (userRank || userEntry) && (
-        <div className="shrink-0 mx-4 mt-3 px-4 py-3 rounded-2xl"
-          style={{
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(168,85,247,0.08))',
-            border: '1px solid rgba(124,58,237,0.3)',
-            boxShadow: '0 4px 20px rgba(124,58,237,0.12)',
-          }}>
-          <div className="flex items-center justify-between">
-
-            {/* Rank + Liga */}
-            <div className="flex items-center gap-3">
-              <div>
-                <span className="text-[10px] font-bold tracking-widest block"
-                  style={{ color: 'rgba(168,85,247,0.6)', fontFamily: 'var(--font-display)' }}>
-                  YOUR RANK
-                </span>
-                <span className="text-2xl font-black"
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    background: 'linear-gradient(135deg, #A855F7, #3B82F6)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                  }}>
-                  #{userRank ?? '—'}
-                </span>
-              </div>
-
-            </div>
-
-            {/* XP */}
-            {userEntry && (
-              <div className="text-right">
-                <p className="text-lg font-black text-white tabular-nums"
-                  style={{ fontFamily: 'var(--font-display)' }}>
-                  {userEntry.seasonXp.toLocaleString()}
-                </p>
-                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  Season XP
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-
-
-      {/* ── Entries ───────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-1.5">
+        {/* ── Podium ───────────────────────────────────────────── */}
         {isLoading && entries.length === 0 ? (
-          Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-xl shimmer"
-              style={{ background: 'rgba(255,255,255,0.04)' }} />
-          ))
-        ) : (
-          entries.map((entry, i) => (
-            <EntryRow
-              key={entry.userId}
-              entry={entry}
-              ref={i === entries.length - 1 ? lastItemRef : null}
-            />
-          ))
+          <div className="h-44 shimmer rounded-[26px] mt-2" />
+        ) : podium.length > 0 && (
+          <div className="relative mt-1 mb-4 animate-rise" style={{ animationDelay: '40ms' }}>
+            <div className="absolute inset-x-6 top-0 h-32 pointer-events-none"
+              style={{ background: 'radial-gradient(60% 100% at 50% 0%, rgba(251,191,36,0.16), transparent 70%)' }} />
+            <div className="relative flex items-end justify-center gap-3 pt-4">
+              {podium[1] && <PodiumPillar entry={podium[1]} place={2} />}
+              {podium[0] && <PodiumPillar entry={podium[0]} place={1} />}
+              {podium[2] && <PodiumPillar entry={podium[2]} place={3} />}
+            </div>
+          </div>
         )}
+
+        {/* ── Your rank banner ─────────────────────────────────── */}
+        {(userRank || userEntry) && (
+          <div className="surface-accent p-4 mb-4 animate-rise" style={{ animationDelay: '80ms' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl"
+                  style={{ background: 'var(--surface-2)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
+                  <span className="display-xl text-[18px] gradient-text leading-none">#{userRank ?? '—'}</span>
+                </div>
+                <div>
+                  <p className="eyebrow" style={{ color: 'var(--violet-bright)' }}>Your rank</p>
+                  <p className="text-[12px] font-medium mt-0.5" style={{ color: 'var(--text-muted)' }}>Global leaderboard</p>
+                </div>
+              </div>
+              {userEntry && (
+                <div className="text-right">
+                  <p className="display text-[19px] text-white tabular-nums">{userEntry.seasonXp.toLocaleString()}</p>
+                  <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Season XP</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Ranked list ──────────────────────────────────────── */}
+        <div className="space-y-1.5">
+          {rest.map((entry, i) => (
+            <EntryRow key={entry.userId} entry={entry} ref={i === rest.length - 1 ? lastItemRef : null} />
+          ))}
+        </div>
 
         {isLoading && entries.length > 0 && (
           <div className="flex justify-center py-4">
             <div className="w-5 h-5 rounded-full border-2 animate-spin"
-              style={{ borderColor: 'rgba(124,58,237,0.3)', borderTopColor: '#A855F7' }} />
+              style={{ borderColor: 'rgba(139,92,246,0.3)', borderTopColor: '#A78BFA' }} />
           </div>
         )}
 
         {refreshedAt && (
-          <p className="text-center text-[10px] py-2"
-            style={{ color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--font-display)',
-              letterSpacing: '0.1em' }}>
-            UPDATED {new Date(refreshedAt).toLocaleTimeString('en-US')}
+          <p className="text-center text-[10px] py-3 eyebrow" style={{ color: 'var(--text-ultra)' }}>
+            Updated {new Date(refreshedAt).toLocaleTimeString('en-US')}
           </p>
         )}
       </div>
@@ -134,142 +102,79 @@ export default function LeaderboardPage() {
   )
 }
 
-// ── Entry Row ─────────────────────────────────────────────────
-const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entry }, ref) => {
-  const MEDAL_ICONS = [
-    <Trophy key={0} size={16}
-      style={{ color: '#F59E0B', filter: 'drop-shadow(0 0 8px rgba(245,158,11,0.7))' }}
-      fill="#F59E0B" />,
-    <Medal key={1} size={16}
-      style={{ color: '#9CA3AF', filter: 'drop-shadow(0 0 6px rgba(156,163,175,0.6))' }}
-      fill="#9CA3AF" />,
-    <Medal key={2} size={16}
-      style={{ color: '#CD7F32', filter: 'drop-shadow(0 0 6px rgba(205,127,50,0.6))' }}
-      fill="#CD7F32" />,
-  ]
-
-  const isTop3 = entry.rank <= 3
-
-  // Top 3 Hintergrundfarben
-  const top3Bg = isTop3 ? [
-    'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
-    'linear-gradient(135deg, rgba(156,163,175,0.1), rgba(156,163,175,0.03))',
-    'linear-gradient(135deg, rgba(205,127,50,0.1), rgba(205,127,50,0.03))',
-  ][entry.rank - 1] : null
-
-  const top3Border = isTop3 ? [
-    '1px solid rgba(245,158,11,0.25)',
-    '1px solid rgba(156,163,175,0.2)',
-    '1px solid rgba(205,127,50,0.2)',
-  ][entry.rank - 1] : null
+// ── Podium pillar ─────────────────────────────────────────────
+function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 | 3 }) {
+  const cfg = {
+    1: { ring: 'linear-gradient(135deg,#FBBF24,#F59E0B)', glow: 'rgba(251,191,36,0.55)', size: 64, h: 96, label: '#FBBF24' },
+    2: { ring: 'linear-gradient(135deg,#D1D5DB,#9CA3AF)', glow: 'rgba(209,213,219,0.4)',  size: 52, h: 74, label: '#D1D5DB' },
+    3: { ring: 'linear-gradient(135deg,#E0A06A,#CD7F32)', glow: 'rgba(205,127,50,0.4)',   size: 52, h: 62, label: '#E0A06A' },
+  }[place]
 
   return (
+    <div className="flex flex-col items-center flex-1 max-w-[110px]">
+      {place === 1 && <Crown size={20} fill="#FBBF24" style={{ color: '#FBBF24', filter: 'drop-shadow(0 0 8px rgba(251,191,36,0.7))', marginBottom: 2 }} />}
+      <div className="rounded-full p-[2.5px] animate-pop" style={{ background: cfg.ring, boxShadow: `0 0 18px ${cfg.glow}` }}>
+        <div className="rounded-full p-[2px]" style={{ background: 'var(--bg-void)' }}>
+          <TelegramAvatar photoUrl={entry.photoUrl ?? null} firstName={entry.firstName} size={cfg.size} />
+        </div>
+      </div>
+      <p className="text-[12px] font-bold truncate max-w-full mt-1.5" style={{ color: 'var(--text-primary)' }}>{entry.firstName}</p>
+      <p className="text-[11px] font-extrabold tabular-nums" style={{ color: cfg.label, fontFamily: 'var(--font-display)' }}>
+        {entry.seasonXp.toLocaleString()}
+      </p>
+      <div className="w-full rounded-t-2xl mt-2 flex items-start justify-center pt-2"
+        style={{
+          height: cfg.h,
+          background: place === 1
+            ? 'linear-gradient(180deg, rgba(251,191,36,0.18), rgba(251,191,36,0.02))'
+            : 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.01))',
+          boxShadow: 'inset 0 1px 0 var(--edge-light)',
+        }}>
+        <span className="display-xl text-lg" style={{ color: cfg.label }}>{place}</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Entry row ─────────────────────────────────────────────────
+const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entry }, ref) => {
+  const me = entry.isCurrentUser
+  return (
     <div ref={ref}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
+      className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl"
       style={{
-        background: entry.isCurrentUser
-          ? 'linear-gradient(135deg, rgba(124,58,237,0.14), rgba(168,85,247,0.07))'
-          : isTop3
-          ? top3Bg!
-          : 'rgba(255,255,255,0.025)',
-        border: entry.isCurrentUser
-          ? '1px solid rgba(124,58,237,0.35)'
-          : isTop3
-          ? top3Border!
-          : '1px solid rgba(255,255,255,0.04)',
-        boxShadow: isTop3
-          ? entry.rank === 1 ? '0 4px 20px rgba(245,158,11,0.1)' : '0 2px 10px rgba(0,0,0,0.15)'
-          : 'none',
+        background: me ? 'linear-gradient(135deg, rgba(139,92,246,0.16), rgba(91,141,239,0.06))' : 'var(--surface-1)',
+        boxShadow: me ? 'inset 0 0 0 1px rgba(167,139,250,0.35)' : 'inset 0 1px 0 var(--edge-soft)',
       }}>
 
-      {/* Rank number — always visible */}
-      <div className="w-8 shrink-0 flex items-center justify-center">
-        {entry.rank <= 3 ? (
-          <div className="flex flex-col items-center gap-0.5">
-            {MEDAL_ICONS[entry.rank - 1]}
-            <span className="text-[8px] font-black tabular-nums"
-              style={{
-                color: entry.rank === 1 ? '#F59E0B'
-                  : entry.rank === 2 ? '#9CA3AF' : '#CD7F32',
-                fontFamily: 'var(--font-display)',
-              }}>
-              #{entry.rank}
-            </span>
-          </div>
-        ) : (
-          <span className="text-xs font-black tabular-nums"
-            style={{
-              color: entry.isCurrentUser ? 'rgba(168,85,247,0.9)' : 'rgba(255,255,255,0.3)',
-              fontFamily: 'var(--font-display)',
-            }}>
-            #{entry.rank}
-          </span>
-        )}
-      </div>
+      <span className="w-7 text-center text-[13px] font-extrabold tabular-nums shrink-0"
+        style={{ color: me ? 'var(--violet-bright)' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
+        {entry.rank}
+      </span>
 
-      {/* Avatar */}
-      {entry.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={entry.photoUrl} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0"
-          style={{
-            boxShadow: entry.isCurrentUser
-              ? '0 0 10px rgba(124,58,237,0.5)'
-              : isTop3 && entry.rank === 1
-              ? '0 0 10px rgba(245,158,11,0.3)'
-              : 'none'
-          }} />
-      ) : (
-        <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center
-                        text-sm font-black"
-          style={{
-            background: entry.isCurrentUser
-              ? 'linear-gradient(135deg, #7C3AED, #A855F7)'
-              : 'rgba(255,255,255,0.07)',
-            color: entry.isCurrentUser ? 'white' : 'rgba(255,255,255,0.4)',
-          }}>
-          {entry.firstName[0]}
-        </div>
-      )}
+      <TelegramAvatar photoUrl={entry.photoUrl ?? null} firstName={entry.firstName} size={36} className="shrink-0" />
 
-      {/* Name + Clan */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-semibold truncate"
-            style={{
-              color: entry.isCurrentUser
-                ? 'rgba(216,180,254,0.95)'
-                : isTop3 ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.8)'
-            }}>
+          <span className="text-sm font-semibold truncate" style={{ color: me ? '#DDD6FE' : 'var(--text-primary)' }}>
             {entry.firstName}
           </span>
-          {entry.isCurrentUser && (
-            <span className="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded"
-              style={{
-                color: '#A855F7', background: 'rgba(168,85,247,0.15)',
-                fontFamily: 'var(--font-display)', letterSpacing: '0.05em',
-              }}>
+          {me && (
+            <span className="shrink-0 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md"
+              style={{ color: '#C4B5FD', background: 'rgba(167,139,250,0.18)', fontFamily: 'var(--font-display)' }}>
               YOU
             </span>
           )}
         </div>
         {entry.clanName && (
-          <p className="text-[10px] truncate mt-0.5"
-            style={{ color: 'rgba(255,255,255,0.28)' }}>
-            🛡️ {entry.clanName}
-          </p>
+          <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--text-faint)' }}>🛡️ {entry.clanName}</p>
         )}
       </div>
 
-      {/* XP + League (no Level) */}
-      <div className="shrink-0 flex flex-col items-end gap-1">
-        <span className="text-sm font-black tabular-nums"
-          style={{
-            color: entry.isCurrentUser ? 'white' : 'rgba(255,255,255,0.75)',
-            fontFamily: 'var(--font-display)',
-          }}>
-          {entry.seasonXp.toLocaleString()}
-        </span>
-      </div>
+      <span className="text-sm font-extrabold tabular-nums shrink-0"
+        style={{ color: me ? 'white' : 'var(--text-secondary)', fontFamily: 'var(--font-display)' }}>
+        {entry.seasonXp.toLocaleString()}
+      </span>
     </div>
   )
 })
