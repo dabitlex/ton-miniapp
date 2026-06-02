@@ -21,7 +21,7 @@ const STEPS = [
   {
     icon: '⭐',
     title: 'Level Up',
-    body:  'Earn XP to level up through 30 levels across 6 leagues — from Bronze to Legendary.',
+    body:  'Earn XP to level up through 30 levels. The higher your level, the more powerful you become on the leaderboard.',
   },
   {
     icon: '🔥',
