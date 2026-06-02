@@ -1,4 +1,4 @@
-// src/app/(game)/clans/page.tsx
+// src/app/(game)/clans/page.tsx — Redesigned (Aurora OS · Social Hub)
 'use client'
 import { useState }                                     from 'react'
 import { useQuery, useMutation, useQueryClient }        from '@tanstack/react-query'
@@ -10,7 +10,7 @@ import { Button }         from '@/components/ui/Button'
 import { SkeletonCard }   from '@/components/ui/Skeleton'
 import { cn, formatNumber } from '@/lib/utils'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
-import { Users, Search, Shield, LogOut, Swords, Zap, Star, Crown, Sword } from 'lucide-react'
+import { Users, Search, Shield, LogOut, Swords, Zap, Star, Crown, Sword, ChevronRight } from 'lucide-react'
 import type { UserProfile } from '@/types/game'
 import { v4 as uuidv4 }  from 'uuid'
 
@@ -70,7 +70,6 @@ export default function ClansPage() {
     },
   })
 
-  // Format last active time
   function formatLastActive(lastActiveAt: string | null): string {
     if (!lastActiveAt) return 'Never'
     const diff = Math.floor((Date.now() - new Date(lastActiveAt).getTime()) / 86400000)
@@ -92,7 +91,6 @@ export default function ClansPage() {
   const isOfficer = myRole === 'officer'
   const canManage = isLeader || isOfficer
 
-  // ── Kick / Promote / Demote ───────────────────────────────
   const { mutate: manageMember, isPending: isManaging } = useMutation({
     mutationFn: async ({ action, targetUserId }: {
       action: 'kick' | 'promote' | 'demote'
@@ -185,226 +183,205 @@ export default function ClansPage() {
     { key: 'browse',   label: 'Discover',   icon: Search },
     { key: 'mine',     label: 'My Clan',    icon: Shield },
     ...(hasClan ? [{ key: 'missions' as Tab, label: 'Missions', icon: Swords }] : []),
-    { key: 'create',   label: '+',          icon: null },
+    { key: 'create',   label: 'Create',     icon: null },
   ] as const
 
-  return (
-    <div className="flex flex-col h-full">
+  function clanInitials(name: string) {
+    return (name?.trim()?.slice(0, 2) ?? '🛡').toUpperCase()
+  }
 
-      {/* ── Tabs ─────────────────────────────────────────── */}
-      <div className="flex border-b border-white/[0.06] shrink-0 px-4">
-        {TABS.map(({ key, label, icon: Icon }) => (
-          <button key={key} onClick={() => setView(key as Tab)}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 py-3',
-              'text-xs font-semibold transition-colors relative',
-              view === key ? 'text-violet-300' : 'text-white/35'
-            )}>
-            {Icon && <Icon size={12} />}
-            {label}
-            {view === key && (
-              <span className="absolute bottom-0 left-1 right-1 h-0.5 bg-violet-400 rounded-full" />
-            )}
-          </button>
-        ))}
+  return (
+    <div className="flex flex-col h-full relative z-10">
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="shrink-0 px-5 pt-4 pb-3 animate-rise">
+        <h1 className="display-xl text-[24px] text-white leading-none">Clans</h1>
+        <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Team up · earn together</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-6 space-y-3">
+      {/* ── Segmented tabs ─────────────────────────────────────── */}
+      <div className="shrink-0 px-5 pb-3 animate-rise" style={{ animationDelay: '50ms' }}>
+        <div className="flex p-1 rounded-2xl gap-1" style={{ background: 'var(--surface-press)' }}>
+          {TABS.map(({ key, label, icon: Icon }) => {
+            const active = view === key
+            return (
+              <button key={key} onClick={() => setView(key as Tab)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl press transition-all"
+                style={{
+                  background: active ? 'var(--surface-2)' : 'transparent',
+                  boxShadow: active ? 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)' : 'none',
+                }}>
+                {Icon && <Icon size={13} style={{ color: active ? 'var(--violet-bright)' : 'var(--text-faint)' }} />}
+                <span className="text-[12px] font-bold" style={{ color: active ? 'white' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
+                  {label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
-        {/* ── DISCOVER ─────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-5 pb-6 space-y-3">
+
+        {/* ── DISCOVER ─────────────────────────────────────────── */}
         {view === 'browse' && (
           <>
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search clans…"
-                className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl
-                           pl-8 pr-3 py-2.5 text-sm text-white placeholder-white/25
-                           focus:outline-none focus:border-violet-500/50" />
+                className="w-full rounded-2xl pl-10 pr-3 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
+                style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }} />
             </div>
 
             {loadingClans
               ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} lines={1} />)
               : (clansData ?? []).length === 0
               ? (
-                <div className="text-center py-10 space-y-2">
-                  <p className="text-3xl">🏰</p>
-                  <p className="text-sm text-white/40">No clans yet</p>
-                  <p className="text-xs text-white/25">Create the first clan!</p>
+                <div className="text-center py-12 space-y-2">
+                  <p className="text-4xl">🏰</p>
+                  <p className="display text-sm" style={{ color: 'var(--text-secondary)' }}>No clans yet</p>
+                  <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Be the first to forge one</p>
                 </div>
               )
-              : (clansData ?? []).map((clan: any) => (
-                <div key={clan.id}
-                  className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="font-bold text-white text-sm truncate">{clan.name}</p>
-                        <span className="text-[10px] text-white/30 shrink-0">Lv.{clan.level}</span>
-                      </div>
-                      {clan.description && (
-                        <p className="text-xs text-white/35 line-clamp-1">{clan.description}</p>
-                      )}
-                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-white/30">
-                        <span className="flex items-center gap-1">
-                          <Users size={10} /> {clan.member_count}/20
-                        </span>
-                        <span>⭐ {formatNumber(clan.season_xp)} XP</span>
-                      </div>
-                    </div>
-                    {!hasClan
-                      ? <Button size="sm" loading={joining} onClick={() => joinClan(clan.id)}
-                          className="h-8 text-xs px-3 shrink-0">Join</Button>
-                      : myMembership?.clan?.id === clan.id &&
-                        <span className="text-[10px] font-bold text-violet-400 border border-violet-500/30
-                                         bg-violet-500/10 px-2 py-1 rounded-lg shrink-0">YOUR CLAN</span>
-                    }
+              : (clansData ?? []).map((clan: any, i: number) => (
+                <div key={clan.id} className="surface p-3.5 flex items-center gap-3.5 animate-rise" style={{ animationDelay: `${i * 40}ms` }}>
+                  <div className="flex items-center justify-center w-12 h-12 rounded-2xl shrink-0 display text-base text-white"
+                    style={{ background: 'var(--aurora)', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
+                    {clanInitials(clan.name)}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-white text-sm truncate">{clan.name}</p>
+                      <span className="text-[10px] shrink-0 px-1.5 py-0.5 rounded-md" style={{ color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.14)', fontFamily: 'var(--font-display)' }}>Lv {clan.level}</span>
+                    </div>
+                    {clan.description && <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{clan.description}</p>}
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px]" style={{ color: 'var(--text-faint)' }}>
+                      <span className="flex items-center gap-1"><Users size={11} /> {clan.member_count}/20</span>
+                      <span>⭐ {formatNumber(clan.season_xp)}</span>
+                    </div>
+                  </div>
+                  {!hasClan
+                    ? <Button size="sm" loading={joining} onClick={() => joinClan(clan.id)} className="h-9 text-xs px-4 shrink-0">Join</Button>
+                    : myMembership?.clan?.id === clan.id &&
+                      <span className="text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl shrink-0" style={{ color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.14)', fontFamily: 'var(--font-display)' }}>YOURS</span>
+                  }
                 </div>
               ))
             }
           </>
         )}
 
-        {/* ── MY CLAN ──────────────────────────────────── */}
+        {/* ── MY CLAN ──────────────────────────────────────────── */}
         {view === 'mine' && (
           <>
             {loadingMembership ? <SkeletonCard lines={3} />
              : !hasClan ? (
-              <div className="text-center py-10 space-y-3">
-                <Shield size={48} className="mx-auto text-white/10" />
-                <p className="text-sm text-white/40">You are not in a clan</p>
-                <div className="flex gap-2 justify-center">
-                  <Button size="sm" variant="secondary" onClick={() => setView('browse')}>
-                    Join
-                  </Button>
-                  {canCreate && (
-                    <Button size="sm" onClick={() => setView('create')}>Create</Button>
-                  )}
+              <div className="text-center py-12 space-y-3">
+                <Shield size={48} className="mx-auto" style={{ color: 'var(--text-ultra)' }} />
+                <p className="display text-sm" style={{ color: 'var(--text-secondary)' }}>You're not in a clan yet</p>
+                <div className="flex gap-2 justify-center pt-1">
+                  <Button size="sm" variant="secondary" onClick={() => setView('browse')}>Discover</Button>
+                  {canCreate && <Button size="sm" onClick={() => setView('create')}>Create</Button>}
                 </div>
               </div>
              ) : myMembership && (
               <>
-                {/* Clan Info Card */}
-                <div className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.05] p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-lg font-black text-white">{myMembership.clan.name}</p>
-                      {myMembership.clan.description && (
-                        <p className="text-xs text-white/40 mt-0.5">{myMembership.clan.description}</p>
-                      )}
-                      <div className="flex gap-3 mt-2 text-xs text-white/40">
-                        <span>⭐ {formatNumber(myMembership.clan.seasonXp)} XP</span>
-                        <span className="flex items-center gap-1">
-                          <Users size={10} className="inline" /> {myMembership.clan.memberCount}/20
-                        </span>
-                        <span>🏆 {myMembership.clan.wins}W</span>
-                      </div>
+                {/* Clan banner */}
+                <div className="surface-accent relative overflow-hidden p-5 animate-rise">
+                  <div className="absolute -top-10 -right-8 w-40 h-40 pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.28), transparent 70%)' }} />
+                  <div className="relative flex items-start gap-4">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-3xl shrink-0 display-xl text-xl text-white"
+                      style={{ background: 'var(--aurora)', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}>
+                      {clanInitials(myMembership.clan.name)}
                     </div>
-                    <span className="text-xs text-violet-300 font-semibold shrink-0">
-                      {myMembership.role === 'leader'  ? '👑 Leader'
-                       : myMembership.role === 'officer' ? '⚔️ Officer'
-                       : '🎮 Member'}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="display text-[18px] text-white truncate">{myMembership.clan.name}</p>
+                        <span className="text-[10px] font-bold shrink-0" style={{ color: 'var(--violet-bright)' }}>
+                          {myMembership.role === 'leader' ? '👑' : myMembership.role === 'officer' ? '⚔️' : '🎮'}
+                        </span>
+                      </div>
+                      {myMembership.clan.description && (
+                        <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{myMembership.clan.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="relative grid grid-cols-3 gap-2 mt-4">
+                    {[
+                      { label: 'Season XP', value: formatNumber(myMembership.clan.seasonXp), tint: '#A78BFA' },
+                      { label: 'Members',   value: `${myMembership.clan.memberCount}/20`,     tint: '#5B8DEF' },
+                      { label: 'Wins',      value: `${myMembership.clan.wins}`,               tint: '#FBBF24' },
+                    ].map(s => (
+                      <div key={s.label} className="rounded-2xl px-2 py-2.5 text-center" style={{ background: 'var(--surface-press)' }}>
+                        <p className="display text-[15px] tabular-nums" style={{ color: s.tint }}>{s.value}</p>
+                        <p className="text-[9px] font-semibold mt-0.5" style={{ color: 'var(--text-faint)' }}>{s.label}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Missions Button */}
+                {/* Missions shortcut */}
                 <button onClick={() => setView('missions')}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl
-                             border border-white/[0.07] bg-white/[0.02]
-                             active:scale-[0.98] transition-transform">
-                  <Swords size={18} className="text-violet-400 shrink-0" />
+                  className="surface w-full flex items-center gap-3 px-4 py-3.5 press">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0" style={{ background: 'rgba(139,92,246,0.14)' }}>
+                    <Swords size={17} style={{ color: 'var(--violet-bright)' }} />
+                  </div>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-bold text-white">Clan Missions</p>
-                    <p className="text-xs text-white/35">3 missions daily · 15⚡ · Clan XP</p>
+                    <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>3 daily · 15⚡ · earns Clan XP</p>
                   </div>
-                  <span className="text-white/30 text-xs">→</span>
+                  <ChevronRight size={16} style={{ color: 'var(--text-faint)' }} />
                 </button>
 
-                {/* Members List */}
+                {/* Members */}
                 <div className="space-y-2">
-                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">
-                    Members ({(myMembership.members ?? []).length})
-                  </h3>
+                  <h3 className="eyebrow">Roster · {(myMembership.members ?? []).length}</h3>
 
                   {(myMembership.members ?? []).map((m: any) => {
-                    const isMe          = m.userId === profile?.id
+                    const isMe           = m.userId === profile?.id
                     const isTargetLeader = m.role === 'leader'
-                    const canKick       = canManage && !isMe && !isTargetLeader &&
-                                          (isLeader || m.role === 'member')
-                    const canPromote    = isLeader && !isMe && m.role === 'member'
-                    const canDemote     = isLeader && !isMe && m.role === 'officer'
-                    const inactive      = isInactive(m.lastActiveAt ?? null)
+                    const canKick        = canManage && !isMe && !isTargetLeader && (isLeader || m.role === 'member')
+                    const canPromote     = isLeader && !isMe && m.role === 'member'
+                    const canDemote      = isLeader && !isMe && m.role === 'officer'
+                    const inactive       = isInactive(m.lastActiveAt ?? null)
 
                     return (
-                      <div key={m.userId}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl
-                                   border border-white/[0.05] bg-white/[0.02]">
-
-                        {/* Avatar */}
+                      <div key={m.userId} className="surface flex items-center gap-3 px-3.5 py-3">
                         {m.telegramPhotoUrl
                           // eslint-disable-next-line @next/next/no-img-element
-                          ? <img src={m.telegramPhotoUrl} alt=""
-                              className="w-8 h-8 rounded-full object-cover shrink-0" />
-                          : <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center
-                                            justify-center text-xs font-bold text-violet-300 shrink-0">
+                          ? <img src={m.telegramPhotoUrl} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                          : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ background: 'var(--aurora)' }}>
                               {m.telegramFirstName?.[0] ?? '?'}
                             </div>
                         }
-
-                        {/* Name + Stats */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-xs font-semibold text-white/80 truncate">
-                              {m.telegramFirstName}
-                            </p>
-                            {isMe && (
-                              <span className="text-[9px] text-violet-400 font-black shrink-0">YOU</span>
-                            )}
-                            {m.role === 'leader'  && <Crown size={11} className="text-amber-400 shrink-0" />}
-                            {m.role === 'officer' && <Sword size={11} className="text-violet-400 shrink-0" />}
+                            <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{m.telegramFirstName}</p>
+                            {isMe && <span className="text-[8px] font-extrabold shrink-0" style={{ color: 'var(--violet-bright)' }}>YOU</span>}
+                            {m.role === 'leader'  && <Crown size={11} className="shrink-0" style={{ color: '#FBBF24' }} />}
+                            {m.role === 'officer' && <Sword size={11} className="shrink-0" style={{ color: 'var(--violet-bright)' }} />}
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <p className="text-[10px] text-white/30">
-                              Lv.{m.level} · ⭐ {formatNumber(m.contributedXp ?? 0)} XP
-                            </p>
-                            <span className="text-[10px]"
-                              style={{ color: inactive ? '#F43F5E' : 'rgba(255,255,255,0.2)' }}>
-                              · {formatLastActive(m.lastActiveAt ?? null)}
-                            </span>
+                            <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Lv.{m.level} · ⭐ {formatNumber(m.contributedXp ?? 0)}</p>
+                            <span className="text-[10px]" style={{ color: inactive ? '#FB7185' : 'var(--text-faint)' }}>· {formatLastActive(m.lastActiveAt ?? null)}</span>
                           </div>
                         </div>
-
-                        {/* Action Buttons */}
                         {(canKick || canPromote || canDemote) && (
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             {canPromote && (
-                              <button
-                                onClick={() => manageMember({ action: 'promote', targetUserId: m.userId })}
-                                disabled={isManaging}
-                                title="Promote to Officer"
-                                className="w-6 h-6 rounded flex items-center justify-center
-                                           active:scale-90 transition-all disabled:opacity-40"
-                                style={{
-                                  background: 'rgba(124,58,237,0.15)',
-                                  border: '1px solid rgba(124,58,237,0.3)',
-                                }}>
-                                <Sword size={11} className="text-violet-400" />
+                              <button onClick={() => manageMember({ action: 'promote', targetUserId: m.userId })} disabled={isManaging}
+                                title="Promote to Officer" className="w-7 h-7 rounded-lg flex items-center justify-center press disabled:opacity-40"
+                                style={{ background: 'rgba(139,92,246,0.15)', boxShadow: 'inset 0 0 0 1px rgba(139,92,246,0.3)' }}>
+                                <Sword size={12} style={{ color: 'var(--violet-bright)' }} />
                               </button>
                             )}
                             {canDemote && (
-                              <button
-                                onClick={() => manageMember({ action: 'demote', targetUserId: m.userId })}
-                                disabled={isManaging}
-                                title="Demote to Member"
-                                className="w-6 h-6 rounded flex items-center justify-center
-                                           active:scale-90 transition-all disabled:opacity-40"
-                                style={{
-                                  background: 'rgba(245,158,11,0.12)',
-                                  border: '1px solid rgba(245,158,11,0.25)',
-                                }}>
-                                <span className="text-[10px]">🎮</span>
+                              <button onClick={() => manageMember({ action: 'demote', targetUserId: m.userId })} disabled={isManaging}
+                                title="Demote to Member" className="w-7 h-7 rounded-lg flex items-center justify-center press disabled:opacity-40"
+                                style={{ background: 'rgba(245,158,11,0.12)', boxShadow: 'inset 0 0 0 1px rgba(245,158,11,0.25)' }}>
+                                <span className="text-[11px]">🎮</span>
                               </button>
                             )}
                             {canKick && (
@@ -414,15 +391,10 @@ export default function ClansPage() {
                                     manageMember({ action: 'kick', targetUserId: m.userId })
                                   }
                                 }}
-                                disabled={isManaging}
-                                title="Kick member"
-                                className="w-6 h-6 rounded flex items-center justify-center
-                                           active:scale-90 transition-all disabled:opacity-40"
-                                style={{
-                                  background: 'rgba(244,63,94,0.12)',
-                                  border: '1px solid rgba(244,63,94,0.25)',
-                                }}>
-                                <span className="text-[11px] font-bold text-rose-400">✕</span>
+                                disabled={isManaging} title="Kick member"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center press disabled:opacity-40"
+                                style={{ background: 'rgba(244,63,94,0.12)', boxShadow: 'inset 0 0 0 1px rgba(244,63,94,0.25)' }}>
+                                <span className="text-[12px] font-bold" style={{ color: '#FB7185' }}>✕</span>
                               </button>
                             )}
                           </div>
@@ -432,11 +404,8 @@ export default function ClansPage() {
                   })}
                 </div>
 
-                {/* Leave Button */}
                 <Button variant="destructive" fullWidth loading={leaving}
-                  onClick={() => {
-                    if (window.confirm('Leave this clan?')) leaveClan(myMembership.clan.id)
-                  }}>
+                  onClick={() => { if (window.confirm('Leave this clan?')) leaveClan(myMembership.clan.id) }}>
                   <LogOut size={14} /> Leave Clan
                 </Button>
               </>
@@ -444,13 +413,12 @@ export default function ClansPage() {
           </>
         )}
 
-        {/* ── MISSIONS ─────────────────────────────────── */}
+        {/* ── MISSIONS ─────────────────────────────────────────── */}
         {view === 'missions' && hasClan && (
           <>
-            <div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.04] px-3 py-2.5">
-              <p className="text-xs text-white/40 leading-relaxed">
-                🛡️ Complete clan missions to support your clan with XP.
-                Cost: <span className="text-yellow-400">15⚡</span> per mission.
+            <div className="surface-quiet px-3.5 py-3" style={{ background: 'rgba(139,92,246,0.06)' }}>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                🛡️ Complete clan missions to support your clan with XP. Cost: <span style={{ color: '#FBBF24' }}>15⚡</span> each.
               </p>
             </div>
 
@@ -458,55 +426,37 @@ export default function ClansPage() {
               ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} lines={1} />)
               : (missions ?? []).length === 0
               ? (
-                <div className="text-center py-10">
-                  <Swords size={40} className="mx-auto mb-2 text-white/10" />
-                  <p className="text-sm text-white/40">No missions available</p>
+                <div className="text-center py-12">
+                  <Swords size={40} className="mx-auto mb-2" style={{ color: 'var(--text-ultra)' }} />
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No missions available</p>
                 </div>
               )
               : (missions ?? []).map((m: any) => (
-                <div key={m.id}
-                  className={cn(
-                    'rounded-2xl border p-4 transition-all',
-                    m.status === 'completed'
-                      ? 'border-emerald-500/15 bg-emerald-500/[0.03] opacity-60'
-                      : 'border-white/[0.08] bg-white/[0.02]'
-                  )}>
+                <div key={m.id} className="surface p-4" style={{ opacity: m.status === 'completed' ? 0.6 : 1 }}>
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/[0.05] flex items-center
-                                    justify-center text-xl shrink-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                      style={{ background: m.status === 'completed' ? 'rgba(52,211,153,0.12)' : 'var(--surface-2)' }}>
                       {m.status === 'completed' ? '✓' : (m.template.iconKey ?? '⚔️')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white/90">{m.template.title}</p>
-                      <p className="text-xs text-white/35 mt-0.5 line-clamp-2">{m.template.description}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-white/35">
-                        <span className="flex items-center gap-1">
-                          <Zap size={10} className="text-yellow-400" fill="currentColor" />
-                          {m.energyCost}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Star size={10} className="text-violet-400" fill="currentColor" />
-                          +{m.xpReward} XP
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Shield size={10} className="text-blue-400" />
-                          Clan +{m.xpClanReward}
-                        </span>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{m.template.title}</p>
+                      <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{m.template.description}</p>
+                      <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--text-faint)' }}>
+                        <span className="flex items-center gap-1"><Zap size={10} style={{ color: '#FBBF24' }} fill="currentColor" />{m.energyCost}</span>
+                        <span className="flex items-center gap-1"><Star size={10} style={{ color: 'var(--violet-bright)' }} fill="currentColor" />+{m.xpReward}</span>
+                        <span className="flex items-center gap-1"><Shield size={10} style={{ color: '#5B8DEF' }} />Clan +{m.xpClanReward}</span>
                       </div>
                     </div>
                   </div>
 
                   {m.status !== 'completed' ? (
                     <div className="mt-3 flex justify-end">
-                      <Button size="sm"
-                        loading={completing && completingId === m.id}
-                        onClick={() => completeMission(m.id)}
-                        className="h-7 text-[11px] px-3">
+                      <Button size="sm" loading={completing && completingId === m.id} onClick={() => completeMission(m.id)} className="h-8 text-[11px] px-4">
                         Complete
                       </Button>
                     </div>
                   ) : (
-                    <p className="mt-2 text-right text-xs text-emerald-400">✓ Completed</p>
+                    <p className="mt-2 text-right text-xs" style={{ color: 'var(--emerald)' }}>✓ Completed</p>
                   )}
                 </div>
               ))
@@ -514,7 +464,7 @@ export default function ClansPage() {
           </>
         )}
 
-        {/* ── CREATE ───────────────────────────────────── */}
+        {/* ── CREATE ───────────────────────────────────────────── */}
         {view === 'create' && (
           <CreateClanForm
             canCreate={canCreate}
@@ -561,49 +511,59 @@ function CreateClanForm({ canCreate, hasClan, userLevel, token, onCreated }: {
   })
 
   if (hasClan) return (
-    <div className="text-center py-10 space-y-2">
-      <Shield size={48} className="mx-auto text-white/10" />
-      <p className="text-sm text-white/40">You are already in a clan</p>
+    <div className="text-center py-12 space-y-2">
+      <Shield size={48} className="mx-auto" style={{ color: 'var(--text-ultra)' }} />
+      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>You're already in a clan</p>
     </div>
   )
 
   if (!canCreate) return (
-    <div className="text-center py-10 space-y-2">
-      <p className="text-3xl">🔒</p>
-      <p className="text-sm font-bold text-white">
-        Level {GAME_CONSTANTS.CLAN_UNLOCK_LEVEL} required
-      </p>
-      <p className="text-xs text-white/40">
-        {GAME_CONSTANTS.CLAN_UNLOCK_LEVEL - userLevel} more levels to go
+    <div className="surface p-6 text-center space-y-2">
+      <div className="flex items-center justify-center w-14 h-14 rounded-2xl mx-auto text-2xl"
+        style={{ background: 'var(--surface-2)' }}>🔒</div>
+      <p className="display text-sm text-white">Level {GAME_CONSTANTS.CLAN_UNLOCK_LEVEL} required</p>
+      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        {GAME_CONSTANTS.CLAN_UNLOCK_LEVEL - userLevel} more level{GAME_CONSTANTS.CLAN_UNLOCK_LEVEL - userLevel === 1 ? '' : 's'} to go
       </p>
     </div>
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-rise">
+      <div className="surface-accent p-5 text-center">
+        <div className="flex items-center justify-center w-14 h-14 rounded-3xl mx-auto display-xl text-xl text-white"
+          style={{ background: 'var(--aurora)', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}>
+          {clanCrest(name)}
+        </div>
+        <p className="display text-sm text-white mt-3">Forge your clan</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Recruit up to 20 members and climb together</p>
+      </div>
+
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-white/50">Clan Name *</label>
+        <label className="eyebrow">Clan Name *</label>
         <input value={name} onChange={e => setName(e.target.value)}
           placeholder="e.g. Crypto Warriors" maxLength={32}
-          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl
-                     px-3 py-2.5 text-sm text-white placeholder-white/25
-                     focus:outline-none focus:border-violet-500/50" />
-        <p className="text-[10px] text-white/25 text-right">{name.length}/32</p>
+          className="w-full rounded-2xl px-3.5 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
+          style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }} />
+        <p className="text-[10px] text-right" style={{ color: 'var(--text-faint)' }}>{name.length}/32</p>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-white/50">Description</label>
+        <label className="eyebrow">Description</label>
         <textarea value={desc} onChange={e => setDesc(e.target.value)}
           placeholder="What does your clan stand for?" maxLength={200} rows={3}
-          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl
-                     px-3 py-2.5 text-sm text-white placeholder-white/25
-                     focus:outline-none focus:border-violet-500/50 resize-none" />
+          className="w-full rounded-2xl px-3.5 py-3 text-sm text-white placeholder-white/25 focus:outline-none resize-none"
+          style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }} />
       </div>
 
-      <Button fullWidth size="lg" loading={isPending}
-        disabled={name.trim().length < 3} onClick={() => create()}>
+      <Button fullWidth size="lg" loading={isPending} disabled={name.trim().length < 3} onClick={() => create()}>
         <Shield size={16} /> Create Clan
       </Button>
     </div>
   )
+}
+
+function clanCrest(name: string) {
+  const t = name.trim()
+  return t ? t.slice(0, 2).toUpperCase() : '🛡'
 }
