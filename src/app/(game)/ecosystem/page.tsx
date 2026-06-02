@@ -15,13 +15,41 @@ function toNano(amount: number): string {
   return (BigInt(Math.round(amount * 1e9))).toString()
 }
 
-// Visual rarity per tier (presentation only)
-const RELIC: Record<string, { gem: string; color: string; glow: string; rarity: string }> = {
-  tier_1:   { gem: '🔹', color: '#5EEAD4', glow: 'rgba(94,234,212,0.45)', rarity: 'Common Relic' },
-  tier_5:   { gem: '🔷', color: '#5B8DEF', glow: 'rgba(91,141,239,0.45)', rarity: 'Rare Crystal' },
-  tier_20:  { gem: '🟣', color: '#8B5CF6', glow: 'rgba(139,92,246,0.5)',  rarity: 'Epic Shard' },
-  tier_50:  { gem: '💠', color: '#A78BFA', glow: 'rgba(167,139,250,0.55)',rarity: 'Mythic Core' },
-  tier_100: { gem: '👑', color: '#FBBF24', glow: 'rgba(251,191,36,0.6)',  rarity: 'Legendary Vault' },
+// Faceted relic crystal themes per tier (presentation only)
+const RELIC: Record<string, { c1: string; c2: string; accent: string; glow: string; aura: string }> = {
+  tier_1:   { c1: '#BCC4FF', c2: '#6E7BFF', accent: '#9AA6FF', glow: 'rgba(110,123,255,0.5)', aura: '#6E7BFF' },
+  tier_5:   { c1: '#9CF0FF', c2: '#06B6D4', accent: '#67E8F9', glow: 'rgba(6,182,212,0.5)',   aura: '#06B6D4' },
+  tier_20:  { c1: '#D7B3FF', c2: '#A855F7', accent: '#C9A3FF', glow: 'rgba(168,85,247,0.5)',  aura: '#A855F7' },
+  tier_50:  { c1: '#FFD0B3', c2: '#F97316', accent: '#FFB98F', glow: 'rgba(249,115,22,0.5)',  aura: '#F97316' },
+  tier_100: { c1: '#FFF0C8', c2: '#F59E0B', accent: '#FBBF24', glow: 'rgba(245,158,11,0.55)', aura: '#F59E0B' },
+}
+
+// Faceted crystal gem (SVG), gently floating
+function Gem({ id, c1, c2, size = 56 }: { id: string; c1: string; c2: string; size?: number }) {
+  return (
+    <svg width={size} height={Math.round(size * 76 / 60)} viewBox="0 0 60 76" className="float"
+      style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.5))', position: 'relative', zIndex: 2 }}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={c1} />
+          <stop offset="1" stopColor={c2} />
+        </linearGradient>
+      </defs>
+      <path d="M30 2 L56 24 L30 74 L4 24 Z" fill={`url(#${id})`} />
+      <path d="M30 2 L56 24 L30 36 Z" fill="#fff" opacity="0.3" />
+      <path d="M4 24 L30 36 L30 74 Z" fill="#000" opacity="0.16" />
+    </svg>
+  )
+}
+
+// "ACTIVE" corner flag for the equipped relic
+function Flag({ accent }: { accent: string }) {
+  return (
+    <span className="absolute top-2.5 right-2.5 z-20 text-[8px] font-extrabold tracking-wider px-1.5 py-0.5 rounded-md"
+      style={{ color: accent, background: `${accent}26`, fontFamily: 'var(--font-display)' }}>
+      ACTIVE
+    </span>
+  )
 }
 
 export default function EcosystemPage() {
@@ -218,94 +246,107 @@ export default function EcosystemPage() {
           </div>
         )}
 
-        {/* ── Relics grid ────────────────────────────────────── */}
+        {/* ── Support tiers · relic grid ─────────────────────── */}
         <div>
-          <h3 className="eyebrow mb-3">Collectible Relics</h3>
+          <h3 className="eyebrow mb-3">Support Tiers · forge a relic</h3>
 
-          <div className="space-y-2.5">
-            {isLoading
-              ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-28 shimmer" />)
-              : ECOSYSTEM_TIERS.map((tier, i) => {
-                  const isCurrent     = active?.tier === tier.key
-                  const isPendingThis = pendingTierKey === tier.key
-                  const isLowerTier   = active ? tier.boostPercent <= active.boostPercent && !isCurrent : false
-                  const r = RELIC[tier.key] ?? RELIC.tier_1
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-2.5">
+              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-44 shimmer" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {ECOSYSTEM_TIERS.map((tier, i) => {
+                const isCurrent     = active?.tier === tier.key
+                const isPendingThis = pendingTierKey === tier.key
+                const isLowerTier   = active ? tier.boostPercent <= active.boostPercent && !isCurrent : false
+                const r = RELIC[tier.key] ?? RELIC.tier_1
+                const isLegend = tier.key === 'tier_100'
+                const btnDisabled = isCurrent || isLowerTier || !!pendingTierKey || !!pending
 
+                const btnLabel = isPendingThis
+                  ? (<><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Claiming…</>)
+                  : isCurrent   ? '✓ Active'
+                  : isLowerTier ? '🔒 Outranked'
+                  : (<><Zap size={13} fill="currentColor" /> {tier.tonAmount} TON</>)
+
+                const btnStyle: React.CSSProperties = (isCurrent || isLowerTier)
+                  ? { background: 'var(--surface-2)', color: 'var(--text-muted)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }
+                  : { background: `linear-gradient(135deg, ${r.c1}, ${r.c2})`, color: isLegend ? '#1a1505' : '#fff', boxShadow: `0 6px 18px ${r.glow}` }
+
+                const cardBase: React.CSSProperties = {
+                  animationDelay: `${i * 50}ms`,
+                  background: isCurrent
+                    ? `linear-gradient(150deg, ${r.aura}22, transparent 62%), var(--surface-1)`
+                    : 'var(--surface-1)',
+                  boxShadow: isCurrent
+                    ? `inset 0 0 0 1px ${r.aura}55, 0 12px 30px ${r.glow}`
+                    : 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)',
+                  opacity: isLowerTier ? 0.5 : 1,
+                }
+
+                // ── Legendary tier: full-width horizontal relic ──
+                if (isLegend) {
                   return (
-                    <div key={tier.key}
-                      className="surface relative overflow-hidden p-4 animate-rise"
-                      style={{
-                        animationDelay: `${i * 50}ms`,
-                        background: isCurrent
-                          ? `linear-gradient(150deg, ${r.color}26, transparent 65%), var(--surface-1)`
-                          : 'var(--surface-1)',
-                        boxShadow: isCurrent
-                          ? `inset 0 0 0 1px ${r.color}4d, 0 12px 32px ${r.glow}`
-                          : 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)',
-                        opacity: isLowerTier ? 0.5 : 1,
-                      }}>
-
-                      {/* relic glow */}
-                      <div className="absolute -top-6 -right-4 w-24 h-24 pointer-events-none"
-                        style={{ background: `radial-gradient(circle, ${r.glow}, transparent 70%)`, opacity: isCurrent ? 1 : 0.45 }} />
-
-                      <div className="flex items-center gap-3.5 relative z-10">
-                        {/* gem tile */}
-                        <div className="flex items-center justify-center w-14 h-14 rounded-2xl text-2xl shrink-0"
-                          style={{ background: `${r.color}1f`, boxShadow: `inset 0 0 0 1px ${r.color}40, 0 0 18px ${r.glow}` }}>
-                          {r.gem}
-                        </div>
-
+                    <div key={tier.key} className="relative overflow-hidden rounded-[22px] p-4 animate-rise"
+                      style={{ ...cardBase, gridColumn: '1 / -1' }}>
+                      <div className="absolute pointer-events-none rounded-full"
+                        style={{ top: '-40%', left: '16%', width: 120, height: 120, background: r.aura, filter: 'blur(34px)', opacity: isCurrent ? 0.55 : 0.4 }} />
+                      {isCurrent && <Flag accent={r.accent} />}
+                      <div className="relative z-10 flex items-center gap-3">
+                        <Gem id="gem-tier_100" c1={r.c1} c2={r.c2} size={46} />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-[10px] font-extrabold tracking-wider uppercase" style={{ color: r.color, fontFamily: 'var(--font-display)' }}>
-                              {r.rarity}
-                            </p>
-                            {isCurrent && (
-                              <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-md"
-                                style={{ background: `${r.color}26`, color: r.color, fontFamily: 'var(--font-display)' }}>
-                                EQUIPPED
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-bold text-white mt-0.5">{tier.label}</p>
-                          <div className="flex items-baseline gap-1.5 mt-1">
-                            <span className="display text-[18px]" style={{ color: r.color }}>+{tier.boostPercent}%</span>
-                            <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>XP · {tier.tonAmount} TON</span>
-                          </div>
+                          <p className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: r.accent, fontFamily: 'var(--font-display)' }}>
+                            {tier.label}
+                          </p>
+                          <p className="display text-[17px] text-white mt-0.5">
+                            {tier.tonAmount} <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>TON</span>
+                          </p>
+                        </div>
+                        <div className="text-center shrink-0">
+                          <p className="display-xl text-[22px]" style={{ color: r.accent }}>+{tier.boostPercent}%</p>
+                          <button disabled={btnDisabled} onClick={() => handleSupport(tier)}
+                            className="mt-1 px-4 py-2 rounded-xl text-[12px] font-bold press disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+                            style={btnStyle}>
+                            {btnLabel}
+                          </button>
                         </div>
                       </div>
-
-                      <button
-                        disabled={isCurrent || isLowerTier || !!pendingTierKey || !!pending}
-                        onClick={() => handleSupport(tier)}
-                        className="sheen relative w-full mt-3.5 py-2.5 rounded-xl text-sm font-bold press disabled:opacity-60 flex items-center justify-center gap-2 overflow-hidden"
-                        style={{
-                          background: isCurrent ? 'var(--surface-2)' : `linear-gradient(135deg, ${r.color}, ${r.color}bb)`,
-                          color: isCurrent ? 'var(--text-muted)' : (tier.key === 'tier_100' ? '#1a1505' : 'white'),
-                          boxShadow: isCurrent ? 'inset 0 1px 0 var(--edge-light)' : `0 6px 18px ${r.glow}`,
-                        }}>
-                        {isPendingThis ? (
-                          <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Claiming...</>
-                        ) : isCurrent ? (
-                          '✓ Equipped'
-                        ) : isLowerTier ? (
-                          '🔒 Outranked'
-                        ) : (
-                          <><Zap size={14} fill="currentColor" /> Claim · {tier.tonAmount} TON</>
-                        )}
-                      </button>
                     </div>
                   )
-                })
-            }
-          </div>
+                }
+
+                // ── Standard tiers: vertical relic card ──
+                return (
+                  <div key={tier.key} className="relative overflow-hidden rounded-[22px] p-4 pt-5 flex flex-col items-center gap-2 animate-rise press"
+                    style={cardBase}>
+                    <div className="absolute pointer-events-none rounded-full"
+                      style={{ top: '-26%', left: '50%', transform: 'translateX(-50%)', width: 110, height: 110, background: r.aura, filter: 'blur(32px)', opacity: isCurrent ? 0.6 : 0.42 }} />
+                    {isCurrent && <Flag accent={r.accent} />}
+                    <Gem id={`gem-${tier.key}`} c1={r.c1} c2={r.c2} size={56} />
+                    <p className="relative z-10 display text-[15px] text-white">
+                      {tier.tonAmount} <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>TON</span>
+                    </p>
+                    <p className="relative z-10 text-[10px] font-extrabold uppercase tracking-wider" style={{ color: r.accent, fontFamily: 'var(--font-display)' }}>
+                      {tier.label}
+                    </p>
+                    <p className="relative z-10 display-xl text-[18px]" style={{ color: r.accent }}>+{tier.boostPercent}%</p>
+                    <button disabled={btnDisabled} onClick={() => handleSupport(tier)}
+                      className="relative z-10 w-full mt-1 py-2.5 rounded-xl text-[12px] font-bold press disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+                      style={btnStyle}>
+                      {btnLabel}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* ── Info ───────────────────────────────────────────── */}
         <div className="surface-quiet px-3.5 py-3" style={{ background: 'rgba(91,141,239,0.07)' }}>
           <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            ℹ️ Your transaction is verified automatically after sending. The relic equips once the TON blockchain confirms the TX (~30 seconds).
+            ℹ️ Your transaction is verified automatically after sending. The relic equips once the TON blockchain confirms the TX (~30 seconds). Boost applies to your first 3,000 XP per day.
           </p>
         </div>
 
