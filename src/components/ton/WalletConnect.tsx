@@ -121,7 +121,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
 
     return (
       <div className="space-y-3">
-        <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
+        <div className="surface p-4" style={{ background: "rgba(52,211,153,0.08)", boxShadow: "inset 0 0 0 1px rgba(52,211,153,0.25)" }}>
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={14} className="text-emerald-400 shrink-0" />
             <span className="text-xs font-semibold text-emerald-300">{appName} connected</span>
@@ -170,11 +170,12 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
   // ── Nicht connected ─────────────────────────────────────────
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
+      <div className="surface p-4 space-y-3">
         <div className="text-center space-y-2">
-          <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20
-                          flex items-center justify-center mx-auto">
-            <Wallet size={18} className="text-blue-400" />
+          <div className="w-11 h-11 rounded-2xl
+                          flex items-center justify-center mx-auto"
+            style={{ background: 'rgba(91,141,239,0.12)', boxShadow: 'inset 0 0 0 1px rgba(91,141,239,0.25)' }}>
+            <Wallet size={18} style={{ color: '#5B8DEF' }} />
           </div>
           <div>
             <p className="text-sm font-bold text-white">Connect TON Wallet</p>
