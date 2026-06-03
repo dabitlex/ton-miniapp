@@ -2,6 +2,7 @@
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient }    from '@/lib/supabase/admin'
 import { ECOSYSTEM_TIERS }   from '@/lib/constants/game'
+import { notifyUser, boostConfirmedMessage } from '@/lib/telegram/notifications'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -86,6 +87,12 @@ export const POST = withAuth(async (ctx) => {
 
   if (isConfirmedOnChain) {
     console.log(`[EcoSupport] ✅ Boost sofort aktiviert: ${tier.key} +${tier.boostPercent}% für User ${ctx.userId}`)
+    // Push-Bestätigung (Zahlungs-Bestätigung → bypassOptOut)
+    notifyUser(
+      ctx.userId,
+      boostConfirmedMessage(tier.label, tier.boostPercent, season.ends_at),
+      { bypassOptOut: true }
+    ).catch(() => {})
     return ok({
       activated:  true,
       tier:       tier.key,
