@@ -57,3 +57,9 @@ verify_jwt = false
 
 [functions.season-rollover.cron]
 schedule = "5 0 * * *"           # daily at 00:05 UTC
+
+[functions.notification-sender]
+verify_jwt = false
+
+[functions.notification-sender.cron]
+schedule = "*/1 * * * *"         # jede Minute — arbeitet notification_queue ab
