@@ -85,7 +85,7 @@ export const POST = withAuth(async (ctx) => {
     streak_miss_eligible_at:newMissEligibleAt,
   }).eq('id', ctx.userId)
 
-  // Grant XP for streak
+  // Grant XP for streak (daily base reward)
   if (xpGranted > 0) {
     await db.rpc('grant_xp', {
       p_user_id:       ctx.userId,
@@ -95,10 +95,27 @@ export const POST = withAuth(async (ctx) => {
     })
   }
 
+  // ── Streak-Meilensteine prüfen (Bonus zusätzlich zur Basis-XP) ──
+  // streak_cycle = Startdatum dieses Streaks = today - (newStreak - 1) Tage
+  const cycleStart = new Date(todayDate.getTime() - (newStreak - 1) * 86400_000)
+    .toISOString().split('T')[0]
+  let milestoneAwards: { day: number; xp: number }[] = []
+  try {
+    const { data: awards } = await db.rpc('check_streak_milestones', {
+      p_user_id:        ctx.userId,
+      p_streak_current: newStreak,
+      p_streak_cycle:   cycleStart,
+    })
+    milestoneAwards = (awards as any[] ?? []).map(a => ({ day: a.awarded_day, xp: a.awarded_xp }))
+  } catch (e) {
+    console.error('[Streak] Meilenstein-Check Fehler:', e)
+  }
+
   return ok({
     streakCurrent: newStreak,
     streakLongest: newLongest,
     xpGranted,
     missUsed,
+    milestoneAwards,   // falls beim Claim ein Meilenstein erreicht wurde
   })
 })
