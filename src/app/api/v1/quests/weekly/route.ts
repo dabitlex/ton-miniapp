@@ -58,10 +58,10 @@ export const GET = withAuth(async (ctx) => {
       .eq('iso_year', year)
       .eq('iso_week', week)
 
-    return ok((newData ?? []).map(mapRow))
+    return ok(await attachProgress((newData ?? []).map(mapRow), ctx.userId))
   }
 
-  return ok(data.map(mapRow))
+  return ok(await attachProgress(data.map(mapRow), ctx.userId))
 })
 
 async function assignWeeklyQuests(userId: string, isoYear: number, isoWeek: number) {
@@ -97,6 +97,23 @@ async function assignWeeklyQuests(userId: string, isoYear: number, isoWeek: numb
     })),
     { onConflict: 'user_id,template_id,iso_year,iso_week' }
   )
+}
+
+async function attachProgress(quests: any[], userId: string) {
+  const db = getAdminClient()
+  const codes = quests.filter(q => q.status !== 'completed').map(q => q.template.internalCode)
+  if (codes.length === 0) return quests
+  const { data: prog } = await db.rpc('get_quests_progress_batch' as any, {
+    p_user_id: userId, p_codes: codes,
+  })
+  const map: Record<string, any> = {}
+  for (const p of (prog as any[] ?? [])) {
+    map[p.quest_code] = {
+      current: Number(p.current_value), target: Number(p.required_value),
+      type: p.progress_type, isMet: p.is_met,
+    }
+  }
+  return quests.map(q => ({ ...q, progress: map[q.template.internalCode] ?? undefined }))
 }
 
 function mapRow(row: any) {
