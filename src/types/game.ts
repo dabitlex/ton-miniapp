@@ -79,6 +79,13 @@ export interface QuestTemplate {
   sortOrder: number
 }
 
+export interface QuestProgress {
+  current: number
+  target: number
+  type: 'binary' | 'countable'
+  isMet: boolean
+}
+
 export interface DailyQuest {
   id: string
   templateId: string
@@ -88,6 +95,7 @@ export interface DailyQuest {
   xpGranted: number | null
   energySpent: number | null
   template: QuestTemplate
+  progress?: QuestProgress
 }
 
 export interface WeeklyQuest {
@@ -98,6 +106,7 @@ export interface WeeklyQuest {
   status: QuestStatus
   xpGranted: number | null
   template: QuestTemplate
+  progress?: QuestProgress
 }
 
 export interface QuestCompletionResult {
