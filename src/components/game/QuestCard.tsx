@@ -1,14 +1,14 @@
-// src/components/game/QuestCard.tsx — Redesigned (Aurora OS · mission row)
+// src/components/game/QuestCard.tsx — Redesigned (Aurora OS · progress + claim)
 'use client'
-import { Zap, Star, Check, ChevronRight } from 'lucide-react'
+import { Zap, Star, Check, Lock } from 'lucide-react'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
 
 interface QuestCardProps {
-  quest:             DailyQuest | WeeklyQuest
-  onComplete:        (id: string) => void
-  completing:        boolean
-  activeBoostPct?:   number   // active ecosystem boost in %
-  index?:            number
+  quest:           DailyQuest | WeeklyQuest
+  onComplete:      (id: string) => void
+  completing:      boolean
+  activeBoostPct?: number
+  index?:          number
 }
 
 const DIFF_CONFIG = {
@@ -24,9 +24,17 @@ export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, i
   const diff   = DIFF_CONFIG[quest.template.difficulty] ?? DIFF_CONFIG.easy
   const isDone = quest.status === 'completed'
 
+  const progress = quest.progress
+  const isCountable = progress?.type === 'countable'
+  const isMet = progress?.isMet ?? false
+  const current = progress?.current ?? 0
+  const target  = progress?.target ?? 1
+
+  // Claim is enabled only when requirement met (and not done)
+  const canClaim = !isDone && isMet
+
   return (
-    <div
-      className="relative flex items-stretch gap-3 animate-rise"
+    <div className="relative flex items-stretch gap-3 animate-rise"
       style={{ animationDelay: `${Math.min(index, 8) * 55}ms` }}>
 
       {/* Timeline rail node */}
@@ -34,8 +42,8 @@ export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, i
         <span className="rounded-full transition-all"
           style={{
             width: isDone ? 12 : 10, height: isDone ? 12 : 10,
-            background: isDone ? 'var(--emerald)' : diff.color,
-            boxShadow: `0 0 10px ${isDone ? 'rgba(52,211,153,0.6)' : diff.glow}`,
+            background: isDone ? 'var(--emerald)' : canClaim ? 'var(--emerald)' : diff.color,
+            boxShadow: `0 0 10px ${isDone || canClaim ? 'rgba(52,211,153,0.6)' : diff.glow}`,
           }} />
         <span className="flex-1 w-[2px] mt-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }} />
       </div>
@@ -77,6 +85,45 @@ export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, i
               {quest.template.description}
             </p>
 
+            {/* ── PROGRESS (only countable, not done) ─────────── */}
+            {!isDone && isCountable && (
+              <div className="mb-2.5">
+                {target <= 5 ? (
+                  /* Segmented — one segment per unit */
+                  <div className="flex gap-1">
+                    {Array.from({ length: target }).map((_, i) => (
+                      <span key={i} className="flex-1 rounded-full transition-all"
+                        style={{
+                          height: 6,
+                          background: i < current
+                            ? (isMet ? 'linear-gradient(90deg,#10B981,#34D399)' : 'linear-gradient(90deg,var(--violet),var(--blue))')
+                            : 'rgba(255,255,255,0.08)',
+                          boxShadow: i < current ? `0 0 8px ${isMet ? 'rgba(52,211,153,0.5)' : 'rgba(139,92,246,0.5)'}` : 'none',
+                        }} />
+                    ))}
+                  </div>
+                ) : (
+                  /* Continuous bar — for targets > 5 */
+                  <div className="rounded-full overflow-hidden" style={{ height: 6, background: 'rgba(255,255,255,0.07)' }}>
+                    <div className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, (current / target) * 100)}%`,
+                        background: isMet ? 'linear-gradient(90deg,#10B981,#34D399)' : 'linear-gradient(90deg,var(--violet),var(--blue))',
+                        boxShadow: `0 0 8px ${isMet ? 'rgba(52,211,153,0.5)' : 'rgba(139,92,246,0.5)'}`,
+                      }} />
+                  </div>
+                )}
+                <div className="flex justify-between mt-1">
+                  <span className="text-[9px]" style={{ color: isMet ? 'var(--emerald)' : 'var(--text-faint)' }}>
+                    {isMet ? 'Complete!' : 'In progress'}
+                  </span>
+                  <span className="text-[10px] font-bold" style={{ fontFamily: 'var(--font-display)', color: isMet ? 'var(--emerald)' : 'var(--violet-bright)' }}>
+                    {current.toLocaleString()} / {target.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: 'var(--cyan-soft)' }}>
@@ -102,21 +149,27 @@ export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, i
                 <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: 'var(--emerald)' }}>
                   <Check size={13} strokeWidth={3} /> Done
                 </span>
-              ) : quest.status === 'available' ? (
+              ) : canClaim ? (
                 <button
                   onClick={() => onComplete(quest.id)}
                   disabled={completing}
-                  className="flex items-center gap-1 pl-3.5 pr-2.5 py-1.5 rounded-xl text-xs font-bold text-white press disabled:opacity-50"
+                  className="flex items-center gap-1 pl-3 pr-3.5 py-1.5 rounded-xl text-xs font-bold text-white press disabled:opacity-50"
                   style={{
-                    background: completing ? 'rgba(139,92,246,0.4)' : 'var(--aurora)',
-                    boxShadow: '0 4px 14px rgba(124,58,237,0.34), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    background: completing ? 'rgba(16,185,129,0.4)' : 'linear-gradient(135deg,#10B981,#34D399)',
+                    boxShadow: '0 4px 14px rgba(16,185,129,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    fontFamily: 'var(--font-display)',
                   }}>
                   {completing
                     ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    : <>Start <ChevronRight size={13} strokeWidth={2.6} /></>
+                    : <><Check size={13} strokeWidth={2.8} /> Claim</>
                   }
                 </button>
-              ) : null}
+              ) : (
+                <span className="flex items-center gap-1 pl-3 pr-3 py-1.5 rounded-xl text-xs font-bold"
+                  style={{ color: 'var(--text-faint)', background: 'rgba(255,255,255,0.05)', fontFamily: 'var(--font-display)' }}>
+                  <Lock size={11} /> Claim
+                </span>
+              )}
             </div>
           </div>
         </div>
