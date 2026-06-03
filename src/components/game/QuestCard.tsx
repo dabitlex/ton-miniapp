@@ -91,25 +91,30 @@ export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, i
                 {target <= 5 ? (
                   /* Segmented — one segment per unit */
                   <div className="flex gap-1">
-                    {Array.from({ length: target }).map((_, i) => (
-                      <span key={i} className="flex-1 rounded-full transition-all"
-                        style={{
-                          height: 6,
-                          background: i < current
-                            ? (isMet ? 'linear-gradient(90deg,#10B981,#34D399)' : 'linear-gradient(90deg,var(--violet),var(--blue))')
-                            : 'rgba(255,255,255,0.08)',
-                          boxShadow: i < current ? `0 0 8px ${isMet ? 'rgba(52,211,153,0.5)' : 'rgba(139,92,246,0.5)'}` : 'none',
-                        }} />
-                    ))}
+                    {Array.from({ length: target }).map((_, i) => {
+                      const filled = i < current
+                      return (
+                        <span key={i} className="flex-1 rounded-full transition-all"
+                          style={{
+                            height: 7,
+                            background: filled
+                              ? (isMet ? 'linear-gradient(90deg,#34D399,#6EE7B7)' : 'linear-gradient(90deg,#A78BFA,#60A5FA)')
+                              : 'rgba(255,255,255,0.10)',
+                            boxShadow: filled
+                              ? (isMet ? '0 0 10px rgba(52,211,153,0.7)' : '0 0 10px rgba(139,92,246,0.7)')
+                              : 'inset 0 0 0 1px rgba(255,255,255,0.04)',
+                          }} />
+                      )
+                    })}
                   </div>
                 ) : (
                   /* Continuous bar — for targets > 5 */
                   <div className="rounded-full overflow-hidden" style={{ height: 6, background: 'rgba(255,255,255,0.07)' }}>
                     <div className="h-full rounded-full transition-all"
                       style={{
-                        width: `${Math.min(100, (current / target) * 100)}%`,
-                        background: isMet ? 'linear-gradient(90deg,#10B981,#34D399)' : 'linear-gradient(90deg,var(--violet),var(--blue))',
-                        boxShadow: `0 0 8px ${isMet ? 'rgba(52,211,153,0.5)' : 'rgba(139,92,246,0.5)'}`,
+                        width: `${Math.max(6, Math.min(100, (current / target) * 100))}%`,
+                        background: isMet ? 'linear-gradient(90deg,#34D399,#6EE7B7)' : 'linear-gradient(90deg,#A78BFA,#60A5FA)',
+                        boxShadow: `0 0 10px ${isMet ? 'rgba(52,211,153,0.7)' : 'rgba(139,92,246,0.7)'}`,
                       }} />
                   </div>
                 )}
