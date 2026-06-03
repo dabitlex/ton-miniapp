@@ -76,13 +76,45 @@ export const GET = withAuth(async (ctx) => {
       .eq('id', ctx.userId)
   }
 
+  const validCount = list.filter((r: any) => r.isValid).length
+
+  // Meilenstein-Daten laden
+  const { data: grantedMs } = await supabase
+    .from('referral_milestones')
+    .select('milestone, xp_reward, granted_at')
+    .eq('user_id', ctx.userId)
+
+  const MILESTONE_DEFS = [
+    { threshold: 5,  xp: 2500  },
+    { threshold: 10, xp: 6000  },
+    { threshold: 25, xp: 18000 },
+    { threshold: 50, xp: 40000 },
+  ]
+  const grantedSet = new Set((grantedMs ?? []).map((m: any) => m.milestone))
+
+  const milestones = MILESTONE_DEFS.map(m => ({
+    threshold: m.threshold,
+    xpReward:  m.xp,
+    reached:   validCount >= m.threshold,
+    granted:   grantedSet.has(m.threshold),
+  }))
+
+  // Nächster offener Meilenstein
+  const nextMilestone = MILESTONE_DEFS.find(m => validCount < m.threshold) ?? null
+
   return ok({
     referralCode,
     referralLink,
     referralEligible: isEligible,
     totalReferrals:   list.length,
-    validReferrals:   list.filter((r: any) => r.isValid).length,
+    validReferrals:   validCount,
     referrals:        list,
+    milestones,
+    nextMilestone: nextMilestone ? {
+      threshold: nextMilestone.threshold,
+      xpReward:  nextMilestone.xp,
+      remaining: nextMilestone.threshold - validCount,
+    } : null,
     requirements: {
       level: {
         current:  userLevel,
