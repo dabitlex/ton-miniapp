@@ -1,11 +1,26 @@
-// src/app/(game)/leaderboard/page.tsx — Redesigned + Relic Gem
+// src/app/(game)/leaderboard/page.tsx — Redesigned + Relic Gem + Season Rewards
 'use client'
-import { useCallback, useRef, forwardRef } from 'react'
-import { Crown } from 'lucide-react'
+import { useCallback, useRef, forwardRef, useState } from 'react'
+import { Crown, Gift, X } from 'lucide-react'
 import { useLeaderboard }   from '@/features/leaderboard/hooks'
 import { useUserStore }     from '@/stores/useUserStore'
 import { TelegramAvatar }   from '@/components/layout/GameHeader'
 import type { LeaderboardEntry } from '@/types/game'
+
+// ── Season reward tiers (mirrors calc_season_reward SQL) ─────
+interface RewardTier { label: string; medal: string; xp: number; min: number; max: number }
+const REWARD_TIERS: RewardTier[] = [
+  { label: 'Rank 1',       medal: '🥇', xp: 50000, min: 1,   max: 1   },
+  { label: 'Rank 2',       medal: '🥈', xp: 35000, min: 2,   max: 2   },
+  { label: 'Rank 3',       medal: '🥉', xp: 25000, min: 3,   max: 3   },
+  { label: 'Rank 4–10',    medal: '⭐', xp: 15000, min: 4,   max: 10  },
+  { label: 'Rank 11–25',   medal: '✨', xp: 8000,  min: 11,  max: 25  },
+  { label: 'Rank 26–50',   medal: '✨', xp: 5000,  min: 26,  max: 50  },
+  { label: 'Rank 51–100',  medal: '✨', xp: 3000,  min: 51,  max: 100 },
+  { label: 'Rank 101–250', medal: '·',  xp: 1500,  min: 101, max: 250 },
+  { label: 'Rank 251–500', medal: '·',  xp: 750,   min: 251, max: 500 },
+  { label: 'Rank 501+',    medal: '·',  xp: 250,   min: 501, max: Infinity },
+]
 
 // ── Relic Crystal — exact same SVG as Boost tab, scaled small ─
 const RELIC_CFG: Record<string, { c1: string; c2: string; c3: string; glow: string }> = {
@@ -54,6 +69,7 @@ function RelicGem({ tier, size = 14 }: { tier: string; size?: number }) {
 export default function LeaderboardPage() {
   useUserStore(s => s.profile)
   const league = null // League filter disabled until Season 2
+  const [rewardsOpen, setRewardsOpen] = useState(false)
 
   const { entries, userRank, userEntry, isLoading, hasMore, refreshedAt, loadMore } =
     useLeaderboard(league)
@@ -76,9 +92,21 @@ export default function LeaderboardPage() {
     <div className="flex flex-col h-full relative z-10">
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="shrink-0 px-5 pt-4 pb-2 animate-rise">
-        <h1 className="display-xl text-[24px] text-white leading-none">Arena</h1>
-        <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Global season rankings</p>
+      <div className="shrink-0 px-5 pt-4 pb-2 animate-rise flex items-start justify-between">
+        <div>
+          <h1 className="display-xl text-[24px] text-white leading-none">Arena</h1>
+          <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Global season rankings</p>
+        </div>
+        <button
+          onClick={() => setRewardsOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl press mt-0.5"
+          style={{
+            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+            color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.12)',
+            border: '1px solid rgba(139,92,246,0.25)', whiteSpace: 'nowrap',
+          }}>
+          <Gift size={13} /> Rewards
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 pb-6">
@@ -142,7 +170,87 @@ export default function LeaderboardPage() {
           </p>
         )}
       </div>
+
+      {/* ── Season Rewards Sheet ──────────────────────────────── */}
+      <RewardsSheet open={rewardsOpen} onClose={() => setRewardsOpen(false)} userRank={userRank} />
     </div>
+  )
+}
+
+// ── Bottom sheet: full reward tier breakdown ──────────────────
+function RewardsSheet({ open, onClose, userRank }: { open: boolean; onClose: () => void; userRank: number | null }) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(3,3,8,0.7)', backdropFilter: 'blur(6px)',
+          opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
+          transition: 'opacity 0.3s',
+        }} />
+      {/* Sheet */}
+      <div
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 101,
+          maxWidth: 420, margin: '0 auto',
+          background: 'linear-gradient(180deg,#16132e,#0c0a1a)',
+          borderRadius: '26px 26px 0 0',
+          padding: '8px 20px calc(24px + env(safe-area-inset-bottom))',
+          boxShadow: '0 -10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
+          transform: open ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.35s cubic-bezier(0.34,1.2,0.5,1)',
+        }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)', margin: '8px auto 16px' }} />
+
+        <div className="flex items-center justify-between mb-1">
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#fff' }}>
+            Season Rewards
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)' }}>
+            <X size={20} />
+          </button>
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
+          XP added to your Total XP at season end, based on final rank.
+        </p>
+
+        {REWARD_TIERS.map((t) => {
+          const isYou = userRank != null && userRank >= t.min && userRank <= t.max
+          return (
+            <div key={t.label}
+              className="flex items-center justify-between mb-1.5"
+              style={{
+                padding: '11px 13px', borderRadius: 13,
+                background: isYou
+                  ? 'linear-gradient(135deg,rgba(139,92,246,0.2),rgba(91,141,239,0.06))'
+                  : 'var(--surface-1)',
+                boxShadow: isYou ? 'inset 0 0 0 1px rgba(167,139,250,0.4)' : 'none',
+              }}>
+              <div className="flex items-center gap-2.5">
+                <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{t.medal}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: isYou ? '#fff' : 'var(--text-secondary)' }}>
+                  {t.label}
+                  {isYou && (
+                    <span style={{ fontSize: 8, fontWeight: 800, color: '#C4B5FD', background: 'rgba(167,139,250,0.2)', padding: '2px 6px', borderRadius: 5, marginLeft: 7 }}>
+                      YOU · #{userRank}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 800, color: 'var(--emerald)' }}>
+                +{t.xp.toLocaleString()}
+              </span>
+            </div>
+          )
+        })}
+
+        <p style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'center', marginTop: 14, lineHeight: 1.5 }}>
+          Minimum 500 Season XP required to qualify · Rewards added automatically
+        </p>
+      </div>
+    </>
   )
 }
 
