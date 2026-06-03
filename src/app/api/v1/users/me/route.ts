@@ -62,6 +62,23 @@ export const GET = withAuth(async (ctx) => {
     .eq('status', 'active')
     .maybeSingle()
 
+  // Streak-Meilensteine berechnen
+  const STREAK_MS = [
+    { day: 3,   xp: 500   },
+    { day: 7,   xp: 1500  },
+    { day: 14,  xp: 3500  },
+    { day: 30,  xp: 8000  },
+    { day: 60,  xp: 18000 },
+    { day: 100, xp: 35000 },
+  ]
+  const streakCur = (u as any).streak_current ?? 0
+  const streakMilestones = STREAK_MS.map(m => ({
+    day:      m.day,
+    xpReward: m.xp,
+    reached:  streakCur >= m.day,
+  }))
+  const nextStreakMs = STREAK_MS.find(m => streakCur < m.day) ?? null
+
   // Clan-Mitgliedschaft laden
   const { data: clanMember } = await supabase
     .from('clan_members')
@@ -114,6 +131,13 @@ export const GET = withAuth(async (ctx) => {
       number:  activeSeason.season_number,
       endsAt:  activeSeason.ends_at,
       startsAt: activeSeason.starts_at,
+    } : null,
+    // Streak-Meilensteine (für Home-Anzeige)
+    streakMilestones,
+    nextStreakMilestone: nextStreakMs ? {
+      day:       nextStreakMs.day,
+      xpReward:  nextStreakMs.xp,
+      remaining: nextStreakMs.day - streakCur,
     } : null,
     // Clan
     clan: clanMember ? {
