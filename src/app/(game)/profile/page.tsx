@@ -6,6 +6,7 @@ import { XPBar }           from '@/components/game/XPBar'
 import { TelegramAvatar }  from '@/components/layout/GameHeader'
 import { WalletConnect }   from '@/components/ton/WalletConnect'
 import { ReferralSection } from '@/components/game/ReferralSection'
+import { NotificationSettings } from '@/components/game/NotificationSettings'
 import { formatNumber }    from '@/lib/utils'
 import { Flame, Star, Zap, TrendingUp, Trophy, Calendar } from 'lucide-react'
 
@@ -111,6 +112,12 @@ export default function ProfilePage() {
         <div className="animate-rise" style={{ animationDelay: '180ms' }}>
           <h3 className="eyebrow mb-2.5">Referral</h3>
           <ReferralSection />
+        </div>
+
+        {/* ── Settings ─────────────────────────────────────────── */}
+        <div className="animate-rise" style={{ animationDelay: '210ms' }}>
+          <h3 className="eyebrow mb-2.5">Settings</h3>
+          <NotificationSettings />
         </div>
       </div>
     </div>
