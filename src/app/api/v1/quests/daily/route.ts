@@ -51,7 +51,32 @@ export const GET = withAuth(async (ctx) => {
     template: mapTemplate(row.template),
   }))
 
-  return ok(quests)
+  // Fortschritt für alle Quests in einem Batch laden
+  const codes = quests
+    .filter(q => q.status !== 'completed')
+    .map(q => q.template.internalCode)
+  let progressMap: Record<string, any> = {}
+  if (codes.length > 0) {
+    const { data: prog } = await db.rpc('get_quests_progress_batch' as any, {
+      p_user_id: ctx.userId,
+      p_codes:   codes,
+    })
+    for (const p of (prog as any[] ?? [])) {
+      progressMap[p.quest_code] = {
+        current: Number(p.current_value),
+        target:  Number(p.required_value),
+        type:    p.progress_type,
+        isMet:   p.is_met,
+      }
+    }
+  }
+
+  const withProgress = quests.map(q => ({
+    ...q,
+    progress: progressMap[q.template.internalCode] ?? undefined,
+  }))
+
+  return ok(withProgress)
 })
 
 function mapTemplate(t: any) {
