@@ -7,6 +7,7 @@ import { formatNumber }  from '@/lib/utils'
 import { xpForLevel, GAME_CONSTANTS } from '@/lib/constants/game'
 import { QuestCard }     from '@/components/game/QuestCard'
 import { StreakCard }    from '@/components/game/StreakCard'
+import { StreakMilestoneCard } from '@/components/game/StreakMilestoneCard'
 import Link from 'next/link'
 import { Flame, Zap, Star, Shield, ArrowRight } from 'lucide-react'
 
@@ -121,6 +122,7 @@ export default function HomePage() {
       {/* ── STREAK ─────────────────────────────────────────────── */}
       <div className="px-5 mt-4 animate-rise" style={{ animationDelay: '160ms' }}>
         <StreakCard />
+        <StreakMilestoneCard />
       </div>
 
       {/* ── DAILY MISSION FEED ─────────────────────────────────── */}
