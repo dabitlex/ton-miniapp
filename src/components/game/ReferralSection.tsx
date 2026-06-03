@@ -2,6 +2,7 @@
 'use client'
 import { useState }      from 'react'
 import { useQuery }      from '@tanstack/react-query'
+import { ReferralMilestones } from '@/components/game/ReferralMilestones'
 import { useAuthStore }  from '@/stores/useAuthStore'
 import { useUserStore }  from '@/stores/useUserStore'
 import { SkeletonCard }  from '@/components/ui/Skeleton'
@@ -329,6 +330,15 @@ export function ReferralSection() {
             <Share2 size={15} /> Share Link
           </button>
         </div>
+
+        {/* Milestones */}
+        {data?.milestones && (
+          <ReferralMilestones
+            validCount={data.validReferrals ?? 0}
+            milestones={data.milestones}
+            nextMilestone={data.nextMilestone ?? null}
+          />
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2">
