@@ -6,6 +6,7 @@ import { v4 as uuidv4 }  from 'uuid'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useQuestStore }  from '@/stores/useQuestStore'
 import { useEnergyStore } from '@/stores/useEnergyStore'
+import { useMysteryBoxStore } from '@/stores/useMysteryBoxStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
@@ -65,6 +66,7 @@ export function useQuests() {
       return apiFetch<{
         xpGranted: number; leveledUp: boolean; newLevel: number
         newLeague: string; energyAfter: number; softCapped: boolean
+        mysteryBoxUnlocked?: boolean
       }>('/api/v1/quests/complete', token!, {
         method: 'POST',
         body:   JSON.stringify({ questId, questType, nonce }),
@@ -115,6 +117,12 @@ export function useQuests() {
       // (z.B. daily_hard_champion entsperrt sich wenn alle anderen done sind)
       qc.invalidateQueries({ queryKey: ['quests', questType] })
       qc.invalidateQueries({ queryKey: ['leaderboard'] })
+
+      // Mystery Box: wenn mit dieser Quest alle Daily Quests fertig sind → Popup
+      if (data.mysteryBoxUnlocked) {
+        // kleine Verzögerung damit die XP-Animation zuerst läuft
+        setTimeout(() => useMysteryBoxStore.getState().trigger(), 600)
+      }
     },
 
     onError: (error: Error, _, context) => {
