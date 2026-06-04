@@ -71,7 +71,7 @@ export const GET = withAuth(async (ctx) => {
     { day: 60,  xp: 18000 },
     { day: 100, xp: 35000 },
   ]
-  const streakCur = (u as any).streak_current ?? 0
+  const streakCur = (user as any)?.streak_current ?? 0
   const streakMilestones = STREAK_MS.map(m => ({
     day:      m.day,
     xpReward: m.xp,
