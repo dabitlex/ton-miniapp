@@ -171,6 +171,29 @@ export const POST = withAuth(async (ctx) => {
     }, { onConflict: 'user_id,stat_date' }).then(() => {}),
   ])
 
+  // ── Mystery Box Trigger ──────────────────────────────────────
+  // Prüfen ob mit dieser Quest ALLE Daily Quests abgeschlossen sind
+  // und die Box heute noch nicht geöffnet wurde.
+  let mysteryBoxUnlocked = false
+  if (questType === 'daily') {
+    try {
+      const { data: allDone } = await db.rpc('all_daily_quests_complete', {
+        p_user_id: ctx.userId,
+      })
+      if (allDone === true) {
+        const { data: existingClaim } = await db
+          .from('mystery_box_claims')
+          .select('id')
+          .eq('user_id', ctx.userId)
+          .eq('claim_date', todayUTC())
+          .maybeSingle()
+        mysteryBoxUnlocked = !existingClaim
+      }
+    } catch (e) {
+      console.error('[MysteryBox] Trigger-Check Fehler:', e)
+    }
+  }
+
   return ok({
     xpGranted:   xp.xp_granted,
     leveledUp:   xp.leveled_up,
@@ -178,6 +201,7 @@ export const POST = withAuth(async (ctx) => {
     newLeague:   xp.new_league,
     energyAfter: energyRes.energy_after,
     softCapped:  xp.soft_capped,
+    mysteryBoxUnlocked,   // ← Frontend öffnet das Popup wenn true
   })
 })
 
