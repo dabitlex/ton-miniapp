@@ -6,7 +6,7 @@ import { GameHeader }      from '@/components/layout/GameHeader'
 import { EnergyStrip }     from '@/components/layout/EnergyStrip'
 import { MobileNav }       from '@/components/layout/MobileNav'
 import { EnergyTicker }    from '@/components/layout/EnergyTicker'
-import { SeasonRewardModal } from '@/components/game/SeasonRewardModal'
+import { MysteryBoxModal } from '@/components/game/MysteryBoxModal'
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -22,8 +22,8 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               {children}
             </main>
             <MobileNav />
-            <SeasonRewardModal />
           </div>
+          <MysteryBoxModal />
         </TonProvider>
       </QueryProvider>
     </AuthProvider>
