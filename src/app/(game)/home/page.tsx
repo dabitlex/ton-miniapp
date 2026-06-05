@@ -1,19 +1,20 @@
 // src/app/(game)/home/page.tsx — Redesigned (Aurora OS · Progression Hub)
 'use client'
 import { useUserStore }  from '@/stores/useUserStore'
-import { useEnergy }     from '@/features/hooks'
 import { useQuests }     from '@/features/quests/hooks'
+import { useLeaderboardStore } from '@/stores/useLeaderboardStore'
+import { EnergyStrip }   from '@/components/layout/EnergyStrip'
 import { formatNumber }  from '@/lib/utils'
 import { xpForLevel, GAME_CONSTANTS } from '@/lib/constants/game'
 import { QuestCard }     from '@/components/game/QuestCard'
 import { StreakCard }    from '@/components/game/StreakCard'
 import { StreakMilestoneCard } from '@/components/game/StreakMilestoneCard'
 import Link from 'next/link'
-import { Flame, Zap, Star, Shield, ArrowRight } from 'lucide-react'
+import { Flame, Star, Shield, Trophy, ArrowRight } from 'lucide-react'
 
 export default function HomePage() {
   const profile  = useUserStore(s => s.profile)
-  const energy   = useEnergy()
+  const userRank = useLeaderboardStore(s => s.userRank)
   const { daily, completingId, completeQuest, isLoadingDaily } = useQuests()
 
   const completed   = daily.filter(q => q.status === 'completed').length
@@ -98,14 +99,19 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* ── ENERGY BAR (zwischen Season XP und Chips) ──────────── */}
+      <div className="px-1 mt-4 animate-rise" style={{ animationDelay: '100ms' }}>
+        <EnergyStrip />
+      </div>
+
       {/* ── FLOATING STATUS CHIPS ──────────────────────────────── */}
       <div className="px-5 mt-4 grid grid-cols-2 gap-2.5 animate-rise" style={{ animationDelay: '120ms' }}>
         <StatChip icon={<Flame size={15} fill="#FBBF24" style={{ color: '#FBBF24' }} />} label="Streak"
           value={`${profile?.streakCurrent ?? 0}d`} tint="#FBBF24" />
         <StatChip icon={<Star size={15} fill="#A78BFA" style={{ color: '#A78BFA' }} />} label="Today XP"
           value={formatNumber(profile?.xpEarnedToday ?? 0)} tint="#A78BFA" />
-        <StatChip icon={<Zap size={15} fill={energy.current < 20 ? '#FB7185' : '#5EEAD4'} style={{ color: energy.current < 20 ? '#FB7185' : '#5EEAD4' }} />} label="Energy"
-          value={`${energy.current}/100`} tint={energy.current < 20 ? '#FB7185' : '#5EEAD4'} />
+        <StatChip icon={<Trophy size={15} style={{ color: '#FBBF24' }} />} label="Rank"
+          value={userRank ? `#${userRank}` : '—'} tint="#FBBF24" />
         {profile?.clan ? (
           <Link href="/clans" className="press">
             <StatChip icon={<Shield size={15} style={{ color: '#5B8DEF' }} />} label="Clan"
