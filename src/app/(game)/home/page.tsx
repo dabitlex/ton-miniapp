@@ -120,7 +120,7 @@ export default function HomePage() {
       </div>
 
       {/* ── STREAK ─────────────────────────────────────────────── */}
-      <div className="px-5 mt-4 animate-rise" style={{ animationDelay: '160ms' }}>
+      <div className="px-5 mt-4 animate-rise space-y-3" style={{ animationDelay: '160ms' }}>
         <StreakCard />
         <StreakMilestoneCard />
       </div>
