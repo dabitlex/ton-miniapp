@@ -1,6 +1,6 @@
 // src/features/leaderboard/hooks.ts
 'use client'
-import { useEffect, useCallback }        from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useQuery, useQueryClient }      from '@tanstack/react-query'
 import { useAuthStore }                  from '@/stores/useAuthStore'
 import { useLeaderboardStore }           from '@/stores/useLeaderboardStore'
@@ -11,18 +11,24 @@ export function useLeaderboard(league: LeagueTier | null = null) {
   const store = useLeaderboardStore()
   const qc    = useQueryClient()
 
-  // Wenn Liga sich ändert: Cache invalidieren damit queryFn IMMER läuft
+  // Nur zurücksetzen wenn die Liga TATSÄCHLICH wechselt — nicht bei jedem
+  // Tab-Öffnen. Sonst würde der vorgeladene Store geleert und Ranks zeigt
+  // wieder ein Lade-Skelett. Beim ersten Mount bleiben die vorgeladenen
+  // Einträge stehen (kein Flackern).
+  const prevLeague = useRef<LeagueTier | null | undefined>(undefined)
   useEffect(() => {
-    store.reset()
+    if (prevLeague.current !== undefined && prevLeague.current !== league) {
+      store.reset()
+      qc.invalidateQueries({ queryKey: ['leaderboard', 'season', league] })
+    }
+    prevLeague.current = league
     store.setLeague(league)
-    // Cache für diese Kombination als veraltet markieren → erzwingt neuen Fetch
-    qc.invalidateQueries({ queryKey: ['leaderboard', 'season', league] })
   }, [league]) // eslint-disable-line
 
   const { isLoading, refetch } = useQuery({
     queryKey:  ['leaderboard', 'season', league],
     enabled:   !!token,
-    staleTime: 0,         // Immer frisch fetchen wenn Liga wechselt
+    staleTime: 60_000,    // Vorgeladene Daten beim Mount nutzen (kein Lade-Flackern)
     gcTime:    5 * 60_000,// Cache 5 min im Speicher behalten
     queryFn:   async () => {
       store.setLoading(true)
