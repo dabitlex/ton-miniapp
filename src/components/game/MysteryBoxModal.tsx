@@ -66,14 +66,18 @@ export function MysteryBoxModal() {
           if (apiResult) {
             setResult(apiResult)
             setPhase('reward')
-            // XP optimistisch ins Profil
+            // XP optimistisch ins Profil (BEIDE: Season + Total, sonst driften sie)
             const p = useUserStore.getState().profile
-            if (p) patchProfile({ seasonXp: p.seasonXp + apiResult.xp })
+            if (p) patchProfile({
+              seasonXp: p.seasonXp + apiResult.xp,
+              xpTotal:  p.xpTotal  + apiResult.xp,
+            })
             const st = TIER_STYLE[apiResult.tier]
             if (st.conf) fireConfetti()
             try { (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch {}
             qc.invalidateQueries({ queryKey: ['leaderboard'] })
-            qc.invalidateQueries({ queryKey: ['user'] })
+            // Echte Server-Werte nachziehen (Level/Liga können sich geändert haben)
+            useUserStore.getState().refreshProfile()
           } else {
             // Fehler → schließen
             close()
