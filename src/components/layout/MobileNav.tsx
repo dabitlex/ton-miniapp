@@ -17,8 +17,9 @@ export function MobileNav() {
   const path = usePathname()
 
   return (
-    <nav className="shrink-0 relative z-20 safe-bottom px-3 pt-2 pb-2"
+    <nav className="shrink-0 relative z-20 px-3 pt-2"
       style={{
+        paddingBottom: 'calc(0.5rem + var(--tg-safe-bottom, 0px))',
         background: 'linear-gradient(0deg, rgba(8,8,14,0.96) 30%, rgba(8,8,14,0.6) 100%)',
         backdropFilter: 'blur(26px)',
         WebkitBackdropFilter: 'blur(26px)',
