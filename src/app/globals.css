@@ -433,3 +433,24 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
 }
+
+
+/* ── Telegram Fullscreen · Safe-Area-Defaults ────────────────── */
+/* Werden zur Laufzeit von initTelegramFullscreen() überschrieben.   */
+:root {
+  --tg-safe-area-top: 0px;   /* Geräte-Statusleiste / Notch        */
+  --tg-content-top:   48px;  /* Band der Telegram-Buttons (Titel)  */
+  --tg-safe-bottom:   0px;   /* Home-Indikator / untere Safe-Area  */
+}
+
+/* ── Animierter Aurora-Hintergrund (driftende Blobs) ─────────── */
+.aurora-blobs { position: absolute; inset: -40%; filter: blur(54px); opacity: 0.8; }
+.aurora-blob  { position: absolute; display: block; border-radius: 50%; mix-blend-mode: screen; will-change: transform; }
+.aurora-blob.ab1 { width: 62vw; height: 62vw; background: radial-gradient(circle, #8B5CF6, transparent 65%); top: 2%;  left: -10%;  animation: aurora-drift-1 18s ease-in-out infinite; }
+.aurora-blob.ab2 { width: 56vw; height: 56vw; background: radial-gradient(circle, #5B8DEF, transparent 65%); top: -6%; right: -12%; animation: aurora-drift-2 22s ease-in-out infinite; }
+.aurora-blob.ab3 { width: 52vw; height: 52vw; background: radial-gradient(circle, #5EEAD4, transparent 65%); top: 34%; left: 16%;  animation: aurora-drift-3 26s ease-in-out infinite; }
+.aurora-blob.ab4 { width: 46vw; height: 46vw; background: radial-gradient(circle, #A78BFA, transparent 65%); bottom: -6%; right: -4%; animation: aurora-drift-1 20s ease-in-out infinite reverse; }
+@keyframes aurora-drift-1 { 0%,100% { transform: translate(0,0)    scale(1);    } 50% { transform: translate(7%,5%)   scale(1.15); } }
+@keyframes aurora-drift-2 { 0%,100% { transform: translate(0,0)    scale(1);    } 50% { transform: translate(-8%,6%)  scale(1.2);  } }
+@keyframes aurora-drift-3 { 0%,100% { transform: translate(0,0)    scale(1);    } 50% { transform: translate(5%,-6%)  scale(1.1);  } }
+@media (prefers-reduced-motion: reduce) { .aurora-blob { animation: none !important; } }
