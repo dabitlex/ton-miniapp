@@ -98,7 +98,9 @@ export function useStreak() {
       haptic('success')
       if (data.missUsed) toast('info', '🛡️ Miss day protection used — streak saved!')
       toast('success', `🔥 Day ${data.streakCurrent} Streak!`)
-      qc.invalidateQueries({ queryKey: ['user', 'profile'] })
+      // Profil ist keine Live-Query → echte Server-Werte nachziehen
+      // (Streak-XP + evtl. Meilenstein-XP fließen so sofort in Total/Season XP).
+      useUserStore.getState().refreshProfile()
     },
     onError: (e: Error) => {
       toast('error', e.message)
