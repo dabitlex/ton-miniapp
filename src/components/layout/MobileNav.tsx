@@ -1,4 +1,4 @@
-// src/components/layout/MobileNav.tsx — Redesigned (Aurora OS · floating bar)
+// src/components/layout/MobileNav.tsx — Redesigned (Aurora OS · floating bar) 
 'use client'
 import Link            from 'next/link'
 import { usePathname } from 'next/navigation'
