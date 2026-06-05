@@ -6,6 +6,7 @@ import { useAuthStore }      from '@/stores/useAuthStore'
 import { useUserStore }      from '@/stores/useUserStore'
 import { useEnergyStore }    from '@/stores/useEnergyStore'
 import type { UserProfile }  from '@/types/game'
+import { prefetchAppData }   from '@/lib/prefetch'
 
 interface Props { children: React.ReactNode }
 
@@ -93,6 +94,9 @@ export function AuthProvider({ children }: Props) {
       if (isNewUser) {
         router.replace('/onboarding')
       } else {
+        // Alle Tab-Daten vorladen, solange der Splash noch sichtbar ist
+        // (isInitializing bleibt true bis hier). Danach öffnen die Tabs ohne Laden.
+        await prefetchAppData(accessToken)
         router.replace('/home')
       }
     } catch (e: any) {
