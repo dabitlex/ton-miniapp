@@ -7,6 +7,7 @@ import { useUserStore }      from '@/stores/useUserStore'
 import { useEnergyStore }    from '@/stores/useEnergyStore'
 import type { UserProfile }  from '@/types/game'
 import { prefetchAppData }   from '@/lib/prefetch'
+import { initTelegramFullscreen } from '@/lib/telegram-fullscreen'
 
 interface Props { children: React.ReactNode }
 
@@ -119,6 +120,8 @@ export function AuthProvider({ children }: Props) {
         tg.enableClosingConfirmation()
         tg.setBackgroundColor('#0c0c0f')
         tg.setHeaderColor('#0c0c0f')
+        // Fullscreen anfordern + Safe-Area-Variablen setzen/überwachen
+        initTelegramFullscreen()
       } catch { /* ignore */ }
     }
 
