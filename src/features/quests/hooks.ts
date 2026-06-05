@@ -37,7 +37,10 @@ export function useQuests() {
     // Automatisch alle 60 Sekunden refreshen
     refetchInterval: 60_000,
     queryFn:   async () => {
-      questStore.setLoadingDaily(true)
+      // KEIN setLoadingDaily(true) hier: Hintergrund-Refreshes (nach jedem
+      // Claim und alle 60s) sollen die Liste lautlos in-place aktualisieren,
+      // nicht das Skelett zeigen. Das Skelett erscheint nur beim Erstladen
+      // (React-Query isLoading), solange der Store noch keine Daten hat.
       const data = await apiFetch<DailyQuest[]>('/api/v1/quests/daily', token!)
       questStore.setDaily(data)
       return data
@@ -52,7 +55,6 @@ export function useQuests() {
     // Weekly alle 5 Minuten refreshen
     refetchInterval: 5 * 60_000,
     queryFn:   async () => {
-      questStore.setLoadingWeekly(true)
       const data = await apiFetch<WeeklyQuest[]>('/api/v1/quests/weekly', token!)
       questStore.setWeekly(data)
       return data
@@ -105,6 +107,7 @@ export function useQuests() {
       if (profile) {
         patchProfile({
           seasonXp:      profile.seasonXp + data.xpGranted,
+          xpTotal:       profile.xpTotal + data.xpGranted,   // ← hielt vorher nicht Schritt → Total/Season drifteten
           xpEarnedToday: profile.xpEarnedToday + data.xpGranted,
         })
       }
@@ -113,10 +116,15 @@ export function useQuests() {
         toast('warning', '⚠️ Tages-XP-Limit erreicht. Komm morgen wieder!', 4000)
       }
 
-      // Nach Abschluss: Quests neu laden damit Fortschritte sichtbar sind
-      // (z.B. daily_hard_champion entsperrt sich wenn alle anderen done sind)
+      // Nach Abschluss: Quests lautlos neu laden, damit der Fortschritt der
+      // ANDEREN Quests sofort stimmt (z.B. "verbrauche 30 Energie" schaltet
+      // frei, "Champion" entsperrt sich) — ohne sichtbares Neuladen.
       qc.invalidateQueries({ queryKey: ['quests', questType] })
       qc.invalidateQueries({ queryKey: ['leaderboard'] })
+
+      // Echte Server-Werte nachziehen (Total/Season XP, Level, Liga, Meilensteine)
+      // → kein App-Neustart mehr nötig, damit die Zahlen konsistent sind.
+      useUserStore.getState().refreshProfile()
 
       // Mystery Box: wenn mit dieser Quest alle Daily Quests fertig sind → Popup
       if (data.mysteryBoxUnlocked) {
