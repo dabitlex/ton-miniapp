@@ -66,12 +66,12 @@ function SplashContent() {
         }}>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icon-mark.png" alt="VEXALGO" width={104} height={104}
+        <img src="/icon-mark.png" alt="VEXALGO" width={150} height={150}
           className="mb-5 float"
           style={{
             objectFit: 'contain',
             // drop-shadow folgt der Logo-Form (kein rechteckiger Schatten wie bei box-shadow)
-            filter: 'drop-shadow(0 0 38px rgba(139,92,246,0.45)) drop-shadow(0 0 72px rgba(91,141,239,0.18))',
+            filter: 'drop-shadow(0 0 48px rgba(139,92,246,0.45)) drop-shadow(0 0 90px rgba(91,141,239,0.18))',
           }} />
 
         <h1 style={{
