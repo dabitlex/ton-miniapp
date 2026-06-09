@@ -1,6 +1,6 @@
 // src/components/game/QuestCard.tsx — Redesigned (Aurora OS · progress + claim)
 'use client'
-import { Zap, Star, Check, Lock } from 'lucide-react'
+import { Zap, Star, Check, Lock, Play } from 'lucide-react'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
 
 interface QuestCardProps {
@@ -9,6 +9,11 @@ interface QuestCardProps {
   completing:      boolean
   activeBoostPct?: number
   index?:          number
+  // Watch-Modus (für die synthetische "Watch Ads"-Tageskarte):
+  watchMode?:      boolean
+  onWatch?:        () => void
+  watching?:       boolean
+  watchDisabled?:  boolean
 }
 
 const DIFF_CONFIG = {
@@ -17,7 +22,8 @@ const DIFF_CONFIG = {
   hard:   { label: 'HARD', color: '#FB7185', glow: 'rgba(251,113,133,0.5)' },
 }
 
-export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, index = 0 }: QuestCardProps) {
+export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, index = 0,
+  watchMode = false, onWatch, watching = false, watchDisabled = false }: QuestCardProps) {
   const boostedXp = activeBoostPct > 0
     ? Math.floor(quest.template.xpReward * (1 + activeBoostPct / 100))
     : quest.template.xpReward
@@ -131,9 +137,11 @@ export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, i
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: 'var(--cyan-soft)' }}>
-                  <Zap size={11} fill="currentColor" />{quest.template.energyCost}
-                </span>
+                {quest.template.energyCost > 0 && (
+                  <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: 'var(--cyan-soft)' }}>
+                    <Zap size={11} fill="currentColor" />{quest.template.energyCost}
+                  </span>
+                )}
                 <span className="flex items-center gap-1 text-[11px] font-extrabold" style={{ color: 'var(--violet-bright)' }}>
                   <Star size={11} fill="currentColor" />
                   {activeBoostPct > 0 ? (
@@ -154,6 +162,21 @@ export function QuestCard({ quest, onComplete, completing, activeBoostPct = 0, i
                 <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: 'var(--emerald)' }}>
                   <Check size={13} strokeWidth={3} /> Done
                 </span>
+              ) : watchMode ? (
+                <button
+                  onClick={() => onWatch?.()}
+                  disabled={watching || watchDisabled}
+                  className="flex items-center gap-1 pl-3 pr-3.5 py-1.5 rounded-xl text-xs font-bold text-white press disabled:opacity-50"
+                  style={{
+                    background: watching ? 'rgba(139,92,246,0.4)' : 'linear-gradient(135deg,#8B5CF6,#5B8DEF)',
+                    boxShadow: '0 4px 14px rgba(139,92,246,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    fontFamily: 'var(--font-display)',
+                  }}>
+                  {watching
+                    ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    : <><Play size={12} strokeWidth={2.8} fill="currentColor" /> Watch</>
+                  }
+                </button>
               ) : canClaim ? (
                 <button
                   onClick={() => onComplete(quest.id)}
