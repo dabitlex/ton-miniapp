@@ -30,8 +30,12 @@ export function useLeaderboard(league: LeagueTier | null = null) {
     enabled:   !!token,
     staleTime: 60_000,    // Vorgeladene Daten beim Mount nutzen (kein Lade-Flackern)
     gcTime:    5 * 60_000,// Cache 5 min im Speicher behalten
+    refetchInterval: 2 * 60_000,        // Auto-Refresh alle 2 Minuten
+    refetchIntervalInBackground: false, // nur bei aktivem/fokussiertem Tab pollen (spart Last)
     queryFn:   async () => {
-      store.setLoading(true)
+      // Skelett nur beim Erstladen zeigen; die 2-Minuten-Refreshes
+      // aktualisieren lautlos in-place (kein Flackern).
+      if (store.entries.length === 0) store.setLoading(true)
       const params = new URLSearchParams({ page: '1', limit: '50' })
       if (league) params.set('league', league)
 
