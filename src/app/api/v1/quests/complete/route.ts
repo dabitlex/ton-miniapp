@@ -3,7 +3,7 @@
 import { NextRequest } from 'next/server'
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
-import { todayUTC } from '@/lib/utils'
+import { todayUTC, getISOWeek } from '@/lib/utils'
 import type { CompleteQuestRequest } from '@/types/api'
 
 export const runtime = 'nodejs'
@@ -83,8 +83,26 @@ export const POST = withAuth(async (ctx) => {
   const xpReward    = template.xp_reward as number
   const questCode   = template.internal_code as string
 
+  // ── 3a. Ad-Quest: eigene Verifizierung (zählt ad_views der Woche) ──
+  // Die SQL-RPC kennt ad_views nicht -> hier in TS prüfen und RPC überspringen.
+  let adQuestVerified = false
+  if (questCode === 'weekly_med_ads') {
+    const { year, week } = getISOWeek(new Date())
+    const { count } = await db
+      .from('ad_views')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', ctx.userId)
+      .eq('iso_year', year)
+      .eq('iso_week', week)
+    if ((count ?? 0) < 20) {
+      return err('Schau dir erst 20 Werbungen diese Woche an.', 'QUEST_CONDITION_NOT_MET', 422)
+    }
+    adQuestVerified = true
+  }
+
   // ── 3. QUEST VERIFIKATION ─────────────────────────────────────
   // Server prüft ob der Nutzer die Bedingung wirklich erfüllt hat
+  if (!adQuestVerified) {
   const { data: verifyResult, error: verifyErr } = await db.rpc(
     'verify_quest_condition' as any,
     {
@@ -115,21 +133,28 @@ export const POST = withAuth(async (ctx) => {
       )
     }
   }
+  } // ende if(!adQuestVerified)
 
-  // ── 4. Energie abziehen ───────────────────────────────────────
-  const { data: energyResult, error: energyErr } = await db.rpc('consume_energy', {
-    p_user_id: ctx.userId,
-    p_amount:  energyCost,
-    p_reason:  `quest_${template.difficulty}`,
-    p_ref_id:  questId,
-    p_ip_hash: ctx.ipHash,
-  })
-
-  if (energyErr) return err(`Energy error: ${energyErr.message}`, 'ENERGY_ERROR', 500)
-
-  const energyRes = (energyResult as any[])[0]
-  if (!energyRes?.success) {
-    return err(energyRes?.failure_reason ?? 'Insufficient energy', 'NO_ENERGY')
+  // ── 4. Energie abziehen (Ad-Quest: keine Energiekosten) ───────
+  let energyAfter: number | null = null
+  if (energyCost > 0 && questCode !== 'weekly_med_ads') {
+    const { data: energyResult, error: energyErr } = await db.rpc('consume_energy', {
+      p_user_id: ctx.userId,
+      p_amount:  energyCost,
+      p_reason:  `quest_${template.difficulty}`,
+      p_ref_id:  questId,
+      p_ip_hash: ctx.ipHash,
+    })
+    if (energyErr) return err(`Energy error: ${energyErr.message}`, 'ENERGY_ERROR', 500)
+    const energyRes = (energyResult as any[])[0]
+    if (!energyRes?.success) {
+      return err(energyRes?.failure_reason ?? 'Insufficient energy', 'NO_ENERGY')
+    }
+    energyAfter = energyRes.energy_after
+  } else {
+    // keine Energiekosten: aktuellen Stand für die Antwort lesen
+    const { data: u } = await db.from('users').select('energy_current').eq('id', ctx.userId).single()
+    energyAfter = (u as any)?.energy_current ?? null
   }
 
   // ── 5. XP vergeben ───────────────────────────────────────────
@@ -199,7 +224,7 @@ export const POST = withAuth(async (ctx) => {
     leveledUp:   xp.leveled_up,
     newLevel:    xp.new_level,
     newLeague:   xp.new_league,
-    energyAfter: energyRes.energy_after,
+    energyAfter: energyAfter,
     softCapped:  xp.soft_capped,
     mysteryBoxUnlocked,   // ← Frontend öffnet das Popup wenn true
   })
