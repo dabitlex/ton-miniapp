@@ -11,6 +11,25 @@ import { initTelegramFullscreen } from '@/lib/telegram-fullscreen'
 
 interface Props { children: React.ReactNode }
 
+// Fragt den Nutzer um Schreibrechte für den Bot und reiht — bei Erlaubnis —
+// die Willkommensnachricht ein (Bot landet dadurch im Chat-Verlauf des Nutzers,
+// damit er die App leicht wiederfindet). Fire-and-forget, blockiert nichts.
+function requestWriteAccessAndWelcome(accessToken: string) {
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    if (typeof tg?.requestWriteAccess === 'function') {
+      tg.requestWriteAccess((granted: boolean) => {
+        if (granted) {
+          fetch('/api/v1/me/welcome', {
+            method:  'POST',
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }).catch(() => { /* ignore */ })
+        }
+      })
+    }
+  } catch { /* ignore */ }
+}
+
 export function AuthProvider({ children }: Props) {
   const router       = useRouter()
   const didInit      = useRef(false)
@@ -93,6 +112,9 @@ export function AuthProvider({ children }: Props) {
       scheduleRefresh(expiresIn ?? 3600)
 
       if (isNewUser) {
+        // Schreibrechte anfragen → bei Erlaubnis Willkommensnachricht senden
+        // (Bot erscheint im Chat-Verlauf, App ist danach leicht wiederzufinden)
+        requestWriteAccessAndWelcome(accessToken)
         router.replace('/onboarding')
       } else {
         // Alle Tab-Daten vorladen, solange der Splash noch sichtbar ist
