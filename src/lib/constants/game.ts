@@ -10,8 +10,8 @@ export const GAME_CONSTANTS = {
   MAX_LEVEL:                   30,
   XP_CURVE_BASE:              120,
   XP_CURVE_FACTOR:             1.34,
-  SOFT_XP_DAILY_CAP:         5000,   // anti-bot soft cap
-  BOOST_XP_DAILY_THRESHOLD:  3000,   // ecosystem boost applies up to this
+  SOFT_XP_DAILY_CAP:        10000,   // anti-bot soft cap
+  BOOST_XP_DAILY_THRESHOLD: 10000,   // boost applies to full daily earnings (= soft cap)
   CLAN_UNLOCK_LEVEL:            6,
   CLAN_MAX_MEMBERS:            20,
   CLAN_CREATION_COST:        5000,
