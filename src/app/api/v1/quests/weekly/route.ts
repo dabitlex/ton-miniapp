@@ -6,6 +6,11 @@ import { getISOWeek }        from '@/lib/utils'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Ad-Quest: Fortschritt + Energie werden in TS behandelt (nicht über die
+// SQL-Progress-RPC, die ad_views nicht kennt).
+const AD_CODE   = 'weekly_med_ads'
+const AD_TARGET = 20
+
 export const GET = withAuth(async (ctx) => {
   const db = getAdminClient()
   const { year, week } = getISOWeek(new Date())
@@ -74,17 +79,24 @@ async function assignWeeklyQuests(userId: string, isoYear: number, isoWeek: numb
     .eq('status', 'active')
     .maybeSingle()
 
-  // Pick 5 weekly templates (mix of difficulties)
+  // Pick 5 weekly templates — die Ad-Quest IMMER dabei, Rest auffüllen
   const { data: templates } = await db
     .from('quest_templates')
-    .select('id, difficulty')
+    .select('id, internal_code, difficulty')
     .eq('quest_type', 'weekly')
     .eq('is_active', true)
-    .limit(10)
+    .limit(20)
 
   if (!templates || templates.length === 0) return
 
-  const toAssign = templates.slice(0, 5)
+  const adQuest = templates.find(t => (t as any).internal_code === AD_CODE)
+  const others  = templates.filter(t => (t as any).internal_code !== AD_CODE)
+
+  // Ad-Quest zuerst, dann mit anderen auf 5 auffüllen
+  const toAssign = [
+    ...(adQuest ? [adQuest] : []),
+    ...others.slice(0, adQuest ? 4 : 5),
+  ]
 
   await db.from('weekly_quest_assignments').upsert(
     toAssign.map(t => ({
@@ -101,19 +113,45 @@ async function assignWeeklyQuests(userId: string, isoYear: number, isoWeek: numb
 
 async function attachProgress(quests: any[], userId: string) {
   const db = getAdminClient()
-  const codes = quests.filter(q => q.status !== 'completed').map(q => q.template.internalCode)
-  if (codes.length === 0) return quests
-  const { data: prog } = await db.rpc('get_quests_progress_batch' as any, {
-    p_user_id: userId, p_codes: codes,
-  })
+
+  // Ad-Quest separat behandeln (ad_views zählen), NICHT an die SQL-RPC geben
+  let adProgress: any = undefined
+  const hasAdQuest = quests.some(q => q.template.internalCode === AD_CODE && q.status !== 'completed')
+  if (hasAdQuest) {
+    const { year, week } = getISOWeek(new Date())
+    const { count } = await db
+      .from('ad_views')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('iso_year', year)
+      .eq('iso_week', week)
+    const current = count ?? 0
+    adProgress = { current, target: AD_TARGET, type: 'countable', isMet: current >= AD_TARGET }
+  }
+
+  const codes = quests
+    .filter(q => q.status !== 'completed' && q.template.internalCode !== AD_CODE)
+    .map(q => q.template.internalCode)
+
   const map: Record<string, any> = {}
-  for (const p of (prog as any[] ?? [])) {
-    map[p.quest_code] = {
-      current: Number(p.current_value), target: Number(p.required_value),
-      type: p.progress_type, isMet: p.is_met,
+  if (codes.length > 0) {
+    const { data: prog } = await db.rpc('get_quests_progress_batch' as any, {
+      p_user_id: userId, p_codes: codes,
+    })
+    for (const p of (prog as any[] ?? [])) {
+      map[p.quest_code] = {
+        current: Number(p.current_value), target: Number(p.required_value),
+        type: p.progress_type, isMet: p.is_met,
+      }
     }
   }
-  return quests.map(q => ({ ...q, progress: map[q.template.internalCode] ?? undefined }))
+
+  return quests.map(q => ({
+    ...q,
+    progress: q.template.internalCode === AD_CODE
+      ? adProgress
+      : (map[q.template.internalCode] ?? undefined),
+  }))
 }
 
 function mapRow(row: any) {
@@ -133,7 +171,7 @@ function mapRow(row: any) {
       description:  row.template.description,
       difficulty:   row.template.difficulty,
       questType:    row.template.quest_type,
-      energyCost:   row.template.energy_cost,
+      energyCost:   row.template.internal_code === AD_CODE ? 0 : row.template.energy_cost,
       xpReward:     row.template.xp_reward,
       tokenReward:  row.template.token_reward,
       iconKey:      row.template.icon_key,
