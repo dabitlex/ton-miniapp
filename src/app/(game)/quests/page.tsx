@@ -2,9 +2,11 @@
 'use client'
 import { useState }     from 'react'
 import { useQuests }    from '@/features/quests/hooks'
+import { useAds }       from '@/features/ads/hooks'
 import { useUserStore } from '@/stores/useUserStore'
 import { useEnergy }    from '@/features/hooks'
 import { QuestCard }    from '@/components/game/QuestCard'
+import type { DailyQuest } from '@/types/game'
 import { Swords, CalendarDays, ClipboardList, Zap } from 'lucide-react'
 
 type Tab = 'daily' | 'weekly'
@@ -13,14 +15,47 @@ export default function QuestsPage() {
   const [tab, setTab] = useState<Tab>('daily')
   const { daily, weekly, isLoadingDaily, isLoadingWeekly, completeQuest, completingId } = useQuests()
   const energy      = useEnergy()
+  const ads         = useAds()
   const profile     = useUserStore(s => s.profile)
   const activeBoost = profile?.ecosystemBoost ?? 0
 
+  // Synthetische "Watch Ads"-Tageskarte (kein DB-Quest; gespeist aus /ads/status).
+  // Jede Ad gibt +50 XP server-seitig; bei 5/5 zeigt die Karte "Done".
+  const watchAdsDone = ads.watchedToday >= ads.dailyLimit
+  const watchAdsQuest: DailyQuest = {
+    id:          'watch-ads-daily',
+    templateId:  'watch-ads-daily',
+    questDate:   '',
+    status:      watchAdsDone ? 'completed' : 'available',
+    expiresAt:   '',
+    xpGranted:   null,
+    energySpent: null,
+    template: {
+      id:           'watch-ads-daily',
+      internalCode: 'daily_watch_ads',
+      title:        'Watch Ads',
+      description:  'Watch a short ad to earn XP and support the pool.',
+      difficulty:   'medium',
+      questType:    'daily',
+      energyCost:   0,
+      xpReward:     ads.xpPerAd,
+      tokenReward:  0,
+      iconKey:      '📺',
+      sortOrder:    -1,
+    },
+    progress: {
+      current: ads.watchedToday,
+      target:  ads.dailyLimit,
+      type:    'countable',
+      isMet:   watchAdsDone,
+    },
+  }
+
   const quests    = tab === 'daily' ? daily   : weekly
   const isLoading = tab === 'daily' ? isLoadingDaily : isLoadingWeekly
-  const doneD     = daily.filter(q => q.status === 'completed').length
+  const doneD     = daily.filter(q => q.status === 'completed').length + (watchAdsDone ? 1 : 0)
   const doneW     = weekly.filter(q => q.status === 'completed').length
-  const totalD    = daily.length
+  const totalD    = daily.length + 1   // + synthetische "Watch Ads"-Karte
   const totalW    = weekly.length
   const done      = tab === 'daily' ? doneD : doneW
   const total     = tab === 'daily' ? totalD : totalW
@@ -101,6 +136,18 @@ export default function QuestsPage() {
 
       {/* ── Mission timeline ───────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-5 pb-6">
+        {tab === 'daily' && (
+          <QuestCard
+            quest={watchAdsQuest}
+            onComplete={() => {}}
+            completing={false}
+            activeBoostPct={activeBoost}
+            index={0}
+            watchMode
+            watching={ads.watching}
+            onWatch={ads.watchAd}
+          />
+        )}
         {isLoading ? (
           <div className="space-y-2.5">
             {Array.from({ length: 5 }).map((_, i) => (
