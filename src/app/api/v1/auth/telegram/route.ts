@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
   if (!authUserId) return err('No auth user ID', 'AUTH_ID_ERROR', 500)
 
   const { data: season } = await (db as any)
-    .from('seasons').select('id').eq('status', 'active').maybeSingle()
+    .from('seasons').select('id, season_number').eq('status', 'active').maybeSingle()
 
   // Referrer ermitteln
   let referredByUserId: string | null = null
@@ -161,6 +161,13 @@ export async function POST(req: NextRequest) {
   // Referrer setzen: bei neuem User ODER wenn noch kein Referrer gesetzt
   if (referredByUserId && (isNewUser || !existingReferredBy)) {
     upsertData.referred_by_user_id = referredByUserId
+  }
+
+  // Founder-Status: wer in Season 1 ("Genesis") NEU beitritt, wird dauerhaft Founding Member.
+  // Nur bei Neu-Registrierung gesetzt → bestehende Founder behalten ihr Flag (Upsert lässt
+  // nicht-übergebene Spalten unberührt), und Beitritte ab Season 2 erhalten es nicht.
+  if (isNewUser && (season as any)?.season_number === 1) {
+    upsertData.is_founder = true
   }
 
   const { error: upsertErr } = await (db as any).from('users').upsert(
