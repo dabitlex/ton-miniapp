@@ -114,13 +114,12 @@ export default function ProfilePage() {
                   filter: 'drop-shadow(0 0 6px rgba(139,92,246,0.55))',
                 }} />
             </svg>
-            <div className="absolute inset-[11px] rounded-[28px] overflow-hidden"
+            <div className="absolute inset-[11px] rounded-full overflow-hidden"
               style={{ background: '#1A1530', boxShadow: 'inset 0 0 0 2px var(--bg-void), 0 10px 30px rgba(124,58,237,0.35)' }}>
               <TelegramAvatar
                 photoUrl={profile.telegramPhotoUrl}
                 firstName={profile.telegramFirstName}
                 size={90}
-                className="rounded-[28px]"
               />
             </div>
           </div>
@@ -179,8 +178,8 @@ export default function ProfilePage() {
           boxShadow: 'inset 0 1px 0 var(--edge-light), var(--shadow-md)',
         }}>
         {[
-          { value: formatNumber(profile.xpTotal), label: 'Total XP', hero: true },
-          { value: formatNumber(profile.seasonXp), label: 'Season XP', hero: false },
+          { value: profile.xpTotal.toLocaleString(), label: 'Total XP', hero: true },
+          { value: profile.seasonXp.toLocaleString(), label: 'Season XP', hero: false },
           { value: `${profile.streakCurrent}d 🔥`, label: 'Streak', hero: false, tint: '#FB923C' },
         ].map(({ value, label, hero, tint }, i) => (
           <div key={label} className="relative px-1.5 pt-[15px] pb-[13px] text-center">
@@ -191,7 +190,9 @@ export default function ProfilePage() {
               style={{
                 fontFamily: 'var(--font-display)',
                 letterSpacing: '-0.02em',
-                fontSize: hero ? 23 : 17,
+                fontSize: hero
+                  ? (String(value).length > 7 ? 19 : 23)
+                  : (String(value).length > 7 ? 14 : 17),
                 ...(hero
                   ? { background: 'var(--aurora-text)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
                   : { color: tint ?? '#fff' }),
