@@ -93,6 +93,7 @@ export const GET = withAuth(async (ctx) => {
     clanName:      (e.metadata as any)?.clan_name  ?? null,
     username:      (e.metadata as any)?.username   ?? null,
     relicTier:     (e.metadata as any)?.relic_tier ?? null,
+    isFounder:     (e.metadata as any)?.founder    ?? false,
     isCurrentUser: e.entity_id === ctx.userId,
     refreshedAt:   e.refreshed_at,
   }))
@@ -116,6 +117,7 @@ export const GET = withAuth(async (ctx) => {
         level:     myGlobalEntry.level,
         league:    (myGlobalEntry.metadata as any)?.league ?? 'bronze',
         relicTier: (myGlobalEntry.metadata as any)?.relic_tier ?? null,
+        isFounder: (myGlobalEntry.metadata as any)?.founder    ?? false,
       } : null,
     },
     {
