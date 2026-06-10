@@ -51,6 +51,28 @@ export default function ProfilePage() {
           {profile.telegramUsername && (
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>@{profile.telegramUsername}</p>
           )}
+          {profile.isFounder && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.40)' }}>
+              <svg width={12} height={12} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                <defs>
+                  <linearGradient id="pf-founder-g" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%"   stopColor="#FBBF24" />
+                    <stop offset="55%"  stopColor="#A78BFA" />
+                    <stop offset="100%" stopColor="#8B5CF6" />
+                  </linearGradient>
+                </defs>
+                <path d="M12 1 L21 6.5 L21 17.5 L12 23 L3 17.5 L3 6.5 Z"
+                      fill="url(#pf-founder-g)" stroke="#FCD34D" strokeWidth="1" />
+                <path d="M12 6.2 L13.5 10 L17.5 10.2 L14.4 12.7 L15.4 16.6 L12 14.4 L8.6 16.6 L9.6 12.7 L6.5 10.2 L10.5 10 Z"
+                      fill="#fff" opacity="0.95" />
+              </svg>
+              <span className="text-[10px] font-extrabold tracking-wide"
+                style={{ color: '#FCD34D', fontFamily: 'var(--font-display)' }}>
+                FOUNDING MEMBER
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
