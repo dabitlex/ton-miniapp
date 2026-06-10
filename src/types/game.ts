@@ -27,6 +27,7 @@ export interface UserProfile {
   telegramLastName: string | null
   telegramPhotoUrl: string | null
   telegramIsPremium: boolean
+  isFounder: boolean
   level: number
   xpTotal: number
   xpCurrentLevel: number
@@ -148,6 +149,7 @@ export interface LeaderboardEntry {
   clanName?: string
   streakCurrent?: number
   relicTier?: string | null
+  isFounder?: boolean
   isCurrentUser: boolean
 }
 
