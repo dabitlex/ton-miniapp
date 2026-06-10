@@ -31,6 +31,30 @@ const RELIC_CFG: Record<string, { c1: string; c2: string; c3: string; glow: stri
   tier_100: { c1: '#FFF0C8', c2: '#FBBF24', c3: '#F59E0B', glow: 'rgba(251,191,36,0.7)'  },
 }
 
+// Founder-Badge: dauerhaftes Statussymbol für Season-1-Mitglieder (rein kosmetisch).
+// Aurora-Stil: Hexagon mit Gold→Violett-Verlauf + Stern.
+function FounderBadge({ size = 12 }: { size?: number }) {
+  const uid = 'founder-bdg'
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ flexShrink: 0,
+      filter: 'drop-shadow(0 0 3px rgba(251,191,36,0.55)) drop-shadow(0 1px 3px rgba(0,0,0,0.5))' }}>
+      <defs>
+        <linearGradient id={`${uid}-g`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stopColor="#FBBF24" />
+          <stop offset="55%"  stopColor="#A78BFA" />
+          <stop offset="100%" stopColor="#8B5CF6" />
+        </linearGradient>
+      </defs>
+      {/* Hexagon-Körper */}
+      <path d="M12 1 L21 6.5 L21 17.5 L12 23 L3 17.5 L3 6.5 Z"
+            fill={`url(#${uid}-g)`} stroke="#FCD34D" strokeWidth="1" />
+      {/* Stern */}
+      <path d="M12 6.2 L13.5 10 L17.5 10.2 L14.4 12.7 L15.4 16.6 L12 14.4 L8.6 16.6 L9.6 12.7 L6.5 10.2 L10.5 10 Z"
+            fill="#fff" opacity="0.95" />
+    </svg>
+  )
+}
+
 function RelicGem({ tier, size = 14 }: { tier: string; size?: number }) {
   const r = RELIC_CFG[tier]
   if (!r) return null
@@ -277,6 +301,7 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
         <p className="text-[12px] font-bold truncate max-w-[80px]" style={{ color: 'var(--text-primary)' }}>
           {entry.firstName}
         </p>
+        {entry.isFounder && <FounderBadge size={11} />}
         {relicTier && <RelicGem tier={relicTier} size={10} />}
       </div>
       <p className="text-[11px] font-extrabold tabular-nums" style={{ color: cfg.label, fontFamily: 'var(--font-display)' }}>
@@ -327,7 +352,8 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
               YOU
             </span>
           )}
-          {/* Relic gem neben dem Namen */}
+          {/* Founder-Badge + Relic gem neben dem Namen */}
+          {entry.isFounder && <FounderBadge size={12} />}
           {relicTier && <RelicGem tier={relicTier} size={12} />}
         </div>
         {entry.clanName && (
