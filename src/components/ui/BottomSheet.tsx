@@ -1,6 +1,7 @@
 // src/components/ui/BottomSheet.tsx — Aurora OS slide-up sheet (progressive disclosure)
 'use client'
 import { useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface BottomSheetProps {
@@ -32,9 +33,11 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     }
   }, [open])
 
-  if (!mounted) return null
+  if (!mounted || typeof document === 'undefined') return null
 
-  return (
+  // Portal → document.body: escapes the game layout's stacking context
+  // (<main> has relative z-10, which would trap the sheet below MobileNav z-20)
+  return createPortal(
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label={title}>
       {/* Scrim */}
       <div
@@ -58,7 +61,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
           borderRadius: '28px 28px 0 0',
           borderTop: '1px solid rgba(255,255,255,0.10)',
           boxShadow: '0 -24px 70px rgba(0,0,0,0.7), inset 0 1px 0 var(--edge-light)',
-          padding: '8px 20px calc(22px + env(safe-area-inset-bottom, 0px))',
+          padding: '8px 20px calc(24px + var(--tg-safe-bottom, 0px))',
           transform: visible ? 'translateY(0)' : 'translateY(105%)',
           transition: visible
             ? 'transform 0.42s var(--spring)'
@@ -84,6 +87,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
