@@ -96,6 +96,7 @@ export const GET = withAuth(async (ctx) => {
     telegramLastName:     u.telegram_last_name,
     telegramPhotoUrl:     u.telegram_photo_url,
     telegramIsPremium:    u.telegram_is_premium,
+    isFounder:            u.is_founder ?? false,
     level:                u.level,
     xpTotal:              u.xp_total,
     xpCurrentLevel:       u.xp_current_level,
