@@ -1,5 +1,8 @@
 // src/app/api/v1/quests/complete/route.ts
 // SECURITY: server-authoritative XP + energy + quest verification
+// GEHÄRTET: Quest wird ATOMAR zuerst abgeschlossen (UPDATE ... WHERE status='available'
+//           + Zeilenprüfung). XP/Energie nur, wenn der Abschluss wirklich persistiert.
+//           Verhindert Mehrfach-Claims auch bei stillen DB-/PostgREST-Fehlern.
 import { NextRequest } from 'next/server'
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
@@ -82,6 +85,7 @@ export const POST = withAuth(async (ctx) => {
   const energyCost  = template.energy_cost as number
   const xpReward    = template.xp_reward as number
   const questCode   = template.internal_code as string
+  const hasEnergyCost = energyCost > 0 && questCode !== 'weekly_med_ads'
 
   // ── 3a. Ad-Quest: eigene Verifizierung (zählt ad_views der Woche) ──
   // Die SQL-RPC kennt ad_views nicht -> hier in TS prüfen und RPC überspringen.
@@ -135,9 +139,42 @@ export const POST = withAuth(async (ctx) => {
   }
   } // ende if(!adQuestVerified)
 
-  // ── 4. Energie abziehen (Ad-Quest: keine Energiekosten) ───────
+  // ── 4. Quest ATOMAR abschließen (ZUERST) ──────────────────────
+  // Nur wenn die Zeile noch 'available' ist, wird sie auf 'completed' gesetzt.
+  // Trifft das Update 0 Zeilen (bereits abgeschlossen ODER nicht persistiert),
+  // wird KEIN XP vergeben und KEINE Energie abgezogen → Mehrfach-Claim unmöglich.
+  // xp_granted/energy_spent bleiben hier bewusst leer (CHECK > 0); werden in
+  // Schritt 7 nachgetragen, sobald die echten Werte feststehen.
+  const completedAt = new Date().toISOString()
+  const { data: claimedRows, error: claimErr } = await db
+    .from(table as 'daily_quest_assignments')
+    .update({
+      status:           'completed',
+      completed_at:     completedAt,
+      completion_nonce: nonce,
+    } as any)
+    .eq('id', questId)
+    .eq('status', 'available')
+    .select('id')
+
+  if (claimErr) {
+    return err(`Quest-Abschluss fehlgeschlagen: ${claimErr.message}`, 'COMPLETE_FAILED', 500)
+  }
+  if (!claimedRows || claimedRows.length === 0) {
+    // 0 Zeilen: bereits abgeschlossen (Doppel-Tap) oder Update nicht wirksam.
+    return err('Quest ist bereits abgeschlossen', 'ALREADY_COMPLETED', 409)
+  }
+
+  // Helfer: Abschluss zurücknehmen, falls ein Folgeschritt scheitert
+  const revertClaim = async () => {
+    await db.from(table as 'daily_quest_assignments')
+      .update({ status: 'available', completed_at: null, completion_nonce: null } as any)
+      .eq('id', questId)
+  }
+
+  // ── 5. Energie abziehen (Ad-Quest: keine Energiekosten) ───────
   let energyAfter: number | null = null
-  if (energyCost > 0 && questCode !== 'weekly_med_ads') {
+  if (hasEnergyCost) {
     const { data: energyResult, error: energyErr } = await db.rpc('consume_energy', {
       p_user_id: ctx.userId,
       p_amount:  energyCost,
@@ -145,9 +182,13 @@ export const POST = withAuth(async (ctx) => {
       p_ref_id:  questId,
       p_ip_hash: ctx.ipHash,
     })
-    if (energyErr) return err(`Energy error: ${energyErr.message}`, 'ENERGY_ERROR', 500)
+    if (energyErr) {
+      await revertClaim()
+      return err(`Energy error: ${energyErr.message}`, 'ENERGY_ERROR', 500)
+    }
     const energyRes = (energyResult as any[])[0]
     if (!energyRes?.success) {
+      await revertClaim()
       return err(energyRes?.failure_reason ?? 'Insufficient energy', 'NO_ENERGY')
     }
     energyAfter = energyRes.energy_after
@@ -157,7 +198,7 @@ export const POST = withAuth(async (ctx) => {
     energyAfter = (u as any)?.energy_current ?? null
   }
 
-  // ── 5. XP vergeben ───────────────────────────────────────────
+  // ── 6. XP vergeben ───────────────────────────────────────────
   const { data: xpResult, error: xpErr } = await db.rpc('grant_xp', {
     p_user_id:       ctx.userId,
     p_xp_base:       xpReward,
@@ -165,19 +206,24 @@ export const POST = withAuth(async (ctx) => {
     p_source_ref_id: questId,
   })
 
-  if (xpErr) return err(`XP error: ${xpErr.message}`, 'XP_ERROR', 500)
+  if (xpErr) {
+    await revertClaim()
+    return err(`XP error: ${xpErr.message}`, 'XP_ERROR', 500)
+  }
 
   const xp = (xpResult as any[])[0]
 
-  // ── 6. Quest abschließen ──────────────────────────────────────
+  // ── 7. Datensatz nachtragen + Nonce + Tagesstatistik ──────────
+  // Der Abschluss ist bereits persistiert (Schritt 4). Hier nur Record-Keeping.
+  // xp_granted/energy_spent nur setzen, wenn > 0 (CHECK-Constraints verbieten 0).
+  const backfill: Record<string, unknown> = {}
+  if (xp.xp_granted > 0) backfill.xp_granted = xp.xp_granted
+  if (hasEnergyCost)     backfill.energy_spent = energyCost
+
   await Promise.all([
-    db.from(table as 'daily_quest_assignments').update({
-      status:           'completed',
-      completed_at:     new Date().toISOString(),
-      xp_granted:       xp.xp_granted,
-      energy_spent:     energyCost,
-      completion_nonce: nonce,
-    } as any).eq('id', questId),
+    Object.keys(backfill).length > 0
+      ? db.from(table as 'daily_quest_assignments').update(backfill as any).eq('id', questId).then(() => {})
+      : Promise.resolve(),
 
     db.from('action_nonces').insert({
       nonce,
