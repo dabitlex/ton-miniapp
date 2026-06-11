@@ -85,6 +85,11 @@ export const POST = withAuth(async (ctx) => {
     is_active:         isConfirmedOnChain, // ← sofort aktiv wenn on-chain bestätigt
   })
 
+  // Kauf-Sperre lösen: die Zahlung ist jetzt serverseitig registriert.
+  await db.from('users')
+    .update({ purchase_intent_at: null, purchase_intent_tier: null })
+    .eq('id', ctx.userId)
+
   if (isConfirmedOnChain) {
     console.log(`[EcoSupport] ✅ Boost sofort aktiviert: ${tier.key} +${tier.boostPercent}% für User ${ctx.userId}`)
     // Push-Bestätigung (Zahlungs-Bestätigung → bypassOptOut)
