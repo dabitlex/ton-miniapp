@@ -123,6 +123,7 @@ export const GET = withAuth(async (ctx) => {
     wallet: wallet ? {
       address:         wallet.address,
       addressFriendly: wallet.address_friendly,
+      status:          wallet.status,
       connectedAt:     wallet.connected_at,
     } : null,
     // Ecosystem Boost (für QuestCard Anzeige)
