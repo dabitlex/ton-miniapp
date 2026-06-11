@@ -72,6 +72,7 @@ export default function EcosystemPage() {
       return json.data as {
         activeBoost: ActiveEcosystemBoost | null
         pendingBoost: { tier: string; boostPercent: number } | null
+        purchaseInProgress: { tier: string; at: string } | null
         tiers: EcosystemSupportTier[]
         history: any[]
       }
@@ -90,7 +91,7 @@ export default function EcosystemPage() {
       return json.data
     },
     onSuccess: () => {
-      toast('success', '✅ Transaction confirmed! Boost activates in ~30 seconds.')
+      toast('success', '✅ Zahlung bestätigt! Dein Boost wird aktiviert.')
       qc.invalidateQueries({ queryKey: ['ecosystem'] })
       setPendingTierKey(null)
     },
@@ -116,6 +117,21 @@ export default function EcosystemPage() {
     setPendingTierKey(tier.key)
 
     try {
+      // ── Kauf-Sperre holen (serverseitig) ──────────────────────
+      // Verhindert einen zweiten Kauf, solange dieser läuft. Übersteht App-Neustart.
+      const intentRes = await fetch('/api/v1/ecosystem/intent', {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tier: tier.key }),
+      })
+      const intentJson = await intentRes.json().catch(() => ({}))
+      if (!intentRes.ok || !intentJson.success) {
+        toast('error', intentJson.error ?? 'Eine Zahlung wird bereits verarbeitet. Bitte nicht erneut bezahlen.')
+        qc.invalidateQueries({ queryKey: ['ecosystem'] })
+        setPendingTierKey(null)
+        return
+      }
+
       // Step 1: send transaction via TON Connect
       const result = await tonConnectUI.sendTransaction({
         validUntil: Math.floor(Date.now() / 1000) + 600, // valid for 10 min
@@ -144,7 +160,7 @@ export default function EcosystemPage() {
       const hashJson = await hashRes.json()
 
       if (hashRes.status === 202) {
-        toast('success', '✅ Payment sent! Boost will activate automatically in ~30 seconds.')
+        toast('success', '✅ Zahlung gesendet! Dein Boost wird in den nächsten Minuten automatisch aktiviert — bitte nicht erneut bezahlen.')
         qc.invalidateQueries({ queryKey: ['ecosystem'] })
         setPendingTierKey(null)
         return
@@ -172,6 +188,7 @@ export default function EcosystemPage() {
 
   const active = data?.activeBoost
   const pending = data?.pendingBoost
+  const purchaseInProgress = data?.purchaseInProgress
 
   return (
     <div className="flex flex-col h-full overflow-y-auto pb-6 relative z-10">
@@ -262,7 +279,7 @@ export default function EcosystemPage() {
                 const isLowerTier   = active ? tier.boostPercent <= active.boostPercent && !isCurrent : false
                 const r = RELIC[tier.key] ?? RELIC.tier_1
                 const isLegend = tier.key === 'tier_100'
-                const btnDisabled = isCurrent || isLowerTier || !!pendingTierKey || !!pending
+                const btnDisabled = isCurrent || isLowerTier || !!pendingTierKey || !!pending || !!purchaseInProgress
 
                 const btnLabel = isPendingThis
                   ? (<><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Claiming…</>)
