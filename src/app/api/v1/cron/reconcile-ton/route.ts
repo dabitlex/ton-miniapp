@@ -26,14 +26,19 @@ function normAddr(a: string): string {
 }
 
 // Auth: Vercel-Cron schickt "Authorization: Bearer <CRON_SECRET>".
-// Für manuellen Test / pg_cron zusätzlich ?secret= erlaubt.
+// Query-Secret akzeptiert CRON_SECRET ODER TON_WEBHOOK_SECRET (manueller Test / pg_cron).
 function authorized(req: NextRequest): boolean {
-  const cronSecret = process.env.CRON_SECRET
+  const cronSecret    = process.env.CRON_SECRET
+  const webhookSecret = process.env.TON_WEBHOOK_SECRET
+
   const auth = req.headers.get('authorization')
   if (cronSecret && auth === `Bearer ${cronSecret}`) return true
+
   const q = new URL(req.url).searchParams.get('secret')
-  const expected = cronSecret ?? process.env.TON_WEBHOOK_SECRET
-  return !!q && !!expected && q === expected
+  if (!q) return false
+  if (cronSecret && q === cronSecret) return true
+  if (webhookSecret && q === webhookSecret) return true
+  return false
 }
 
 async function handle(req: NextRequest) {
