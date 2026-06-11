@@ -40,6 +40,18 @@ export const GET = withAuth(async (ctx) => {
 
   const hasPendingTx = (pendingSupport?.tx as any)?.status === 'pending'
 
+  // Offene Kauf-Sperre prüfen (verhindert Doppelkauf, übersteht App-Neustart)
+  const LOCK_MINUTES = 15
+  const { data: lockUser } = await db
+    .from('users')
+    .select('purchase_intent_at, purchase_intent_tier')
+    .eq('id', ctx.userId)
+    .maybeSingle()
+
+  const intentAt = lockUser?.purchase_intent_at ? new Date(lockUser.purchase_intent_at).getTime() : 0
+  const lockActive = intentAt > 0 && (Date.now() - intentAt) < LOCK_MINUTES * 60_000
+
+
   // History
   const { data: history } = await db
     .from('ecosystem_support')
@@ -66,6 +78,11 @@ export const GET = withAuth(async (ctx) => {
     pendingBoost: hasPendingTx ? {
       tier:        pendingSupport!.tier,
       boostPercent:pendingSupport!.xp_boost_percent,
+    } : null,
+    // Offene Kauf-Sperre → UI deaktiviert Kauf-Buttons + zeigt "wird verarbeitet"
+    purchaseInProgress: lockActive ? {
+      tier: lockUser!.purchase_intent_tier,
+      at:   lockUser!.purchase_intent_at,
     } : null,
     history: (history ?? []).map(h => ({
       id:          h.id,
