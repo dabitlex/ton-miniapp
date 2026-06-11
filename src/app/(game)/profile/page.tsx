@@ -17,12 +17,6 @@ import { Wallet, Users, Settings, ChevronRight, Flame, Zap, TrendingUp, Trophy }
 
 type SheetId = 'wallet' | 'referral' | 'settings' | null
 
-// UQDk7vR2…x4F2
-function shortAddr(addr: string): string {
-  if (addr.length <= 14) return addr
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
-
 const RING_R = 52
 const RING_C = 2 * Math.PI * RING_R // ≈ 326.7
 
@@ -71,9 +65,7 @@ export default function ProfilePage() {
 
   // Row sublines
   const walletConnected = !!profile.wallet && profile.wallet.status === 'connected'
-  const walletSub = walletConnected
-    ? `Connected · ${shortAddr(profile.wallet!.addressFriendly ?? profile.wallet!.address)}`
-    : 'Not connected'
+  const walletSub = walletConnected ? 'Connected' : 'Not connected'
 
   const refEligible = !!refData?.referralEligible || profile.referralEligible
   const referralSub = refEligible
