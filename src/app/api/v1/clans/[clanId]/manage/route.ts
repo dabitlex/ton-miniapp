@@ -64,15 +64,17 @@ export const POST = withAuth(async (ctx) => {
 
   // ── Aktionen ausführen ────────────────────────────────────
   if (action === 'kick') {
-    await db.from('clan_members')
+    const { error: kickErr } = await db.from('clan_members')
       .delete()
       .eq('clan_id', clanId)
       .eq('user_id', targetUserId)
 
-    // Mitgliederzahl aktualisieren
-    await db.from('clans')
-      .update({ member_count: db.rpc('decrement', { x: 1 }) as any })
-      .eq('id', clanId)
+    if (kickErr) return err('Failed to remove member', 'DB_ERROR', 500)
+
+    // member_count wird vom AFTER-DELETE-Trigger fn_sync_clan_member_count
+    // automatisch und sicher (GREATEST(0, …)) heruntergezählt. Beim Kick eines
+    // Leaders übernimmt der Trigger zudem die Nachfolge. KEIN manuelles Update
+    // hier — das wäre eine doppelte Dekrementierung.
 
     console.log(`[ClanManage] ${ctx.userId} kicked ${targetUserId} from clan ${clanId}`)
     return ok({ action: 'kicked', targetUserId })
