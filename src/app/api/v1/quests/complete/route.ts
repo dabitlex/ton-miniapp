@@ -118,13 +118,29 @@ export const POST = withAuth(async (ctx) => {
 
   if (verifyErr) {
     console.error(`[QuestVerify] Fehler für ${questCode}:`, verifyErr.message)
-    // Bei Verifikationsfehler: Quest trotzdem erlauben (Fallback)
-    // damit technische Fehler keine Blockierung verursachen
+    // FAIL-CLOSED (Sicherheit): Wenn die Verifikation technisch fehlschlägt,
+    // wird die Quest NICHT vergeben. Die Verifikation ist die einzige Schicht,
+    // die unverdiente Quest-Abschlüsse verhindert — sie darf bei einem Fehler
+    // nicht stillschweigend übersprungen werden.
+    // Für legitime Nutzer ist das unkritisch: Die Quest bleibt 'available',
+    // der Nonce wird NICHT verbraucht (Abschluss passiert erst in Schritt 4),
+    // sie können also einfach gleich erneut tippen.
+    await recordAntibotEvent(ctx.userId, 'pattern_anomaly', 'low', {
+      reason:    'verify_quest_condition_error',
+      questCode,
+      dbError:   verifyErr.message,
+    })
+    return err(
+      'Verifikation momentan nicht möglich — bitte in ein paar Sekunden erneut versuchen.',
+      'VERIFY_UNAVAILABLE',
+      503
+    )
   } else {
     const verify = (verifyResult as any[])?.[0]
     if (verify && !verify.verified) {
       // Bedingung nicht erfüllt → Quest ablehnen
-      await recordAntibotEvent(ctx.userId, 'quest_condition_failed', 'low', {
+      await recordAntibotEvent(ctx.userId, 'pattern_anomaly', 'low', {
+        kind:          'quest_condition_failed',
         questCode,
         reason:        verify.reason,
         currentValue:  verify.current_value,
