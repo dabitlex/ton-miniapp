@@ -53,9 +53,13 @@ export default function QuestsPage() {
 
   const quests    = tab === 'daily' ? daily   : weekly
   const isLoading = tab === 'daily' ? isLoadingDaily : isLoadingWeekly
-  const doneD     = daily.filter(q => q.status === 'completed').length + (watchAdsDone ? 1 : 0)
+  // Watch-Ads erst in die Statistik einrechnen, wenn der Ad-Stand geladen ist
+  // (verhindert kurzes Springen von Fortschrittsbalken/Zähler beim Start).
+  const adsReady    = !ads.isLoading
+  const watchAdsDone2 = adsReady && watchAdsDone
+  const doneD     = daily.filter(q => q.status === 'completed').length + (watchAdsDone2 ? 1 : 0)
   const doneW     = weekly.filter(q => q.status === 'completed').length
-  const totalD    = daily.length + 1   // + synthetische "Watch Ads"-Karte
+  const totalD    = daily.length + (adsReady ? 1 : 0)   // + synthetische "Watch Ads"-Karte
   const totalW    = weekly.length
   const done      = tab === 'daily' ? doneD : doneW
   const total     = tab === 'daily' ? totalD : totalW
@@ -137,16 +141,21 @@ export default function QuestsPage() {
       {/* ── Mission timeline ───────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-5 pb-6">
         {tab === 'daily' && (
-          <QuestCard
-            quest={watchAdsQuest}
-            onComplete={() => {}}
-            completing={false}
-            activeBoostPct={activeBoost}
-            index={0}
-            watchMode
-            watching={ads.watching}
-            onWatch={ads.watchAd}
-          />
+          ads.isLoading ? (
+            // Watch-Ads-Karte lädt noch → Shimmer statt vorschnell "available".
+            <div className="h-[92px] shimmer mb-2.5" />
+          ) : (
+            <QuestCard
+              quest={watchAdsQuest}
+              onComplete={() => {}}
+              completing={false}
+              activeBoostPct={activeBoost}
+              index={0}
+              watchMode
+              watching={ads.watching}
+              onWatch={ads.watchAd}
+            />
+          )
         )}
         {isLoading ? (
           <div className="space-y-2.5">
