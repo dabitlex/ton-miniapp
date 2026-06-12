@@ -29,7 +29,7 @@ export function useAds() {
   const { toast, haptic } = useUIStore()
   const [watching, setWatching] = useState(false)
 
-  const { data, refetch } = useQuery({
+  const { data, refetch, isLoading } = useQuery({
     queryKey:  ['ads', 'status'],
     enabled:   !!token,
     staleTime: 30_000,
@@ -68,6 +68,10 @@ export function useAds() {
     weeklyCount:    data?.weeklyCount ?? 0,
     weeklyTarget:   data?.weeklyTarget ?? 20,
     xpPerAd:        data?.xpPerAd ?? 50,
+    // true, solange der echte Ad-Stand noch nicht geladen ist. Verhindert,
+    // dass die Watch-Ads-Karte vor dem Laden fälschlich "available" zeigt
+    // (Flackern: kurz offen → dann done).
+    isLoading:      isLoading || (!data && !!token),
     watching,
     watchAd,
     refetchAds:     refetch,
