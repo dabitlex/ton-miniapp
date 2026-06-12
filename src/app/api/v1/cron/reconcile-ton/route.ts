@@ -1,4 +1,4 @@
-// src/app/api/v1/cron/reconcile-ton/route.ts
+// src/app/api/v1/cron/reconcile-ton/route.ts 
 // Serverseitiges Auffangnetz für TON-Boost-Zahlungen.
 // Gleicht die letzten Treasury-Eingänge (tonapi) mit `ton_transactions` ab und
 // trägt fehlende Zahlungen nach: Absender-Wallet → Nutzer, Betrag → Tier, Boost aktivieren.
