@@ -22,6 +22,11 @@ export function TonProvider({ children }: { children: React.ReactNode }) {
       manifestUrl={manifestUrl}
       actionsConfiguration={{
         twaReturnUrl,
+        // 'back': funktioniert auf Android korrekt (automatische Rückkehr).
+        // Auf iOS ist returnStrategy irrelevant wenn twaReturnUrl gesetzt ist
+        // (twaReturnUrl hat Priorität in TWA-Kontext).
+        // Der iOS-"Link öffnen?"-Dialog wird über skipRedirectToWallet: 'ios'
+        // beim sendTransaction-Aufruf verhindert, nicht hier.
         returnStrategy:  'back',
         modals:         ['before', 'success', 'error'],
         notifications:  ['before', 'success', 'error'],
