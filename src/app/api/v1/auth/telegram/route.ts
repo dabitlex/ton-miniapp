@@ -55,14 +55,7 @@ export async function POST(req: NextRequest) {
   const startParamFromInit   = (parsed as any).start_param ?? null
   const startParam = startParamFromClient || startParamFromInit || null
 
-  // Debug-Log (kann nach dem Fix entfernt werden)
-  console.log('[Auth] Referral Debug:', {
-    telegramId: tgUser.id,
-    startParamFromClient,
-    startParamFromInit,
-    startParam,
-    initDataKeys: Object.keys(parsed ?? {}),
-  })
+
 
   const db = getServiceClient()
 
@@ -83,7 +76,6 @@ export async function POST(req: NextRequest) {
       // User existiert → Passwort auf neues stabiles Format updaten
       await db.auth.admin.updateUserById(found.id, { password })
       authUserId = found.id
-      console.log('[Auth] Passwort nach Bot-Wechsel aktualisiert für:', tgUser.id)
     } else {
       isNewUser = true
       const { data: newAuth, error: createErr } = await db.auth.admin.createUser({
@@ -127,8 +119,6 @@ export async function POST(req: NextRequest) {
       .select('id')
       .eq('referral_code', startParam.trim())
       .maybeSingle()
-
-    console.log('[Auth] Referrer lookup:', { startParam, found: referrer?.id ?? null })
 
     if (referrer?.id && referrer.id !== authUserId) {
       referredByUserId = referrer.id
@@ -188,8 +178,6 @@ export async function POST(req: NextRequest) {
 
     if (refErr) {
       console.error('[Auth] Referral insert failed:', refErr.message)
-    } else {
-      console.log('[Auth] Referral saved:', { referredByUserId, authUserId })
     }
   }
 
@@ -205,8 +193,6 @@ export async function POST(req: NextRequest) {
       expiresIn:    session.session.expires_in ?? 3600,
       userId:       authUserId,
       isNewUser,
-      // Debug-Info zurückgeben (temporär)
-      _debug: { startParam, referredByUserId, isNewUser },
     })
   }
 
@@ -227,7 +213,6 @@ export async function POST(req: NextRequest) {
     expiresIn:    (adminSess as any).expires_in ?? 3600,
     userId:       authUserId,
     isNewUser,
-    _debug: { startParam, referredByUserId, isNewUser },
   })
 }
 
