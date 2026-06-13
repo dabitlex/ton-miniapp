@@ -51,3 +51,25 @@ export const POST = withAuth(async (ctx) => {
 
   return ok({ allowed: true, tier: tier.key })
 })
+
+// ── Kauf-Sperre freigeben ────────────────────────────────────────────────────
+// Wird vom Client aufgerufen, wenn der Nutzer den Wallet-Dialog ABBRICHT
+// (User rejects), BEVOR eine echte Zahlung registriert wurde. Verhindert, dass
+// der Nutzer nach einem bewussten Abbruch 15 Min lang ausgesperrt bleibt.
+//
+// SICHERHEIT: release_purchase_lock löst den Lock NUR, wenn keine offene
+// ton_transactions-Zeile (pending/confirming/confirmed) existiert. Bei einer
+// echten, laufenden Zahlung bleibt der Lock bestehen (Doppelkauf-Schutz).
+export const DELETE = withAuth(async (ctx) => {
+  const db = getAdminClient()
+
+  const { data: released, error: relErr } = await db.rpc('release_purchase_lock', {
+    p_user_id: ctx.userId,
+  })
+
+  if (relErr) return err(`Release error: ${relErr.message}`, 'RELEASE_ERROR', 500)
+
+  // released=false ist KEIN Fehler: Lock war entweder schon frei oder es läuft
+  // eine echte Zahlung (dann darf er nicht gelöst werden).
+  return ok({ released: released === true })
+})
