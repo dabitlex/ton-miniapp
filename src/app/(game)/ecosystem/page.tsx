@@ -177,10 +177,24 @@ export default function EcosystemPage() {
     } catch (e: any) {
       setPendingTierKey(null)
       if (e?.message?.includes('User rejects') || e?.message?.includes('Reject')) {
+        // Echter Nutzer-Abbruch (Wallet-Dialog abgelehnt), BEVOR gezahlt wurde:
+        // Kauf-Sperre serverseitig sofort freigeben, damit der Nutzer nicht
+        // 15 Min ausgesperrt bleibt. Der Release-Endpoint löst den Lock nur,
+        // wenn keine echte Zahlung läuft — sicher gegen Doppelkauf.
+        try {
+          await fetch('/api/v1/ecosystem/intent', {
+            method:  'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        } catch { /* Lock läuft sonst nach 15 Min automatisch aus */ }
+        qc.invalidateQueries({ queryKey: ['ecosystem'] })
         toast('info', 'Transaction cancelled')
       } else if (e?.message?.includes('verifiziert werden') || e?.message?.includes('not verified')) {
+        // NICHT freigeben: Zahlung könnte unterwegs sein → Lock bleibt, bis
+        // reconcile final entscheidet (Doppelkauf-Schutz).
         toast('error', '⚠️ TX not verified — check your wallet. Support: @vexalgo_support')
       } else {
+        // Generischer Fehler: ebenfalls NICHT freigeben (Status unklar).
         toast('error', e?.message ?? 'Transaction failed')
       }
     }
