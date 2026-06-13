@@ -7,6 +7,7 @@ import { useUserStore }      from '@/stores/useUserStore'
 import { useEnergyStore }    from '@/stores/useEnergyStore'
 import type { UserProfile }  from '@/types/game'
 import { prefetchAppData }   from '@/lib/prefetch'
+import { getQueryClient }    from '@/lib/queryClient'
 import { initTelegramFullscreen } from '@/lib/telegram-fullscreen'
 
 interface Props { children: React.ReactNode }
@@ -129,6 +130,82 @@ export function AuthProvider({ children }: Props) {
     }
   }, [auth, fetchProfile, scheduleRefresh, router])
 
+  // ── Hintergrund → Vordergrund: Token + Daten auffrischen ─────────────────
+  // Wenn die App aus dem Hintergrund zurückkommt (Telegram minimiert, anderer
+  // Tab, Akku-Sparmodus), werden:
+  //   1. Token geprüft → wenn abgelaufen oder in <5 Min ablaufend → sofort erneuert
+  //   2. Alle React-Query-Daten als veraltet markiert → werden beim nächsten
+  //      Render automatisch neu geladen (Quests, XP, Leaderboard, Clans …)
+  // Supabase-Realtime reconnectet sich vom SDK selbst.
+  useEffect(() => {
+    let hiddenAt: number | null = null
+
+    const onVisibilityChange = async () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+        return
+      }
+
+      // App kommt zurück — war sie länger als 30 Sekunden weg?
+      const wasAway = hiddenAt !== null && Date.now() - hiddenAt > 30_000
+      hiddenAt = null
+      if (!wasAway) return
+
+      const { accessToken, refreshToken, expiresAt, isAuthenticated } = useAuthStore.getState()
+      if (!isAuthenticated || !accessToken) return
+
+      // Token prüft: noch > 5 Minuten gültig? Falls nicht → sofort erneuern
+      const now = Math.floor(Date.now() / 1000)
+      const needsRefresh = !expiresAt || expiresAt - now < 300
+
+      if (needsRefresh) {
+        let refreshed = false
+
+        // Versuch 1: Refresh-Token nutzen (funktioniert bis zu 60 Tage)
+        if (refreshToken) {
+          try {
+            const res = await fetch('/api/v1/auth/refresh', {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body:    JSON.stringify({ refreshToken }),
+            })
+            if (res.ok) {
+              const json = await res.json()
+              if (json.success) {
+                auth.setSession(json.data)
+                scheduleRefresh(json.data.expiresIn ?? 3600)
+                refreshed = true
+              }
+            }
+          } catch { /* weiter zu Versuch 2 */ }
+        }
+
+        // Versuch 2: Komplette Neu-Authentifizierung über Telegram
+        // (Fallback wenn Refresh scheitert — z.B. kein Netz beim ersten Versuch
+        //  oder nach sehr langer Inaktivität). initData ist noch verfügbar,
+        //  solange die Mini-App offen ist.
+        if (!refreshed) {
+          const tg = (window as any).Telegram?.WebApp
+          const initData = tg?.initData
+          if (initData) {
+            const photoUrl   = tg?.initDataUnsafe?.user?.photo_url ?? null
+            const startParam = tg?.initDataUnsafe?.start_param ?? null
+            await authenticate(initData, photoUrl, startParam)
+            return // authenticate() invalidiert selbst, hier fertig
+          }
+        }
+      }
+
+      // Cache für alle Queries als veraltet markieren → Tabs laden frisch
+      // beim nächsten Render, ohne dass der Nutzer neu starten muss.
+      getQueryClient().invalidateQueries()
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [auth, scheduleRefresh, authenticate])
+
+  // ── Initiale Authentifizierung (einmalig beim App-Start) ──────────────────
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
