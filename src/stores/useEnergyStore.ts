@@ -24,6 +24,7 @@ export const useEnergyStore = create<EnergyStoreState>()(
       lastUpdated:   new Date().toISOString(),
       nextRegenAt:   null,
       secondsToFull: 0,
+      regenMultiplier: 1,
       isHydrated:    false,
 
       hydrate(state) {
@@ -31,7 +32,7 @@ export const useEnergyStore = create<EnergyStoreState>()(
       },
 
       tick() {
-        const { current, lastUpdated, isHydrated } = get()
+        const { current, lastUpdated, isHydrated, regenMultiplier } = get()
         if (!isHydrated || current >= GAME_CONSTANTS.MAX_ENERGY) return
 
         const lastUpdatedDate  = new Date(lastUpdated)
@@ -41,21 +42,23 @@ export const useEnergyStore = create<EnergyStoreState>()(
 
         if (ticks <= 0) {
           // No new tick yet, just update countdown
-          const secondsToFull = (GAME_CONSTANTS.MAX_ENERGY - current) * GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC
+          const remaining     = GAME_CONSTANTS.MAX_ENERGY - current
+          const secondsToFull = Math.ceil(remaining / regenMultiplier) * GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC
           const nextTickIn = GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC - (secondsElapsed % GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC)
           const nextRegenAt = new Date(now.getTime() + nextTickIn * 1000).toISOString()
           set({ secondsToFull: Math.max(0, secondsToFull), nextRegenAt })
           return
         }
 
-        const newEnergy     = Math.min(GAME_CONSTANTS.MAX_ENERGY, current + ticks)
+        const newEnergy     = Math.min(GAME_CONSTANTS.MAX_ENERGY, current + ticks * regenMultiplier)
         const lastTickAt    = new Date(lastUpdatedDate.getTime() + ticks * GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC * 1000)
         const nextRegenAt   = newEnergy < GAME_CONSTANTS.MAX_ENERGY
           ? new Date(lastTickAt.getTime() + GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC * 1000).toISOString()
           : null
+        const remainingAfter = GAME_CONSTANTS.MAX_ENERGY - newEnergy
         const secondsToFull = newEnergy >= GAME_CONSTANTS.MAX_ENERGY
           ? 0
-          : (GAME_CONSTANTS.MAX_ENERGY - newEnergy) * GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC
+          : Math.ceil(remainingAfter / regenMultiplier) * GAME_CONSTANTS.ENERGY_REGEN_INTERVAL_SEC
 
         set({
           current:       newEnergy,
