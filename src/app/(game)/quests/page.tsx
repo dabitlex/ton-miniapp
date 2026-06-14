@@ -86,11 +86,6 @@ export default function QuestsPage() {
         </div>
       </div>
 
-      {/* ── "First Steps" onboarding quests ───────────────────── */}
-      <div className="shrink-0 px-5">
-        <OnboardingQuests />
-      </div>
-
       {/* ── Segmented tabs ─────────────────────────────────────── */}
       <div className="shrink-0 px-5 pb-3 animate-rise" style={{ animationDelay: '60ms' }}>
         <div className="flex p-1 rounded-2xl gap-1" style={{ background: 'var(--surface-press)' }}>
@@ -146,6 +141,9 @@ export default function QuestsPage() {
 
       {/* ── Mission timeline ───────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-5 pb-6">
+        {/* "First Steps" — shown on both tabs, scrolls with the list */}
+        <OnboardingQuests />
+
         {tab === 'daily' && (
           ads.isLoading ? (
             // Watch-Ads-Karte lädt noch → Shimmer statt vorschnell "available".
