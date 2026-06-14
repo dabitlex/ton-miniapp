@@ -6,6 +6,7 @@ import { useAds }       from '@/features/ads/hooks'
 import { useUserStore } from '@/stores/useUserStore'
 import { useEnergy }    from '@/features/hooks'
 import { QuestCard }    from '@/components/game/QuestCard'
+import { OnboardingQuests } from '@/components/game/OnboardingQuests'
 import type { DailyQuest } from '@/types/game'
 import { Swords, CalendarDays, ClipboardList, Zap } from 'lucide-react'
 
@@ -83,6 +84,11 @@ export default function QuestsPage() {
         <div className="progress-bar mt-3">
           <div className="progress-fill" style={{ width: `${pct}%` }} />
         </div>
+      </div>
+
+      {/* ── "First Steps" onboarding quests ───────────────────── */}
+      <div className="shrink-0 px-5">
+        <OnboardingQuests />
       </div>
 
       {/* ── Segmented tabs ─────────────────────────────────────── */}
