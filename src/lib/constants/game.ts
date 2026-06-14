@@ -51,11 +51,11 @@ export const LEAGUES = {
 } as const
 
 export const ECOSYSTEM_TIERS = [
-  { key: 'tier_1'   as const, tonAmount:   1, boostPercent:  5, label: 'Supporter',          description: '+5% XP boost for the rest of this season' },
-  { key: 'tier_5'   as const, tonAmount:   5, boostPercent: 10, label: 'Contributor',         description: '+10% XP boost for the rest of this season' },
-  { key: 'tier_20'  as const, tonAmount:  20, boostPercent: 18, label: 'Patron',              description: '+18% XP boost for the rest of this season' },
-  { key: 'tier_50'  as const, tonAmount:  50, boostPercent: 22, label: 'Champion',            description: '+22% XP boost for the rest of this season' },
-  { key: 'tier_100' as const, tonAmount: 100, boostPercent: 25, label: 'Legendary Supporter', description: '+25% XP boost — maximum tier' },
+  { key: 'tier_1'   as const, tonAmount:   1, boostPercent:  5, label: 'Supporter',          description: '+5% XP boost and 2x energy regen for the rest of this season' },
+  { key: 'tier_5'   as const, tonAmount:   5, boostPercent: 10, label: 'Contributor',         description: '+10% XP boost and 2x energy regen for the rest of this season' },
+  { key: 'tier_20'  as const, tonAmount:  20, boostPercent: 18, label: 'Patron',              description: '+18% XP boost and 2x energy regen for the rest of this season' },
+  { key: 'tier_50'  as const, tonAmount:  50, boostPercent: 22, label: 'Champion',            description: '+22% XP boost and 2x energy regen for the rest of this season' },
+  { key: 'tier_100' as const, tonAmount: 100, boostPercent: 25, label: 'Legendary Supporter', description: '+25% XP boost and 2x energy regen — maximum tier' },
 ]
 
 /** XP required to advance FROM this level. Formula: floor(120 × 1.34^level) */
