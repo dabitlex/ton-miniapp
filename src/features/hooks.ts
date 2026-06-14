@@ -46,6 +46,8 @@ export function useEnergy() {
     usedToday:     state.usedToday,
     nextRegenAt:   state.nextRegenAt,
     secondsToFull: state.secondsToFull,
+    regenMultiplier: state.regenMultiplier,
+    isBoosted:     state.regenMultiplier > 1,
     isHydrated:    state.isHydrated,
     isFull:        state.current >= GAME_CONSTANTS.MAX_ENERGY,
     isLow:         state.current <= 20,
