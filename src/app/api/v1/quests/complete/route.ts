@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { todayUTC, getISOWeek } from '@/lib/utils'
+import { autoCompleteSpecialQuest, type SpecialAssignmentRow } from '@/lib/quests/special'
 import type { CompleteQuestRequest } from '@/types/api'
 
 export const runtime = 'nodejs'
@@ -31,8 +32,8 @@ export const POST = withAuth(async (ctx) => {
     return err('Invalid UUID format', 'INVALID_FORMAT')
   }
 
-  if (!['daily', 'weekly'].includes(questType)) {
-    return err('questType must be daily or weekly', 'INVALID_QUEST_TYPE')
+  if (!['daily', 'weekly', 'special'].includes(questType)) {
+    return err('questType must be daily, weekly, or special', 'INVALID_QUEST_TYPE')
   }
 
   // ── Rate Limiting ────────────────────────────────────────────
@@ -47,7 +48,9 @@ export const POST = withAuth(async (ctx) => {
   }
 
   const db    = getAdminClient()
-  const table = questType === 'daily' ? 'daily_quest_assignments' : 'weekly_quest_assignments'
+  const table = questType === 'daily'   ? 'daily_quest_assignments'
+              : questType === 'weekly'  ? 'weekly_quest_assignments'
+              : 'special_quest_assignments'
 
   // ── 1. Replay attack check ────────────────────────────────────
   const { data: nonceCheck } = await db
@@ -59,6 +62,66 @@ export const POST = withAuth(async (ctx) => {
   if (nonceCheck) {
     await recordAntibotEvent(ctx.userId, 'replay_attempt', 'medium', { nonce, questId })
     return err('Duplicate nonce — replay detected', 'REPLAY_ATTACK', 409)
+  }
+
+  // ── 1b. SPECIAL (Onboarding "First Steps") — own, lightweight path ──
+  // Primarily used for the "Done, I joined" button of the Telegram
+  // channel quest (immediate re-check after joining, without
+  // waiting for the next /quests/onboarding call). Works
+  // generically for all special_* codes. No energy cost (all
+  // onboarding quests have energy_cost=0), no mystery-box trigger
+  // (daily only).
+  if (questType === 'special') {
+    const { data: quest, error: questErr } = await db
+      .from('special_quest_assignments')
+      .select('*, template:quest_templates(*)')
+      .eq('id', questId)
+      .eq('user_id', ctx.userId)
+      .single()
+
+    if (questErr || !quest) return err('Quest not found', 'NOT_FOUND', 404)
+
+    if (quest.status !== 'available') {
+      return err(`Quest is ${quest.status}`, `QUEST_${quest.status.toUpperCase()}`)
+    }
+
+    const template = (quest as any).template
+
+    const result = await autoCompleteSpecialQuest(
+      db, ctx.userId, ctx.telegramId,
+      quest as unknown as SpecialAssignmentRow,
+      { internal_code: template.internal_code, xp_reward: template.xp_reward },
+    )
+
+    if (!result.completed) {
+      const status = result.code === 'VERIFY_UNAVAILABLE' ? 503 : 422
+      return err(result.reason ?? 'Quest-Bedingung nicht erfüllt', result.code ?? 'QUEST_CONDITION_NOT_MET', status)
+    }
+
+    // Mark nonce as used (replay protection, consistent with daily/weekly)
+    await db.from('action_nonces').insert({
+      nonce, user_id: ctx.userId, action_type: 'quest_complete', action_ref_id: questId, ip_hash: ctx.ipHash,
+    }).then(() => {})
+
+    await db.from('user_daily_stats').upsert({
+      user_id:          ctx.userId,
+      stat_date:        todayUTC(),
+      quests_completed: 1,
+      xp_earned:        result.xpGranted,
+      was_active:       true,
+    }, { onConflict: 'user_id,stat_date' }).then(() => {})
+
+    const { data: u } = await db.from('users').select('energy_current').eq('id', ctx.userId).single()
+
+    return ok({
+      xpGranted:          result.xpGranted,
+      leveledUp:          result.leveledUp,
+      newLevel:           result.newLevel,
+      newLeague:          result.newLeague,
+      energyAfter:        (u as any)?.energy_current ?? null,
+      softCapped:         result.softCapped,
+      mysteryBoxUnlocked: false,
+    })
   }
 
   // ── 2. Quest laden ────────────────────────────────────────────
