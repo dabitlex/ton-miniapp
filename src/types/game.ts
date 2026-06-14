@@ -64,6 +64,8 @@ export interface EnergyState {
   lastUpdated: string
   nextRegenAt: string | null
   secondsToFull: number
+  /** 1 = normal regen (1 energy/15min), 2 = active ecosystem_support boost (2 energy/15min) */
+  regenMultiplier: number
 }
 
 export interface QuestTemplate {
