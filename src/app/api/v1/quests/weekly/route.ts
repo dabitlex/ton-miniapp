@@ -69,6 +69,25 @@ export const GET = withAuth(async (ctx) => {
   return ok(await attachProgress(data.map(mapRow), ctx.userId))
 })
 
+// Weekly quest pools — every user gets the SAME 5 quests in the same
+// ISO week (fairness), but the medium/hard pick rotates week to week
+// via a deterministic seed derived ONLY from (isoYear, isoWeek).
+//
+//   1x AD_CODE        (always — "watch ads")
+//   2x EASY_CODES     (always — both easy quests)
+//   1x from MEDIUM_POOL (rotates)
+//   1x from HARD_POOL   (rotates)
+//   = 5 total (WEEKLY_QUESTS_PER_USER)
+//
+// This replaces the previous `others.slice(0, 4)` selection, which had
+// no ORDER BY and no real rotation — as a result, two hard-tier quests
+// (weekly_hard_clan, the old weekly_hard_referral) were NEVER assigned
+// to anyone, ever. The explicit pools below guarantee every pool member
+// gets picked roughly 1-in-N weeks.
+const EASY_CODES   = ['weekly_easy_login', 'weekly_easy_energy']
+const MEDIUM_POOL  = ['weekly_med_xp', 'weekly_med_quests', 'weekly_med_level']
+const HARD_POOL    = ['weekly_hard_streak', 'weekly_hard_clan', 'weekly_hard_referral3']
+
 async function assignWeeklyQuests(userId: string, isoYear: number, isoWeek: number) {
   const db = getAdminClient()
 
@@ -79,27 +98,29 @@ async function assignWeeklyQuests(userId: string, isoYear: number, isoWeek: numb
     .eq('status', 'active')
     .maybeSingle()
 
-  // Pick 5 weekly templates — die Ad-Quest IMMER dabei, Rest auffüllen
+  // Deterministic per-week pick — same for every user, rotates weekly.
+  // Different multipliers for medium/hard so the two picks don't move
+  // in lockstep when both pools happen to have the same length.
+  const seed       = isoYear * 100 + isoWeek
+  const mediumPick = MEDIUM_POOL[seed % MEDIUM_POOL.length]
+  const hardPick   = HARD_POOL[Math.floor(seed * 7 / MEDIUM_POOL.length) % HARD_POOL.length]
+
+  const codesToAssign = [AD_CODE, ...EASY_CODES, mediumPick, hardPick]
+
+  // Fetch only the active templates we actually want this week.
+  // If a code is no longer active (e.g. deactivated later), it's
+  // silently skipped — assigns fewer than 5 rather than erroring.
   const { data: templates } = await db
     .from('quest_templates')
-    .select('id, internal_code, difficulty')
+    .select('id, internal_code')
     .eq('quest_type', 'weekly')
     .eq('is_active', true)
-    .limit(20)
+    .in('internal_code', codesToAssign)
 
   if (!templates || templates.length === 0) return
 
-  const adQuest = templates.find(t => (t as any).internal_code === AD_CODE)
-  const others  = templates.filter(t => (t as any).internal_code !== AD_CODE)
-
-  // Ad-Quest zuerst, dann mit anderen auf 5 auffüllen
-  const toAssign = [
-    ...(adQuest ? [adQuest] : []),
-    ...others.slice(0, adQuest ? 4 : 5),
-  ]
-
   await db.from('weekly_quest_assignments').upsert(
-    toAssign.map(t => ({
+    templates.map(t => ({
       user_id:    userId,
       template_id:t.id,
       season_id:  season?.id ?? null,
