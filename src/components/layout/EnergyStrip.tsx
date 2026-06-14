@@ -43,9 +43,24 @@ export function EnergyStrip() {
         {energy.current}<span style={{ color: 'var(--text-faint)' }}>/100</span>
       </span>
 
+      {energy.isBoosted && (
+        <span
+          className="text-[9px] font-extrabold tracking-wide px-1.5 py-0.5 rounded-md shrink-0"
+          style={{
+            color: 'var(--gold)',
+            background: 'var(--gold-dim)',
+            boxShadow: '0 0 8px rgba(251,191,36,0.35)',
+            fontFamily: 'var(--font-display)',
+          }}
+          title="Energy regen boosted by an active support package"
+        >
+          ⚡{energy.regenMultiplier}x
+        </span>
+      )}
+
       {!isFull && energy.nextRegenAt && (
         <span className="text-[10px] shrink-0 font-medium" style={{ color: 'var(--text-faint)' }}>
-          +1 {formatRegen(energy.nextRegenAt)}
+          +{energy.regenMultiplier} {formatRegen(energy.nextRegenAt)}
         </span>
       )}
     </div>
