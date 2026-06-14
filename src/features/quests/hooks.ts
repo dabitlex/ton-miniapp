@@ -160,3 +160,124 @@ export function useQuests() {
     refetchDaily,
   }
 }
+
+// ── "First Steps" onboarding quests ──────────────────────────
+export interface OnboardingActionSpec {
+  action: 'link' | 'navigate' | 'none'
+  url?:    string
+  route?:  string
+  anchor?: string
+}
+
+export interface OnboardingQuestItem {
+  id:            string
+  status:        'available' | 'completed' | 'expired' | 'failed' | 'locked' | 'active'
+  xpGranted:     number | null
+  completedAt:   string | null
+  justCompleted: boolean
+  leveledUp:     boolean
+  newLevel?:     number
+  newLeague?:    string
+  template: {
+    internalCode: string
+    title:        string
+    description:  string
+    xpReward:     number
+    iconKey:      string
+    actionSpec:   OnboardingActionSpec
+    sortOrder:    number
+  }
+  referral?: {
+    xp:     { current: number; required: number; met: boolean }
+    wallet: { met: boolean }
+  }
+}
+
+interface OnboardingResponse {
+  items:          OnboardingQuestItem[]
+  completedCount: number
+  totalCount:     number
+}
+
+interface SpecialCompleteResult {
+  xpGranted:   number
+  leveledUp:   boolean
+  newLevel:    number
+  newLeague:   string
+  energyAfter: number
+  softCapped:  boolean
+}
+
+export function useOnboardingQuests() {
+  const token = useAuthStore(s => s.accessToken)
+  const { showXPGain, toast, haptic } = useUIStore()
+  const { patchProfile } = useUserStore()
+  const qc = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey:  ['quests', 'onboarding'],
+    enabled:   !!token,
+    staleTime: 60_000,
+    queryFn:   async () => {
+      const data = await apiFetch<OnboardingResponse>('/api/v1/quests/onboarding', token!)
+
+      // Quests that were JUST auto-completed during this call
+      // (e.g. wallet was already connected) -> XP toast + refresh profile.
+      const justCompleted = data.items.filter(i => i.justCompleted && i.xpGranted)
+      for (const item of justCompleted) {
+        showXPGain(item.xpGranted!, item.leveledUp, item.leveledUp ? item.newLevel : undefined)
+        if (item.leveledUp && item.newLevel && item.newLeague) {
+          patchProfile({ level: item.newLevel, league: item.newLeague as any })
+        }
+      }
+      if (justCompleted.length > 0) {
+        useUserStore.getState().refreshProfile()
+        qc.invalidateQueries({ queryKey: ['leaderboard'] })
+      }
+
+      return data
+    },
+  })
+
+  // Explicit re-check (mainly the Telegram channel quest: "Done, I joined")
+  const { mutate: recheckQuest, isPending: isRechecking } = useMutation({
+    mutationFn: async (questId: string) => {
+      const nonce = uuidv4()
+      return apiFetch<SpecialCompleteResult>('/api/v1/quests/complete', token!, {
+        method: 'POST',
+        body:   JSON.stringify({ questId, questType: 'special', nonce }),
+      })
+    },
+    onSuccess: (result) => {
+      showXPGain(result.xpGranted, result.leveledUp, result.leveledUp ? result.newLevel : undefined)
+      if (result.leveledUp) {
+        patchProfile({ level: result.newLevel, league: result.newLeague as any })
+        haptic('heavy')
+      }
+      useUserStore.getState().refreshProfile()
+      qc.invalidateQueries({ queryKey: ['quests', 'onboarding'] })
+      qc.invalidateQueries({ queryKey: ['leaderboard'] })
+    },
+    onError: (error: Error) => {
+      if (error.message.includes('CHANNEL_NOT_JOINED')) {
+        toast('warning', 'Not joined yet — join the channel first, then try again.')
+      } else if (error.message.includes('VERIFY_UNAVAILABLE')) {
+        toast('warning', 'Verification temporarily unavailable — please try again in a few seconds.')
+      } else if (error.message.includes('QUEST_CONDITION_NOT_MET')) {
+        toast('warning', `⚠️ ${error.message}`)
+      } else {
+        toast('error', error.message)
+      }
+      haptic('error')
+    },
+  })
+
+  return {
+    items:          data?.items ?? [],
+    completedCount: data?.completedCount ?? 0,
+    totalCount:     data?.totalCount ?? 0,
+    isLoading,
+    recheckQuest,
+    isRechecking,
+  }
+}
