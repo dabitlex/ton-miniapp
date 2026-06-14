@@ -52,6 +52,20 @@ function Flag({ accent }: { accent: string }) {
   )
 }
 
+// Every tier carries the same flat +100% energy regen perk on top of its
+// XP boost — same gold styling as the "⚡2x" badge in EnergyStrip, so
+// players recognize it as the same perk across the app.
+function EnergyBoostBadge({ size = 'sm' }: { size?: 'sm' | 'md' }) {
+  const isSm = size === 'sm'
+  return (
+    <span
+      className={`relative z-10 inline-flex items-center gap-1 font-extrabold tracking-wide rounded-md whitespace-nowrap ${isSm ? 'text-[9px] px-1.5 py-0.5' : 'text-[11px] px-2 py-1'}`}
+      style={{ color: 'var(--gold)', background: 'var(--gold-dim)', fontFamily: 'var(--font-display)' }}>
+      <Zap size={isSm ? 9 : 11} fill="currentColor" />2x Energy
+    </span>
+  )
+}
+
 export default function EcosystemPage() {
   const token          = useAuthStore(s => s.accessToken)
   const { toast }      = useUIStore()
@@ -236,10 +250,15 @@ export default function EcosystemPage() {
                   <span className="w-2 h-2 rounded-full pulse-glow" style={{ background: '#34D399' }} />
                   <span className="eyebrow" style={{ color: '#34D399' }}>Active Boost</span>
                 </div>
-                <p className="display-xl text-[34px]" style={{ color: '#5EEAD4' }}>+{active.boostPercent}%</p>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                  Until {new Date(active.boostActiveUntil).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                <p className="display-xl text-[34px]" style={{ color: '#5EEAD4' }}>
+                  +{active.boostPercent}%<span className="text-[16px]" style={{ color: 'var(--text-muted)' }}> XP</span>
                 </p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <EnergyBoostBadge size="md" />
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Until {new Date(active.boostActiveUntil).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
               </div>
               <Zap size={40} fill="#34D399" style={{ color: '#34D399', filter: 'drop-shadow(0 0 14px rgba(16,185,129,0.55))' }} />
             </div>
@@ -262,7 +281,7 @@ export default function EcosystemPage() {
                 <Clock size={14} /> Relic confirming...
               </p>
               <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                +{pending.boostPercent}% XP — waiting for TON blockchain (~30s)
+                +{pending.boostPercent}% XP & 2x Energy regen — waiting for TON blockchain (~30s)
               </p>
             </div>
           </div>
@@ -326,9 +345,14 @@ export default function EcosystemPage() {
                           </p>
                         </div>
                         <div className="text-center shrink-0">
-                          <p className="display-xl text-[22px]" style={{ color: r.accent }}>+{tier.boostPercent}%</p>
+                          <p className="display-xl text-[22px]" style={{ color: r.accent }}>
+                            +{tier.boostPercent}%<span className="text-[11px]" style={{ color: 'var(--text-muted)' }}> XP</span>
+                          </p>
+                          <div className="flex justify-center mt-1 mb-1.5">
+                            <EnergyBoostBadge size="sm" />
+                          </div>
                           <button disabled={btnDisabled} onClick={() => handleSupport(tier)}
-                            className="mt-1 px-4 py-2 rounded-xl text-[12px] font-bold press disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+                            className="px-4 py-2 rounded-xl text-[12px] font-bold press disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
                             style={btnStyle}>
                             {btnLabel}
                           </button>
@@ -352,7 +376,10 @@ export default function EcosystemPage() {
                     <p className="relative z-10 text-[10px] font-extrabold uppercase tracking-wider" style={{ color: r.accent, fontFamily: 'var(--font-display)' }}>
                       {tier.label}
                     </p>
-                    <p className="relative z-10 display-xl text-[18px]" style={{ color: r.accent }}>+{tier.boostPercent}%</p>
+                    <p className="relative z-10 display-xl text-[18px]" style={{ color: r.accent }}>
+                      +{tier.boostPercent}%<span className="text-[10px]" style={{ color: 'var(--text-muted)' }}> XP</span>
+                    </p>
+                    <EnergyBoostBadge size="sm" />
                     <button disabled={btnDisabled} onClick={() => handleSupport(tier)}
                       className="relative z-10 w-full mt-1 py-2.5 rounded-xl text-[12px] font-bold press disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
                       style={btnStyle}>
@@ -368,7 +395,7 @@ export default function EcosystemPage() {
         {/* ── Info ───────────────────────────────────────────── */}
         <div className="surface-quiet px-3.5 py-3" style={{ background: 'rgba(91,141,239,0.07)' }}>
           <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            ℹ️ Your transaction is verified automatically after sending. The relic equips once the TON blockchain confirms the TX (~30 seconds). Boost applies to your first 3,000 XP per day.
+            ℹ️ Your transaction is verified automatically after sending. The relic equips once the TON blockchain confirms the TX (~30 seconds). Boost applies to your first 3,000 XP per day. Every relic also doubles your energy regen (2 instead of 1 every 15 min) for as long as it's active.
           </p>
         </div>
 
