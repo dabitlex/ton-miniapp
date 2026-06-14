@@ -24,26 +24,7 @@ export const GET = withAuth(async (ctx) => {
 
   if (error || !user) return err('User not found', 'NOT_FOUND', 404)
 
-  // Energie berechnen ohne DB-Schreibzugriff
-  const now          = Date.now()
-  const lastUpdated  = new Date((user as any).energy_last_updated).getTime()
-  const secondsElapsed = Math.floor((now - lastUpdated) / 1000)
-  const ticks        = Math.floor(secondsElapsed / 900)
-  const energyCurrent= Math.min(100, (user as any).energy_current + ticks)
-  const tickedAt     = new Date(lastUpdated + ticks * 900_000).toISOString()
-  const secondsToFull= energyCurrent >= 100 ? 0 : (100 - energyCurrent) * 900
-  const nextRegenAt  = energyCurrent >= 100 ? null
-    : new Date(lastUpdated + (ticks + 1) * 900_000).toISOString()
-
-  // Wallet laden
-  const { data: wallet } = await supabase
-    .from('wallets')
-    .select('address, address_friendly, status, connected_at')
-    .eq('user_id', ctx.userId)
-    .eq('status', 'connected')
-    .maybeSingle()
-
-  // Aktiven Ecosystem Boost laden
+  // Aktiven Ecosystem Boost laden (auch für Energie-Regen-Multiplikator)
   const { data: activeBoost } = await supabase
     .from('ecosystem_support')
     .select('xp_boost_percent')
@@ -53,6 +34,31 @@ export const GET = withAuth(async (ctx) => {
     .gte('boost_active_until', new Date().toISOString())
     .order('xp_boost_percent', { ascending: false })
     .limit(1)
+    .maybeSingle()
+
+  // Energie-Regen-Multiplikator: 2x solange ein Ecosystem-Support-Boost aktiv ist
+  // (gleiche "aktiv"-Definition wie der XP-Boost-Lookup oben — siehe auch
+  // consume_energy/grant_xp in der DB, dieselbe EXISTS-Bedingung).
+  const energyMultiplier = activeBoost ? 2 : 1
+
+  // Energie berechnen ohne DB-Schreibzugriff
+  const now            = Date.now()
+  const lastUpdated    = new Date((user as any).energy_last_updated).getTime()
+  const secondsElapsed = Math.floor((now - lastUpdated) / 1000)
+  const ticks          = Math.floor(secondsElapsed / 900)
+  const energyCurrent  = Math.min(100, (user as any).energy_current + ticks * energyMultiplier)
+  const tickedAt       = new Date(lastUpdated + ticks * 900_000).toISOString()
+  const energyRemaining= 100 - energyCurrent
+  const secondsToFull  = energyRemaining <= 0 ? 0 : Math.ceil(energyRemaining / energyMultiplier) * 900
+  const nextRegenAt    = energyCurrent >= 100 ? null
+    : new Date(lastUpdated + (ticks + 1) * 900_000).toISOString()
+
+  // Wallet laden
+  const { data: wallet } = await supabase
+    .from('wallets')
+    .select('address, address_friendly, status, connected_at')
+    .eq('user_id', ctx.userId)
+    .eq('status', 'connected')
     .maybeSingle()
 
   // Aktive Saison laden (für Countdown)
@@ -112,12 +118,13 @@ export const GET = withAuth(async (ctx) => {
     referralEligible:     u.referral_eligible,
     // Energie (live berechnet)
     energy: {
-      current:       energyCurrent,
-      max:           100,
-      usedToday:     u.energy_used_today,
-      lastUpdated:   tickedAt,
+      current:        energyCurrent,
+      max:            100,
+      usedToday:      u.energy_used_today,
+      lastUpdated:    tickedAt,
       nextRegenAt,
       secondsToFull,
+      regenMultiplier: energyMultiplier,
     },
     // Wallet
     wallet: wallet ? {
