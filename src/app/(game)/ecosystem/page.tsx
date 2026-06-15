@@ -6,7 +6,7 @@ import { useTonConnectUI, useTonWallet }                from '@tonconnect/ui-rea
 import { useAuthStore }      from '@/stores/useAuthStore'
 import { useUIStore }        from '@/stores/useUIStore'
 import { formatNumber }      from '@/lib/utils'
-import { ECOSYSTEM_TIERS }   from '@/lib/constants/game'
+import { ECOSYSTEM_TIERS, CURRENCY_LABEL, CURRENCY_SHORT }   from '@/lib/constants/game'
 import type { EcosystemSupportTier, ActiveEcosystemBoost } from '@/types/game'
 import { Zap, Wallet, Rocket, Clock } from 'lucide-react'
 
@@ -309,7 +309,7 @@ export default function EcosystemPage() {
                   ? (<><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Claiming…</>)
                   : isCurrent   ? '✓ Active'
                   : isLowerTier ? '🔒 Outranked'
-                  : (<><Zap size={13} fill="currentColor" /> {tier.tonAmount} TON</>)
+                  : (<><Zap size={13} fill="currentColor" /> {tier.tonAmount} {CURRENCY_SHORT}</>)
 
                 const btnStyle: React.CSSProperties = (isCurrent || isLowerTier)
                   ? { background: 'var(--surface-2)', color: 'var(--text-muted)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }
@@ -341,7 +341,7 @@ export default function EcosystemPage() {
                             {tier.label}
                           </p>
                           <p className="display text-[17px] text-white mt-0.5">
-                            {tier.tonAmount} <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>TON</span>
+                            {tier.tonAmount} <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>{CURRENCY_LABEL}</span>
                           </p>
                         </div>
                         <div className="text-center shrink-0">
@@ -371,7 +371,7 @@ export default function EcosystemPage() {
                     {isCurrent && <Flag accent={r.accent} />}
                     <Gem id={`gem-${tier.key}`} c1={r.c1} c2={r.c2} size={56} />
                     <p className="relative z-10 display text-[15px] text-white">
-                      {tier.tonAmount} <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>TON</span>
+                      {tier.tonAmount} <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>{CURRENCY_LABEL}</span>
                     </p>
                     <p className="relative z-10 text-[10px] font-extrabold uppercase tracking-wider" style={{ color: r.accent, fontFamily: 'var(--font-display)' }}>
                       {tier.label}
@@ -411,7 +411,7 @@ export default function EcosystemPage() {
                       {h.tier.replace('_', ' ')} — <span style={{ color: 'var(--violet-bright)' }}>+{h.boostPercent}%</span>
                     </p>
                     <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-faint)' }}>
-                      {new Date(h.createdAt).toLocaleDateString('en-US')} · {formatNumber(h.tonAmount)} TON
+                      {new Date(h.createdAt).toLocaleDateString('en-US')} · {formatNumber(h.tonAmount)} {CURRENCY_LABEL}
                     </p>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
