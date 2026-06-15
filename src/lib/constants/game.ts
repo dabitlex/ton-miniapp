@@ -50,6 +50,18 @@ export const LEAGUES = {
   legendary: { min: 26, max: 30 },
 } as const
 
+// ── Currency label ──────────────────────────────────────────
+// The TON network token was renamed Toncoin -> Gram (ticker TON -> GRAM)
+// on 2026-06-15. The BLOCKCHAIN is still "The Open Network (TON)" — only
+// the token's display name/ticker changed. So amounts use these labels,
+// while "TON wallet" / "TON network" wording stays as-is.
+//   CURRENCY_LABEL — full, for amount lines: "100 GRAM (ex TON)"
+//   CURRENCY_SHORT — compact, for tight buttons: "100 GRAM"
+// Once the transition period ends, set CURRENCY_LABEL = 'GRAM' (drop the
+// suffix). Single source of truth.
+export const CURRENCY_LABEL = 'GRAM (ex TON)'
+export const CURRENCY_SHORT = 'GRAM'
+
 export const ECOSYSTEM_TIERS = [
   { key: 'tier_1'   as const, tonAmount:   1, boostPercent:  5, label: 'Supporter',          description: '+5% XP boost and 2x energy regen for the rest of this season' },
   { key: 'tier_5'   as const, tonAmount:   5, boostPercent: 10, label: 'Contributor',         description: '+10% XP boost and 2x energy regen for the rest of this season' },
