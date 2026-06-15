@@ -32,7 +32,7 @@ export const POST = withAuth(async (ctx) => {
   // Classify tier
   const sorted = [...ECOSYSTEM_TIERS].sort((a, b) => b.tonAmount - a.tonAmount)
   const tier   = sorted.find(t => tonAmount >= t.tonAmount)
-  if (!tier) return err('Minimum 1 TON required for Ecosystem Support', 'BELOW_MIN')
+  if (!tier) return err('Minimum 1 GRAM required for Ecosystem Support', 'BELOW_MIN')
 
   // Active season required
   const { data: season } = await db
