@@ -302,7 +302,7 @@ export function ReferralSection() {
 
           <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             Share your personal link. You earn 500 XP once your friend
-            reaches Level 5 and 2,000 XP.
+            reaches 2,000 XP and connects a TON wallet.
           </p>
 
           {/* Link preview */}
