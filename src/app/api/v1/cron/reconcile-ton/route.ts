@@ -148,7 +148,7 @@ async function handle(req: NextRequest) {
     }
 
     // ecosystem_support anlegen (sofort aktiv — on-chain bestätigt)
-    const { error: supErr } = await supabase
+    const { data: supRow, error: supErr } = await supabase
       .from('ecosystem_support')
       .insert({
         user_id:            userId,
@@ -161,10 +161,21 @@ async function handle(req: NextRequest) {
         boost_active_until: season.ends_at,
         is_active:          true,
       })
+      .select('id')
+      .single()
 
     if (supErr) {
       console.error(`[ReconcileTON] support insert failed (user ${userId}, tx ${hash}): ${supErr.message}`)
       continue
+    }
+
+    // Referral-Provision (Stufe 1): nachgetragene Käufe lösen ebenfalls die
+    // Gutschrift aus. Idempotent — falls schon gutgeschrieben, passiert nichts.
+    if (supRow?.id) {
+      const { data: credited, error: cErr } =
+        await supabase.rpc('credit_referral_commission', { p_support_id: supRow.id })
+      if (cErr)            console.error(`[ReconcileTON] commission failed (support ${supRow.id}): ${cErr.message}`)
+      else if (Number(credited) > 0) console.log(`[ReconcileTON] 💰 +${credited} GRAM Provision an Werber von User ${userId}`)
     }
 
     summary.recovered++
