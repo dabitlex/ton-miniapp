@@ -21,6 +21,7 @@ interface LeaderboardState {
   setLeagueRank: (rank: number | null) => void
   setLoading:    (v: boolean) => void
   setPage:       (p: number) => void
+  setHasMore:    (v: boolean) => void
   setLeague:     (l: LeagueTier | null) => void
   // FIX: reset löscht NICHT mehr userRank/userEntry
   reset:         () => void
@@ -49,6 +50,7 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     setLeagueRank: (leagueRank) => set({ leagueRank }),
     setLoading:    (isLoading)   => set({ isLoading }),
     setPage:       (page)        => set({ page }),
+    setHasMore:    (hasMore)     => set({ hasMore }),
     setLeague:     (activeLeague)=> set({ activeLeague }),
 
     // Nur Einträge + Pagination resetten — userRank/userEntry BLEIBEN
