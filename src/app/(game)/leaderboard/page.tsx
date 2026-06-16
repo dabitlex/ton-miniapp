@@ -95,7 +95,8 @@ export default function LeaderboardPage() {
   const league = null // League filter disabled until Season 2
   const [rewardsOpen, setRewardsOpen] = useState(false)
 
-  const { entries, userRank, userEntry, isLoading, hasMore, refreshedAt, loadMore } =
+  const { entries, userRank, userEntry, isLoading, hasMore, refreshedAt, loadMore,
+          focusMode, neighbors, fullExpanded, setFullExpanded } =
     useLeaderboard(league)
 
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -174,12 +175,51 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        {/* ── Ranked list ──────────────────────────────────────── */}
-        <div className="space-y-1.5">
-          {rest.map((entry, i) => (
-            <EntryRow key={entry.userId} entry={entry} ref={i === rest.length - 1 ? lastItemRef : null} />
-          ))}
-        </div>
+        {/* ── Deine Umgebung (nur Fokus-Modus) ─────────────────── */}
+        {focusMode && neighbors.length > 0 && (
+          <div className="mb-4 animate-rise" style={{ animationDelay: '100ms' }}>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
+              <span className="eyebrow" style={{ color: 'var(--text-faint)' }}>Deine Umgebung</span>
+              <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
+            </div>
+            <div className="space-y-1.5">
+              {neighbors.map((entry) => (
+                <EntryRow key={`nb-${entry.userId}`} entry={entry} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Ganze Rangliste (Fokus-Modus: aufklappbar) ────────── */}
+        {focusMode && !fullExpanded ? (
+          <button
+            onClick={() => setFullExpanded(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 mb-2 rounded-2xl press"
+            style={{
+              fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
+              color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.08)',
+              border: '1px solid rgba(139,92,246,0.15)',
+            }}>
+            Ganze Rangliste anzeigen
+          </button>
+        ) : (
+          <>
+            {focusMode && (
+              <div className="flex items-center gap-2.5 mb-2 mt-1">
+                <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
+                <span className="eyebrow" style={{ color: 'var(--text-faint)' }}>Ganze Rangliste</span>
+                <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
+              </div>
+            )}
+            {/* ── Ranked list ──────────────────────────────────── */}
+            <div className="space-y-1.5">
+              {rest.map((entry, i) => (
+                <EntryRow key={entry.userId} entry={entry} ref={i === rest.length - 1 ? lastItemRef : null} />
+              ))}
+            </div>
+          </>
+        )}
 
         {isLoading && entries.length > 0 && (
           <div className="flex justify-center py-4">
