@@ -68,6 +68,16 @@ export const GET = withAuth(async (ctx) => {
     .eq('entity_id', ctx.userId)
     .maybeSingle()
 
+  // Fallback: steht der User außerhalb des gecachten Bereichs (z.B. jenseits
+  // Platz 50.000), ist er nicht im Cache. Dann seinen echten Rang on-demand
+  // berechnen, damit JEDER Spieler seine Platzierung sieht.
+  let myFallbackRank: any = null
+  if (!myGlobalEntry) {
+    const { data: rankRows } = await supabase
+      .rpc('get_user_season_rank', { p_user_id: ctx.userId })
+    myFallbackRank = Array.isArray(rankRows) ? rankRows[0] ?? null : rankRows ?? null
+  }
+
   // Liga-Rang laden wenn Liga-Filter aktiv
   let myLeagueEntry = null
   if (league) {
@@ -104,8 +114,8 @@ export const GET = withAuth(async (ctx) => {
     {
       entries:    mappedEntries,
       refreshedAt,
-      // Globaler Rang (immer)
-      userRank:      myGlobalEntry?.rank ?? null,
+      // Globaler Rang (immer) — Cache, sonst on-demand berechneter Fallback
+      userRank:      myGlobalEntry?.rank ?? myFallbackRank?.rank ?? null,
       // Liga-Rang (nur wenn Liga-Filter aktiv)
       userLeagueRank: myLeagueEntry?.rank ?? null,
       userEntry:  myGlobalEntry ? {
@@ -118,6 +128,16 @@ export const GET = withAuth(async (ctx) => {
         league:    (myGlobalEntry.metadata as any)?.league ?? 'bronze',
         relicTier: (myGlobalEntry.metadata as any)?.relic_tier ?? null,
         isFounder: (myGlobalEntry.metadata as any)?.founder    ?? false,
+      } : myFallbackRank ? {
+        rank:      myFallbackRank.rank,
+        userId:    ctx.userId,
+        firstName: myFallbackRank.first_name,
+        photoUrl:  myFallbackRank.photo_url,
+        seasonXp:  myFallbackRank.season_xp,
+        level:     myFallbackRank.level,
+        league:    myFallbackRank.league ?? 'bronze',
+        relicTier: myFallbackRank.relic_tier ?? null,
+        isFounder: myFallbackRank.is_founder ?? false,
       } : null,
     },
     {
