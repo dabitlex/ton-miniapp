@@ -32,7 +32,7 @@ export const POST = withAuth(async (ctx) => {
   // Classify tier
   const sorted = [...ECOSYSTEM_TIERS].sort((a, b) => b.tonAmount - a.tonAmount)
   const tier   = sorted.find(t => tonAmount >= t.tonAmount)
-  if (!tier) return err('Minimum 1 GRAM required for Ecosystem Support', 'BELOW_MIN')
+  if (!tier) return err('Minimum 1 TON required for Ecosystem Support', 'BELOW_MIN')
 
   // Active season required
   const { data: season } = await db
@@ -73,7 +73,7 @@ export const POST = withAuth(async (ctx) => {
 
   // Ecosystem Support erstellen
   // Wenn TX bereits bestätigt → Boost sofort aktivieren
-  await db.from('ecosystem_support').insert({
+  const { data: support } = await db.from('ecosystem_support').insert({
     user_id:           ctx.userId,
     season_id:         season.id,
     tx_id:             tx.id,
@@ -84,6 +84,8 @@ export const POST = withAuth(async (ctx) => {
     boost_active_until:season.ends_at,
     is_active:         isConfirmedOnChain, // ← sofort aktiv wenn on-chain bestätigt
   })
+  .select('id')
+  .single()
 
   // Kauf-Sperre lösen: die Zahlung ist jetzt serverseitig registriert.
   await db.from('users')
@@ -91,6 +93,18 @@ export const POST = withAuth(async (ctx) => {
     .eq('id', ctx.userId)
 
   if (isConfirmedOnChain) {
+    // Referral-Provision (Stufe 1): falls der Käufer valide geworben wurde,
+    // bekommt der Werber 10% gutgeschrieben. Idempotent + fail-safe — ein
+    // Fehler hier darf den Boost-Kauf nie scheitern lassen.
+    if (support?.id) {
+      db.rpc('credit_referral_commission', { p_support_id: support.id }).then(
+        ({ data: credited, error: cErr }) => {
+          if (cErr) console.error(`[Commission] credit failed (support ${support.id}): ${cErr.message}`)
+          else if (Number(credited) > 0) console.log(`[Commission] +${credited} GRAM an Werber von User ${ctx.userId}`)
+        }
+      )
+    }
+
     console.log(`[EcoSupport] ✅ Boost sofort aktiviert: ${tier.key} +${tier.boostPercent}% für User ${ctx.userId}`)
     // Push-Bestätigung (Zahlungs-Bestätigung → bypassOptOut)
     notifyUser(
