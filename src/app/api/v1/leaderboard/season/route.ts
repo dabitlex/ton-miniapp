@@ -18,7 +18,14 @@ export const GET = withAuth(async (ctx) => {
   const page   = Math.max(1, Number(url.searchParams.get('page')  ?? '1'))
   const limit  = Math.min(100, Number(url.searchParams.get('limit') ?? '50'))
   const league = url.searchParams.get('league') ?? null
-  const offset = (page - 1) * limit
+
+  // 'from' (1-basierter Start-Rang) erlaubt das Laden eines beliebigen Fensters,
+  // unabhängig von der Seitengröße — gebraucht für "Sprung zur eigenen Umgebung"
+  // (Modell A) und das Nachladen nach oben/unten. Fällt auf page zurück.
+  const fromParam = url.searchParams.get('from')
+  const offset = fromParam != null
+    ? Math.max(0, Math.floor(Number(fromParam)) - 1)
+    : (page - 1) * limit
 
   const supabase = db()
 
@@ -143,6 +150,8 @@ export const GET = withAuth(async (ctx) => {
     {
       page,
       limit,
+      offset,
+      fromRank: offset + 1,
       total:   count ?? 0,
       hasMore: offset + limit < (count ?? 0),
     }
