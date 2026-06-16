@@ -22,6 +22,15 @@ interface LeaderboardState {
   setLoading:    (v: boolean) => void
   setPage:       (p: number) => void
   setHasMore:    (v: boolean) => void
+
+  // ── Modell A: Fokus-Modus (User außerhalb der ersten Seite) ──
+  focusMode:     boolean                 // true wenn userRank jenseits der Top-Seite
+  neighbors:     LeaderboardEntry[]      // eigene Umgebung (userRank-2 .. +N)
+  neighborsLoaded: boolean
+  fullExpanded:  boolean                 // ganze Liste aufgeklappt?
+  setFocusMode:  (v: boolean) => void
+  setNeighbors:  (entries: LeaderboardEntry[]) => void
+  setFullExpanded: (v: boolean) => void
   setLeague:     (l: LeagueTier | null) => void
   // FIX: reset löscht NICHT mehr userRank/userEntry
   reset:         () => void
@@ -42,6 +51,11 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     refreshedAt:  null,
     activeLeague: null,
 
+    focusMode:       false,
+    neighbors:       [],
+    neighborsLoaded: false,
+    fullExpanded:    false,
+
     setEntries: (entries, { total, hasMore, refreshedAt }) =>
       set({ entries, total, hasMore, refreshedAt, isLoading: false }),
     appendEntries: (more) =>
@@ -51,6 +65,9 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     setLoading:    (isLoading)   => set({ isLoading }),
     setPage:       (page)        => set({ page }),
     setHasMore:    (hasMore)     => set({ hasMore }),
+    setFocusMode:    (focusMode)    => set({ focusMode }),
+    setNeighbors:    (neighbors)    => set({ neighbors, neighborsLoaded: true }),
+    setFullExpanded: (fullExpanded) => set({ fullExpanded }),
     setLeague:     (activeLeague)=> set({ activeLeague }),
 
     // Nur Einträge + Pagination resetten — userRank/userEntry BLEIBEN
@@ -59,6 +76,10 @@ export const useLeaderboardStore = create<LeaderboardState>()(
       page:     1,
       total:    0,
       hasMore:  false,
+      focusMode:       false,
+      neighbors:       [],
+      neighborsLoaded: false,
+      fullExpanded:    false,
       // userRank und userEntry bleiben erhalten!
       userRank: s.userRank,
       userEntry:s.userEntry,
