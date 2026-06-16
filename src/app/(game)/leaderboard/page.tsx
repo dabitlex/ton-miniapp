@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
   const league = null // League filter disabled until Season 2
   const [rewardsOpen, setRewardsOpen] = useState(false)
 
-  const { entries, userRank, userEntry, isLoading, hasMore, refreshedAt, loadMore,
+  const { entries, userRank, isLoading, hasMore, refreshedAt, loadMore,
           focusMode, neighbors, total, fetchRange, appendNeighbors, prependNeighbors } =
     useLeaderboard(league)
 
@@ -199,67 +199,13 @@ export default function LeaderboardPage() {
         </button>
       </div>
 
-      {focusMode ? (
-        /* ══════════ FOKUS-MODUS (Rang ≥ 8) ══════════
-           Podium FEST oben, darunter eigener Scroll-Container mit
-           bidirektionalem Nachladen (oben + unten). */
-        <>
-          {/* ── Podium: fest, scrollt NICHT mit ── */}
-          <div className="shrink-0 px-5">
-            {podium.length > 0 && (
-              <div className="relative mt-1 mb-3" style={{ animationDelay: '40ms' }}>
-                <div className="absolute inset-x-6 top-0 h-32 pointer-events-none"
-                  style={{ background: 'radial-gradient(60% 100% at 50% 0%, rgba(251,191,36,0.16), transparent 70%)' }} />
-                <div className="relative flex items-end justify-center gap-3 pt-4">
-                  {podium[1] && <PodiumPillar entry={podium[1]} place={2} />}
-                  {podium[0] && <PodiumPillar entry={podium[0]} place={1} />}
-                  {podium[2] && <PodiumPillar entry={podium[2]} place={3} />}
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-2.5 mb-2">
-              <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
-              <span className="eyebrow" style={{ color: 'var(--violet-bright)' }}>Rangliste</span>
-              <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
-            </div>
-          </div>
-
-          {/* ── Liste: eigener Scroll-Container, bidirektional ── */}
-          <div ref={focusScrollRef} onScroll={onFocusScroll}
-            className="flex-1 overflow-y-auto px-5 pb-6">
-            {neighbors[0] && neighbors[0].rank > 4 && (
-              <p className="text-center text-[10px] py-2 eyebrow" style={{ color: 'var(--text-ultra)' }}>
-                ↑ nach oben für Platz {Math.max(4, neighbors[0].rank - 1)} …
-              </p>
-            )}
-            <div className="space-y-1.5">
-              {neighbors.map((entry) => (
-                <EntryRow key={`nb-${entry.userId}`} entry={entry} />
-              ))}
-            </div>
-            {total > 0 && neighbors.length > 0 &&
-              neighbors[neighbors.length - 1].rank >= total ? (
-              <p className="text-center text-[10px] py-3 eyebrow" style={{ color: 'var(--text-ultra)' }}>
-                — Ende der Rangliste —
-              </p>
-            ) : (
-              <div className="flex justify-center py-4">
-                <div className="w-5 h-5 rounded-full border-2 animate-spin"
-                  style={{ borderColor: 'rgba(139,92,246,0.3)', borderTopColor: '#A78BFA' }} />
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        /* ══════════ NORMALMODUS (Top 7) ══════════
-           Alles in einem Scroll-Container wie bisher. */
-        <div className="flex-1 overflow-y-auto px-5 pb-6">
-
-          {/* ── Podium ── */}
-          {isLoading && entries.length === 0 ? (
-            <div className="h-44 shimmer rounded-[26px] mt-2" />
-          ) : podium.length > 0 && (
-            <div className="relative mt-1 mb-4 animate-rise" style={{ animationDelay: '40ms' }}>
+      {/* ── Podium: IMMER fest oben (beide Modi), scrollt nicht mit ── */}
+      <div className="shrink-0 px-5">
+        {isLoading && entries.length === 0 ? (
+          <div className="h-44 shimmer rounded-[26px] mt-2" />
+        ) : podium.length > 0 && (
+          <>
+            <div className="relative mt-1 mb-3">
               <div className="absolute inset-x-6 top-0 h-32 pointer-events-none"
                 style={{ background: 'radial-gradient(60% 100% at 50% 0%, rgba(251,191,36,0.16), transparent 70%)' }} />
               <div className="relative flex items-end justify-center gap-3 pt-4">
@@ -268,33 +214,46 @@ export default function LeaderboardPage() {
                 {podium[2] && <PodiumPillar entry={podium[2]} place={3} />}
               </div>
             </div>
-          )}
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
+              <span className="eyebrow" style={{ color: 'var(--violet-bright)' }}>Rangliste</span>
+              <div className="flex-1 h-px" style={{ background: 'var(--edge-soft)' }} />
+            </div>
+          </>
+        )}
+      </div>
 
-          {/* ── Your rank banner ── */}
-          {(userRank || userEntry) && (
-            <div className="surface-accent p-4 mb-4 animate-rise" style={{ animationDelay: '80ms' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl"
-                    style={{ background: 'var(--surface-2)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
-                    <span className="display-xl text-[18px] gradient-text leading-none">#{userRank ?? '—'}</span>
-                  </div>
-                  <div>
-                    <p className="eyebrow" style={{ color: 'var(--violet-bright)' }}>Your rank</p>
-                    <p className="text-[12px] font-medium mt-0.5" style={{ color: 'var(--text-muted)' }}>Global leaderboard</p>
-                  </div>
-                </div>
-                {userEntry && (
-                  <div className="text-right">
-                    <p className="display text-[19px] text-white tabular-nums">{userEntry.seasonXp.toLocaleString()}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Season XP</p>
-                  </div>
-                )}
-              </div>
+      {focusMode ? (
+        /* ══════════ FOKUS-MODUS (Rang ≥ 8) ══════════
+           Liste startet bei der 5er-Umgebung, lädt in beide Richtungen. */
+        <div ref={focusScrollRef} onScroll={onFocusScroll}
+          className="flex-1 overflow-y-auto px-5 pb-6">
+          {neighbors[0] && neighbors[0].rank > 4 && (
+            <p className="text-center text-[10px] py-2 eyebrow" style={{ color: 'var(--text-ultra)' }}>
+              ↑ nach oben für Platz {Math.max(4, neighbors[0].rank - 1)} …
+            </p>
+          )}
+          <div className="space-y-1.5">
+            {neighbors.map((entry) => (
+              <EntryRow key={`nb-${entry.userId}`} entry={entry} />
+            ))}
+          </div>
+          {total > 0 && neighbors.length > 0 &&
+            neighbors[neighbors.length - 1].rank >= total ? (
+            <p className="text-center text-[10px] py-3 eyebrow" style={{ color: 'var(--text-ultra)' }}>
+              — Ende der Rangliste —
+            </p>
+          ) : (
+            <div className="flex justify-center py-4">
+              <div className="w-5 h-5 rounded-full border-2 animate-spin"
+                style={{ borderColor: 'rgba(139,92,246,0.3)', borderTopColor: '#A78BFA' }} />
             </div>
           )}
-
-          {/* ── Ranked list ── */}
+        </div>
+      ) : (
+        /* ══════════ NORMALMODUS (Top 7) ══════════
+           Liste ab Platz 4, normaler Runter-Scroll. Kein Banner. */
+        <div className="flex-1 overflow-y-auto px-5 pb-6">
           <div className="space-y-1.5">
             {rest.map((entry, i) => (
               <EntryRow key={entry.userId} entry={entry} ref={i === rest.length - 1 ? lastItemRef : null} />
