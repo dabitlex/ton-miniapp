@@ -23,14 +23,14 @@ interface LeaderboardState {
   setPage:       (p: number) => void
   setHasMore:    (v: boolean) => void
 
-  // ── Modell A: Fokus-Modus (User außerhalb der ersten Seite) ──
-  focusMode:     boolean                 // true wenn userRank jenseits der Top-Seite
-  neighbors:     LeaderboardEntry[]      // eigene Umgebung (userRank-2 .. +N)
+  // ── Modell A: Fokus-Modus (User außerhalb der Top 7) ──
+  focusMode:     boolean
+  neighbors:     LeaderboardEntry[]      // bidirektionale Liste um den eigenen Rang
   neighborsLoaded: boolean
-  fullExpanded:  boolean                 // ganze Liste aufgeklappt?
   setFocusMode:  (v: boolean) => void
   setNeighbors:  (entries: LeaderboardEntry[]) => void
-  setFullExpanded: (v: boolean) => void
+  appendNeighbors:  (more: LeaderboardEntry[]) => void   // nach unten
+  prependNeighbors: (more: LeaderboardEntry[]) => void   // nach oben
   setLeague:     (l: LeagueTier | null) => void
   // FIX: reset löscht NICHT mehr userRank/userEntry
   reset:         () => void
@@ -54,7 +54,6 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     focusMode:       false,
     neighbors:       [],
     neighborsLoaded: false,
-    fullExpanded:    false,
 
     setEntries: (entries, { total, hasMore, refreshedAt }) =>
       set({ entries, total, hasMore, refreshedAt, isLoading: false }),
@@ -67,7 +66,8 @@ export const useLeaderboardStore = create<LeaderboardState>()(
     setHasMore:    (hasMore)     => set({ hasMore }),
     setFocusMode:    (focusMode)    => set({ focusMode }),
     setNeighbors:    (neighbors)    => set({ neighbors, neighborsLoaded: true }),
-    setFullExpanded: (fullExpanded) => set({ fullExpanded }),
+    appendNeighbors: (more)         => set(s => ({ neighbors: [...s.neighbors, ...more] })),
+    prependNeighbors:(more)         => set(s => ({ neighbors: [...more, ...s.neighbors] })),
     setLeague:     (activeLeague)=> set({ activeLeague }),
 
     // Nur Einträge + Pagination resetten — userRank/userEntry BLEIBEN
@@ -79,7 +79,6 @@ export const useLeaderboardStore = create<LeaderboardState>()(
       focusMode:       false,
       neighbors:       [],
       neighborsLoaded: false,
-      fullExpanded:    false,
       // userRank und userEntry bleiben erhalten!
       userRank: s.userRank,
       userEntry:s.userEntry,
