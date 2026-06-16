@@ -67,15 +67,15 @@ export function useLeaderboard(league: LeagueTier | null = null) {
       }
       store.setLeagueRank?.(userLeagueRank)
 
-      // ── Modell A: ist der User außerhalb der ersten Seite (Top 50)? ──
-      // Dann Fokus-Modus aktivieren und seine Umgebung (Rang-2 .. Rang+7)
-      // separat laden, damit er sich sofort sieht, ohne zu scrollen.
-      const PAGE = 50
-      if (userRank && userRank > PAGE) {
+      // ── Modell A: ist der User außerhalb der Top 7? ──
+      // Dann Fokus-Modus: Podium bleibt fest oben, die Liste startet mit der
+      // 5er-Umgebung (2 vor, ich, 2 nach) und lädt in beide Richtungen nach.
+      const FOCUS_FROM = 8
+      if (userRank && userRank >= FOCUS_FROM) {
         store.setFocusMode(true)
         if (!store.neighborsLoaded) {
           const fromRank = Math.max(4, userRank - 2)   // Podium (1-3) nie doppeln
-          const np = new URLSearchParams({ from: String(fromRank), limit: '10' })
+          const np = new URLSearchParams({ from: String(fromRank), limit: '5' })
           if (league) np.set('league', league)
           try {
             const nres  = await fetch(`/api/v1/leaderboard/season?${np}`, {
@@ -96,13 +96,38 @@ export function useLeaderboard(league: LeagueTier | null = null) {
     },
   })
 
-  // loadMore lädt die NÄCHSTE Seite tatsächlich nach und hängt sie an die
-  // bestehende Liste an. Vorher wurde nur store.page erhöht, ohne dass ein
-  // Fetch ausgelöst wurde (queryKey enthält page nicht, und der queryFn holt
-  // fix page=1 für den 2-Min-Auto-Refresh). Daher hier ein eigener Fetch.
+  // loadMore: lädt nach unten nach. Im Fokus-Modus wird die EIGENE UMGEBUNG
+  // nach unten erweitert (200, 201, 202 …); im Normalmodus die Hauptliste.
   const isLoadingMore = useRef(false)
   const loadMore = useCallback(async () => {
-    if (!store.hasMore || isLoading || isLoadingMore.current) return
+    if (isLoading || isLoadingMore.current) return
+
+    // ── Fokus-Modus: Umgebung nach unten erweitern ──
+    if (store.focusMode) {
+      const last = store.neighbors[store.neighbors.length - 1]
+      if (!last) return
+      const fromRank = last.rank + 1
+      if (store.total && fromRank > store.total) return   // Ende erreicht
+      isLoadingMore.current = true
+      try {
+        const np = new URLSearchParams({ from: String(fromRank), limit: '15' })
+        if (league) np.set('league', league)
+        const res  = await fetch(`/api/v1/leaderboard/season?${np}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const text = await res.text()
+        if (!text) return
+        const json = JSON.parse(text)
+        if (json.success) {
+          const more = json.data?.entries ?? []
+          if (more.length > 0) store.appendNeighbors(more)
+        }
+      } catch { /* nicht kritisch */ } finally { isLoadingMore.current = false }
+      return
+    }
+
+    // ── Normalmodus: Hauptliste paginieren ──
+    if (!store.hasMore) return
     isLoadingMore.current = true
     try {
       const nextPage = store.page + 1
@@ -120,8 +145,8 @@ export function useLeaderboard(league: LeagueTier | null = null) {
       const more    = json.data?.entries ?? []
       const hasMore = json.meta?.hasMore ?? false
       if (more.length > 0) {
-        store.appendEntries(more)          // hängt an + erhöht store.page
-        store.setHasMore(hasMore)          // hasMore vom Server übernehmen
+        store.appendEntries(more)
+        store.setHasMore(hasMore)
       } else {
         store.setHasMore(false)
       }
@@ -130,7 +155,23 @@ export function useLeaderboard(league: LeagueTier | null = null) {
     } finally {
       isLoadingMore.current = false
     }
-  }, [store.hasMore, store.page, isLoading, league, token]) // eslint-disable-line
+  }, [store.hasMore, store.page, store.focusMode, store.neighbors, store.total, isLoading, league, token]) // eslint-disable-line
+
+  // fetchRange: lädt ein beliebiges Rang-Fenster (für bidirektionales Laden in
+  // der Page orchestriert). Reine Hilfsfunktion ohne Store-Mutation.
+  const fetchRange = useCallback(async (fromRank: number, limit: number): Promise<any[]> => {
+    try {
+      const p = new URLSearchParams({ from: String(fromRank), limit: String(limit) })
+      if (league) p.set('league', league)
+      const res  = await fetch(`/api/v1/leaderboard/season?${p}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const text = await res.text()
+      if (!text) return []
+      const json = JSON.parse(text)
+      return json.success ? (json.data?.entries ?? []) : []
+    } catch { return [] }
+  }, [league, token])
 
   return {
     entries:     store.entries,
@@ -145,7 +186,9 @@ export function useLeaderboard(league: LeagueTier | null = null) {
     // Modell A
     focusMode:    store.focusMode,
     neighbors:    store.neighbors,
-    fullExpanded: store.fullExpanded,
-    setFullExpanded: store.setFullExpanded,
+    total:        store.total,
+    fetchRange,
+    appendNeighbors:  store.appendNeighbors,
+    prependNeighbors: store.prependNeighbors,
   }
 }
