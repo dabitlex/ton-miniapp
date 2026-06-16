@@ -67,6 +67,31 @@ export function useLeaderboard(league: LeagueTier | null = null) {
       }
       store.setLeagueRank?.(userLeagueRank)
 
+      // ── Modell A: ist der User außerhalb der ersten Seite (Top 50)? ──
+      // Dann Fokus-Modus aktivieren und seine Umgebung (Rang-2 .. Rang+7)
+      // separat laden, damit er sich sofort sieht, ohne zu scrollen.
+      const PAGE = 50
+      if (userRank && userRank > PAGE) {
+        store.setFocusMode(true)
+        if (!store.neighborsLoaded) {
+          const fromRank = Math.max(4, userRank - 2)   // Podium (1-3) nie doppeln
+          const np = new URLSearchParams({ from: String(fromRank), limit: '10' })
+          if (league) np.set('league', league)
+          try {
+            const nres  = await fetch(`/api/v1/leaderboard/season?${np}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            const ntext = await nres.text()
+            if (ntext) {
+              const njson = JSON.parse(ntext)
+              if (njson.success) store.setNeighbors(njson.data?.entries ?? [])
+            }
+          } catch { /* Umgebung ist optional; Hauptliste bleibt nutzbar */ }
+        }
+      } else {
+        store.setFocusMode(false)
+      }
+
       return json.data
     },
   })
@@ -117,5 +142,10 @@ export function useLeaderboard(league: LeagueTier | null = null) {
     refreshedAt: store.refreshedAt,
     loadMore,
     refetch,
+    // Modell A
+    focusMode:    store.focusMode,
+    neighbors:    store.neighbors,
+    fullExpanded: store.fullExpanded,
+    setFullExpanded: store.setFullExpanded,
   }
 }
