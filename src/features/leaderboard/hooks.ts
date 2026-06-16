@@ -30,7 +30,11 @@ export function useLeaderboard(league: LeagueTier | null = null) {
     enabled:   !!token,
     staleTime: 60_000,    // Vorgeladene Daten beim Mount nutzen (kein Lade-Flackern)
     gcTime:    5 * 60_000,// Cache 5 min im Speicher behalten
-    refetchInterval: 2 * 60_000,        // Auto-Refresh alle 2 Minuten
+    // Auto-Refresh alle 2 Minuten — ABER pausieren, sobald der User nachgeladen
+    // hat (page > 1). Sonst würde der Seite-1-Refresh seine nachgeladenen
+    // Einträge wegwerfen und ihn nach oben reißen. Sobald er wieder oben ist
+    // (page === 1, z.B. nach Liga-Wechsel/reset), läuft der Refresh weiter.
+    refetchInterval: () => (useLeaderboardStore.getState().page > 1 ? false : 2 * 60_000),
     refetchIntervalInBackground: false, // nur bei aktivem/fokussiertem Tab pollen (spart Last)
     queryFn:   async () => {
       // Skelett nur beim Erstladen zeigen; die 2-Minuten-Refreshes
@@ -67,9 +71,41 @@ export function useLeaderboard(league: LeagueTier | null = null) {
     },
   })
 
-  const loadMore = useCallback(() => {
-    if (store.hasMore && !isLoading) store.setPage(store.page + 1)
-  }, [store.hasMore, isLoading, store.page]) // eslint-disable-line
+  // loadMore lädt die NÄCHSTE Seite tatsächlich nach und hängt sie an die
+  // bestehende Liste an. Vorher wurde nur store.page erhöht, ohne dass ein
+  // Fetch ausgelöst wurde (queryKey enthält page nicht, und der queryFn holt
+  // fix page=1 für den 2-Min-Auto-Refresh). Daher hier ein eigener Fetch.
+  const isLoadingMore = useRef(false)
+  const loadMore = useCallback(async () => {
+    if (!store.hasMore || isLoading || isLoadingMore.current) return
+    isLoadingMore.current = true
+    try {
+      const nextPage = store.page + 1
+      const params = new URLSearchParams({ page: String(nextPage), limit: '50' })
+      if (league) params.set('league', league)
+
+      const res  = await fetch(`/api/v1/leaderboard/season?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const text = await res.text()
+      if (!text) return
+      const json = JSON.parse(text)
+      if (!json.success) return
+
+      const more    = json.data?.entries ?? []
+      const hasMore = json.meta?.hasMore ?? false
+      if (more.length > 0) {
+        store.appendEntries(more)          // hängt an + erhöht store.page
+        store.setHasMore(hasMore)          // hasMore vom Server übernehmen
+      } else {
+        store.setHasMore(false)
+      }
+    } catch {
+      // still: Nachladen ist nicht kritisch; nächster Scroll versucht es erneut
+    } finally {
+      isLoadingMore.current = false
+    }
+  }, [store.hasMore, store.page, isLoading, league, token]) // eslint-disable-line
 
   return {
     entries:     store.entries,
