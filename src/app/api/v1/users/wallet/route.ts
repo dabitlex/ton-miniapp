@@ -50,8 +50,12 @@ export const POST = withAuth(async (ctx) => {
 
   if (error) return err(`Failed to save wallet: ${error.message}`, 'DB_ERROR', 500)
 
-  // Update referral eligibility check (wallet is one of the requirements)
-  await db.rpc('validate_referral' as any, { p_user_id: ctx.userId }).catch(() => {})
+  // Update referral eligibility check (wallet is one of the requirements).
+  // The users-table triggers only fire on level/xp change, not on wallet
+  // connect, so we explicitly run the eligibility check here. Proper await +
+  // error logging (db.rpc(...) is a thenable builder — .catch() on it throws).
+  const { error: refErr } = await db.rpc('check_and_validate_referral', { p_user_id: ctx.userId })
+  if (refErr) console.error(`[Wallet] referral validation failed (user ${ctx.userId}): ${refErr.message}`)
 
   return ok({ address, connected: true })
 })
