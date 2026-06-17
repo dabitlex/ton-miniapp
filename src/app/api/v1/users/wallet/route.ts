@@ -62,9 +62,20 @@ export const POST = withAuth(async (ctx) => {
 
 export const DELETE = withAuth(async (ctx) => {
   const db = getAdminClient()
-  await db.from('wallets')
-    .update({ status: 'disconnected', disconnected_at: new Date().toISOString() })
+
+  // Wallet-Eintrag vollständig LÖSCHEN (nicht nur auf 'disconnected' setzen).
+  // Grund: wallets.address hat einen globalen UNIQUE-Constraint. Würde die Zeile
+  // nur auf 'disconnected' gesetzt, bliebe die Adresse dauerhaft belegt und
+  // könnte nie wieder verbunden werden — der POST-Handler oben würde mit
+  // ADDRESS_TAKEN ablehnen. Löschen gibt die Adresse sofort wieder frei.
+  // Unbedenklich: alle Lesestellen filtern auf status='connected', eine
+  // 'disconnected'-Zeile wird nirgends genutzt. Referral-Status bleibt
+  // unberührt (einmal validierte Referrals bleiben gültig).
+  const { error } = await db.from('wallets')
+    .delete()
     .eq('user_id', ctx.userId)
+
+  if (error) return err(`Failed to disconnect wallet: ${error.message}`, 'DB_ERROR', 500)
 
   return ok({ disconnected: true })
 })
