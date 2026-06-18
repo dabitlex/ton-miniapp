@@ -69,9 +69,15 @@ export const useEnergyStore = create<EnergyStoreState>()(
       },
 
       optimisticConsume(amount) {
+        // Gegen undefined/NaN absichern: ein ungültiger amount würde
+        // current - amount = NaN ergeben und die Anzeige fälschlich auf 0
+        // springen lassen (z.B. bei der energiefreien Ad-Quest, deren
+        // energyCost je nach Datenpfad undefined sein kann).
+        const safe = Number.isFinite(amount) ? amount : 0
+        if (safe <= 0) return
         set(s => ({
-          current:   Math.max(0, s.current - amount),
-          usedToday: s.usedToday + amount,
+          current:   Math.max(0, s.current - safe),
+          usedToday: s.usedToday + safe,
         }))
       },
 
