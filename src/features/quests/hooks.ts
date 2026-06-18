@@ -79,7 +79,9 @@ export function useQuests() {
       const prevEnergy = useEnergyStore.getState().current
       const { daily, weekly } = useQuestStore.getState()
       const quest = [...daily, ...weekly].find(q => q.id === questId)
-      if (quest) energy.optimisticConsume(quest.template.energyCost)
+      // energyCost kann je nach Datenpfad fehlen (undefined) → auf 0 absichern,
+      // damit die Energie-Anzeige nicht fälschlich auf 0 springt.
+      if (quest) energy.optimisticConsume(quest.template.energyCost ?? 0)
       questStore.setCompleting(questId)
       questStore.optimisticComplete(questId)
       return { questId, prevEnergy }
