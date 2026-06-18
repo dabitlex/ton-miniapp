@@ -72,6 +72,23 @@ export async function prefetchAppData(token: string): Promise<void> {
         s.setUserRank(r.data.userRank ?? null, r.data.userEntry ?? null)
         s.setLeagueRank?.(r.data.userLeagueRank ?? null)
         qc.setQueryData(['leaderboard', 'season', null], r.data)
+
+        // ── Modell A: Fokus-Entscheidung schon beim Prefetch treffen. ──
+        // Sonst bliebe focusMode=false, weil der Leaderboard-Hook wegen
+        // staleTime die queryFn (mit der Fokus-Logik) nicht erneut ausführt,
+        // wenn der Cache bereits vorgeladen ist. Spiegelt exakt die Hook-Logik.
+        const userRank = r.data.userRank ?? null
+        const FOCUS_FROM = 8
+        if (userRank && userRank >= FOCUS_FROM) {
+          s.setFocusMode(true)
+          const fromRank = Math.max(4, userRank - 2)   // Podium (1-3) nie doppeln
+          const nr = await getJSON(
+            `/api/v1/leaderboard/season?from=${fromRank}&limit=5`, token,
+          )
+          if (nr?.data) s.setNeighbors(nr.data.entries ?? [])
+        } else {
+          s.setFocusMode(false)
+        }
       }
     })(),
   ]
