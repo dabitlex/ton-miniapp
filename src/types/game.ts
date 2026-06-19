@@ -198,7 +198,7 @@ export interface StreakState {
 
 export interface NotificationItem {
   id: string
-  type: 'xp_gain' | 'level_up' | 'streak' | 'quest_complete' | 'energy_full' | 'info'
+  type: 'xp_gain' | 'level_up' | 'streak' | 'quest_complete' | 'energy_full' | 'info' | 'achievement'
   title: string
   message: string
   xpAmount?: number
