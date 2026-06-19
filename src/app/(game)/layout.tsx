@@ -7,6 +7,7 @@ import { AuroraBackground } from '@/components/layout/AuroraBackground'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { EnergyTicker }     from '@/components/layout/EnergyTicker'
 import { MysteryBoxModal }  from '@/components/game/MysteryBoxModal'
+import { AchievementPopup } from '@/components/game/AchievementPopup'
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,6 +27,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
             <MobileNav />
           </div>
           <MysteryBoxModal />
+          <AchievementPopup />
         </TonProvider>
       </QueryProvider>
     </AuthProvider>
