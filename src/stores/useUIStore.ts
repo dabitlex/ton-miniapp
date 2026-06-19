@@ -16,9 +16,18 @@ interface XPPopup {
   newLevel?: number
 }
 
+/** Ein freigeschaltetes Achievement, das als Popup angezeigt wird. */
+interface AchievementUnlock {
+  code:     string   // z.B. 'streak_7' → für AchievementIcon
+  title:    string
+  iconCode: string
+  xp:       number
+}
+
 interface UIState {
   toasts:        Toast[]
   xpPopups:      XPPopup[]
+  achievementQueue: AchievementUnlock[]   // FIFO-Queue freigeschalteter Achievements
   notifications: NotificationItem[]
   isNavVisible:  boolean
   activeModal:   string | null
@@ -30,6 +39,10 @@ interface UIState {
   // XP popup system
   showXPGain:   (xp: number, levelUp?: boolean, newLevel?: number) => void
   removeXPPopup:(id: string) => void
+
+  // Achievement popup queue
+  enqueueAchievements: (items: AchievementUnlock[]) => void  // mehrere auf einmal anhängen
+  dismissAchievement:  () => void                            // vorderstes wegklicken → nächstes
 
   // Notification queue
   addNotification:    (n: Omit<NotificationItem, 'id' | 'timestamp'>) => void
@@ -51,6 +64,7 @@ const nextId = () => String(++_idCounter)
 export const useUIStore = create<UIState>()((set, get) => ({
   toasts:        [],
   xpPopups:      [],
+  achievementQueue: [],
   notifications: [],
   isNavVisible:  true,
   activeModal:   null,
@@ -84,6 +98,28 @@ export const useUIStore = create<UIState>()((set, get) => ({
 
   removeXPPopup(id) {
     set(s => ({ xpPopups: s.xpPopups.filter(p => p.id !== id) }))
+  },
+
+  enqueueAchievements(items) {
+    if (!items || items.length === 0) return
+    // Haptik beim ersten Eintreffen — fühlt sich nach Belohnung an.
+    get().haptic('success')
+    set(s => ({ achievementQueue: [...s.achievementQueue, ...items] }))
+
+    // Optional zusätzlich in die Notification-Historie (wie XP-Gains).
+    items.forEach(a => {
+      get().addNotification({
+        type:     'achievement',
+        title:    'Achievement Unlocked',
+        message:  `${a.title} — +${a.xp} XP`,
+        xpAmount: a.xp,
+      })
+    })
+  },
+
+  dismissAchievement() {
+    // Vorderstes entfernen → das nächste rückt nach (Queue).
+    set(s => ({ achievementQueue: s.achievementQueue.slice(1) }))
   },
 
   addNotification(n) {
