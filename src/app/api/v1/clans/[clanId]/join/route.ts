@@ -1,6 +1,7 @@
 // src/app/api/v1/clans/[clanId]/join/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { createClient }      from '@supabase/supabase-js'
+import { checkAchievements } from '@/app/api/v1/_lib/achievements'
 import { GAME_CONSTANTS }    from '@/lib/constants/game'
 
 function db() {
@@ -48,5 +49,7 @@ export const POST = withAuth(async (ctx) => {
     return err(`Failed to join clan: ${error.message}`, 'DB_ERROR', 500)
   }
 
-  return ok({ joined: true, clanId })
+  const newAchievements = await checkAchievements(supabase, ctx.userId)
+
+  return ok({ joined: true, clanId, newAchievements })
 })
