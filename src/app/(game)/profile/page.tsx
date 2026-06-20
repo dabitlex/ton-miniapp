@@ -2,6 +2,7 @@
 // Hero with XP ring · tiered stats · progressive disclosure via bottom sheets
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter }       from 'next/navigation'
 import { useQuery }        from '@tanstack/react-query'
 import { useUserStore }    from '@/stores/useUserStore'
 import { useAuthStore }    from '@/stores/useAuthStore'
@@ -22,6 +23,7 @@ const RING_C = 2 * Math.PI * RING_R // ≈ 326.7
 
 export default function ProfilePage() {
   const profile = useUserStore(s => s.profile)
+  const router  = useRouter()
   const token   = useAuthStore(s => s.accessToken)
   const energy  = useEnergy()
   const [sheet, setSheet]   = useState<SheetId>(null)
@@ -259,6 +261,31 @@ export default function ProfilePage() {
             style={{ color: 'var(--violet-bright)', fontFamily: 'var(--font-display)' }}>
             ⭐ {formatNumber((profile.clan as any).seasonXp ?? 0)}
           </span>
+        </div>
+      )}
+
+      {/* ── Achievements — nur sichtbar wenn Feature-Flag aktiv ──── */}
+      {profile?.achievementsEnabled && (
+        <div className="mx-5 mt-6 animate-rise" style={{ animationDelay: '240ms' }}>
+          <h3 className="eyebrow mb-2.5">Progress</h3>
+          <div className="rounded-[22px] overflow-hidden" style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
+            <button
+              onClick={() => router.push('/achievements')}
+              className="w-full flex items-center gap-[13px] px-4 py-[15px] min-h-[60px] text-left transition-colors active:bg-white/[0.025]"
+            >
+              <div className="w-[38px] h-[38px] rounded-[13px] shrink-0 flex items-center justify-center"
+                style={{ background: 'rgba(251,191,36,0.12)', boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.22)' }}>
+                <Trophy size={18} style={{ color: '#FBBF24' }} strokeWidth={1.8} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Achievements</p>
+                <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
+                  View your unlocked achievements
+                </p>
+              </div>
+              <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-faint)' }} />
+            </button>
+          </div>
         </div>
       )}
 
