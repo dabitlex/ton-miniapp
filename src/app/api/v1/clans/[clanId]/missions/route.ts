@@ -1,6 +1,7 @@
 // src/app/api/v1/clans/[clanId]/missions/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { createClient }      from '@supabase/supabase-js'
+import { checkAchievements } from '@/app/api/v1/_lib/achievements'
 import { todayUTC }          from '@/lib/utils'
 
 function db() {
@@ -140,12 +141,15 @@ export const POST = withAuth(async (ctx) => {
     p_xp:      mission.xp_clan_reward,
   })
 
+  const newAchievements = await checkAchievements(supabase, ctx.userId)
+
   return ok({
     xpGranted:    xp?.xp_granted ?? mission.xp_reward,
     clanXpGained: mission.xp_clan_reward,
     leveledUp:    xp?.leveled_up ?? false,
     newLevel:     xp?.new_level ?? null,
     energyAfter:  energyRes.energy_after,
+    newAchievements,
   })
 })
 
