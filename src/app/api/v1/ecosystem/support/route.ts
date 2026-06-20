@@ -1,6 +1,7 @@
 // src/app/api/v1/ecosystem/support/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient }    from '@/lib/supabase/admin'
+import { checkAchievements } from '@/app/api/v1/_lib/achievements'
 import { ECOSYSTEM_TIERS }   from '@/lib/constants/game'
 import { notifyUser, boostConfirmedMessage } from '@/lib/telegram/notifications'
 
@@ -112,11 +113,14 @@ export const POST = withAuth(async (ctx) => {
       boostConfirmedMessage(tier.label, tier.boostPercent, season.ends_at),
       { bypassOptOut: true }
     ).catch(() => {})
+    const newAchievements = await checkAchievements(db, ctx.userId)
+
     return ok({
       activated:  true,
       tier:       tier.key,
       boostPct:   tier.boostPercent,
       message:    'Boost aktiviert!',
+      newAchievements,
     })
   }
 
