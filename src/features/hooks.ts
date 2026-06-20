@@ -69,6 +69,7 @@ export function useStreak() {
   const profile             = useUserStore(s => s.profile)
   const { patchProfile }    = useUserStore()
   const { showXPGain, toast, haptic } = useUIStore()
+  const enqueueAchievements = useUIStore(s => s.enqueueAchievements)
   const qc                  = useQueryClient()
 
   const today      = todayUTC()
@@ -98,6 +99,7 @@ export function useStreak() {
       })
       showXPGain(data.xpGranted)
       haptic('success')
+      if (data.newAchievements?.length) enqueueAchievements(data.newAchievements)
       if (data.missUsed) toast('info', '🛡️ Miss day protection used — streak saved!')
       toast('success', `🔥 Day ${data.streakCurrent} Streak!`)
       // Profil ist keine Live-Query → echte Server-Werte nachziehen
