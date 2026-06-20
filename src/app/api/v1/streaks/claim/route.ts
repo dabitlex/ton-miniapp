@@ -1,6 +1,7 @@
 // src/app/api/v1/streaks/claim/route.ts 
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
+import { checkAchievements } from '@/app/api/v1/_lib/achievements'
 import { todayUTC } from '@/lib/utils'
 import { XP_REWARDS, GAME_CONSTANTS } from '@/lib/constants/game'
 
@@ -111,11 +112,14 @@ export const POST = withAuth(async (ctx) => {
     console.error('[Streak] Meilenstein-Check Fehler:', e)
   }
 
+  const newAchievements = await checkAchievements(db, ctx.userId)
+
   return ok({
     streakCurrent: newStreak,
     streakLongest: newLongest,
     xpGranted,
     missUsed,
     milestoneAwards,   // falls beim Claim ein Meilenstein erreicht wurde
+    newAchievements,
   })
 })
