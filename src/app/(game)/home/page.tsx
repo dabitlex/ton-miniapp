@@ -6,20 +6,17 @@ import { useLeaderboardStore } from '@/stores/useLeaderboardStore'
 import { EnergyStrip }   from '@/components/layout/EnergyStrip'
 import { formatNumber }  from '@/lib/utils'
 import { xpForLevel, GAME_CONSTANTS } from '@/lib/constants/game'
-import { QuestCard }     from '@/components/game/QuestCard'
 import { StreakCard }    from '@/components/game/StreakCard'
 import Link from 'next/link'
-import { Flame, Star, Shield, Trophy, ArrowRight } from 'lucide-react'
+import { Flame, Star, Shield, Trophy, Swords, Sparkles } from 'lucide-react'
 
 export default function HomePage() {
   const profile  = useUserStore(s => s.profile)
   const userRank = useLeaderboardStore(s => s.userRank)
-  const { daily, completingId, completeQuest, isLoadingDaily } = useQuests()
+  const { daily } = useQuests()
 
   const completed   = daily.filter(q => q.status === 'completed').length
   const total       = daily.length
-  const allDone     = total > 0 && completed === total
-  const activeBoost = profile?.ecosystemBoost ?? 0
 
   // Level ring progress (mirror XPBar clamp logic)
   const needed   = profile ? xpForLevel(Math.min(profile.level, 29)) : 1
@@ -129,64 +126,24 @@ export default function HomePage() {
         <StreakCard />
       </div>
 
-      {/* ── DAILY MISSION FEED ─────────────────────────────────── */}
-      <div className="px-5 mt-5 flex-1 animate-rise" style={{ animationDelay: '200ms' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="display text-[15px] text-white">Today's Missions</h2>
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {completed} of {total} complete
-            </p>
-          </div>
-          <Link href="/quests" className="chip press" style={{ color: 'var(--violet-bright)' }}>
-            All <ArrowRight size={12} />
-          </Link>
-        </div>
-
-        {/* segmented progress */}
-        {total > 0 && (
-          <div className="flex gap-1 mb-4">
-            {daily.map((q, i) => (
-              <div key={q.id} className="flex-1 h-1.5 rounded-full transition-all duration-500"
-                style={{
-                  background: q.status === 'completed'
-                    ? (allDone ? 'linear-gradient(90deg,#10B981,#5EEAD4)' : 'var(--aurora)')
-                    : 'rgba(255,255,255,0.07)',
-                  boxShadow: q.status === 'completed' ? '0 0 8px rgba(139,92,246,0.5)' : 'none',
-                  animationDelay: `${i * 60}ms`,
-                }} />
-            ))}
-          </div>
-        )}
-
-        {isLoadingDaily ? (
-          <div className="space-y-2.5">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-[88px] shimmer ml-[30px]" />
-            ))}
-          </div>
-        ) : allDone ? (
-          <div className="surface-accent p-6 text-center">
-            <div className="text-4xl mb-2">🎉</div>
-            <p className="display text-[15px] text-white">All missions complete</p>
-            <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
-              Fresh missions arrive at midnight UTC
-            </p>
-          </div>
-        ) : (
-          <div>
-            {daily.slice(0, 4).map((q, i) => (
-              <QuestCard
-                key={q.id}
-                quest={q}
-                onComplete={(id) => completeQuest(id, 'daily')}
-                completing={completingId === q.id}
-                activeBoostPct={activeBoost}
-                index={i}
-              />
-            ))}
-          </div>
-        )}
+      {/* ── QUICK ACTIONS: Missions + Boost ────────────────────── */}
+      <div className="px-5 mt-4 grid grid-cols-2 gap-2.5 animate-rise" style={{ animationDelay: '200ms' }}>
+        <Link href="/quests" className="press">
+          <ActionButton
+            icon={<Swords size={18} style={{ color: '#A78BFA' }} />}
+            label="Missions"
+            sub={total > 0 ? `${completed}/${total} done` : 'View tasks'}
+            tint="#A78BFA"
+          />
+        </Link>
+        <Link href="/ecosystem" className="press">
+          <ActionButton
+            icon={<Sparkles size={18} style={{ color: '#5EEAD4' }} />}
+            label="Boost"
+            sub="Power up"
+            tint="#5EEAD4"
+          />
+        </Link>
       </div>
     </div>
   )
@@ -208,6 +165,27 @@ function StatChip({ icon, label, value, tint, truncate }: {
           {value}
         </p>
         <p className="text-[10px] font-semibold mt-0.5" style={{ color: 'var(--text-faint)' }}>{label}</p>
+      </div>
+    </div>
+  )
+}
+
+function ActionButton({ icon, label, sub, tint }: {
+  icon: React.ReactNode; label: string; sub: string; tint: string
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-[18px] px-3.5 py-3"
+      style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)' }}>
+      <div className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
+        style={{ background: `${tint}1a`, boxShadow: `inset 0 0 0 1px ${tint}26` }}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[14px] font-extrabold leading-tight truncate"
+          style={{ color: '#fff', fontFamily: 'var(--font-display)' }}>
+          {label}
+        </p>
+        <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: 'var(--text-faint)' }}>{sub}</p>
       </div>
     </div>
   )
