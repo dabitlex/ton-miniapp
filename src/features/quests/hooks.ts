@@ -27,6 +27,7 @@ export function useQuests() {
   const energy     = useEnergyStore()
   const { patchProfile } = useUserStore()
   const { showXPGain, toast, haptic } = useUIStore()
+  const enqueueAchievements = useUIStore(s => s.enqueueAchievements)
   const qc         = useQueryClient()
 
   // ── Daily Quests ──────────────────────────────────────────────
@@ -99,6 +100,11 @@ export function useQuests() {
       })
 
       showXPGain(data.xpGranted, data.leveledUp, data.leveledUp ? data.newLevel : undefined)
+
+      // Freigeschaltete Achievements → Popup-Queue
+      if (data.newAchievements?.length) {
+        enqueueAchievements(data.newAchievements)
+      }
 
       if (data.leveledUp) {
         patchProfile({ level: data.newLevel, league: data.newLeague as any })
