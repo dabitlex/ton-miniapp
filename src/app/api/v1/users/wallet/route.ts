@@ -1,6 +1,7 @@
 // src/app/api/v1/users/wallet/route.ts 
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient }    from '@/lib/supabase/admin'
+import { checkAchievements } from '@/app/api/v1/_lib/achievements'
 import type { SaveWalletRequest } from '@/types/api'
 
 export const runtime = 'nodejs'
@@ -57,7 +58,9 @@ export const POST = withAuth(async (ctx) => {
   const { error: refErr } = await db.rpc('check_and_validate_referral', { p_user_id: ctx.userId })
   if (refErr) console.error(`[Wallet] referral validation failed (user ${ctx.userId}): ${refErr.message}`)
 
-  return ok({ address, connected: true })
+  const newAchievements = await checkAchievements(db, ctx.userId)
+
+  return ok({ address, connected: true, newAchievements })
 })
 
 export const DELETE = withAuth(async (ctx) => {
