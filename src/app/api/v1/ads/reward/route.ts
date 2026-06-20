@@ -6,6 +6,7 @@
 // SECURITY: Der Server ist die einzige Wahrheit — niemals dem Client glauben.
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
+import { checkAchievements }         from '@/app/api/v1/_lib/achievements'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -116,11 +117,18 @@ async function handle(req: NextRequest): Promise<NextResponse> {
     await supabase.from('ad_views').update({ xp_granted: xpGranted }).eq('id', adViewId)
   }
 
+  // Achievements prüfen (Ad-Achievements). Hinweis: Diese Route wird von
+  // Adsgram serverseitig aufgerufen, daher landet newAchievements nicht direkt
+  // im Nutzer-Frontend — die Freischaltung/XP passiert trotzdem, das Popup
+  // erscheint beim nächsten Frontend-Request.
+  const newAchievements = await checkAchievements(supabase, userId)
+
   return NextResponse.json({
     rewarded: true,
     xp:       xpGranted,
     today:    (count ?? 0) + 1,
     limit:    DAILY_AD_LIMIT,
+    newAchievements,
   })
 }
 
