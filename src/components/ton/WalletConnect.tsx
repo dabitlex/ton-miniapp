@@ -52,6 +52,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
   const profile           = useUserStore(s => s.profile)
   const { setProfile }    = useUserStore()
   const { toast, haptic } = useUIStore()
+  const enqueueAchievements = useUIStore(s => s.enqueueAchievements)
   const savedRef          = useRef<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -81,6 +82,8 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
         const json = await res.json()
         if (!json.success) throw new Error(json.error)
 
+        const newAchievements = json.data?.newAchievements
+
         const profileRes  = await fetch('/api/v1/users/me', {
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -89,6 +92,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
 
         toast('success', '✅ Wallet connected!')
         haptic('success')
+        if (newAchievements?.length) enqueueAchievements(newAchievements)
         onConnected?.()
       } catch {
         toast('error', 'Could not save wallet')
