@@ -28,6 +28,7 @@ export interface UserProfile {
   telegramPhotoUrl: string | null
   telegramIsPremium: boolean
   isFounder: boolean
+  achievementsEnabled?: boolean
   level: number
   xpTotal: number
   xpCurrentLevel: number
