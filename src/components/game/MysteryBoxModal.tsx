@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useMysteryBoxStore } from '@/stores/useMysteryBoxStore'
 import { useAuthStore }       from '@/stores/useAuthStore'
 import { useUserStore }       from '@/stores/useUserStore'
+import { useUIStore }         from '@/stores/useUIStore'
 import { useQueryClient }     from '@tanstack/react-query'
 
 type Tier = 'common' | 'uncommon' | 'rare' | 'epic' | 'jackpot'
@@ -22,6 +23,8 @@ export function MysteryBoxModal() {
   const isOpen = useMysteryBoxStore(s => s.isOpen)
   const close  = useMysteryBoxStore(s => s.close)
   const token  = useAuthStore(s => s.accessToken)
+  const enqueueAchievements = useUIStore(s => s.enqueueAchievements)
+  const pendingAch = useRef<any[]>([])
   const qc     = useQueryClient()
   const patchProfile = useUserStore(s => s.patchProfile)
 
@@ -45,14 +48,14 @@ export function MysteryBoxModal() {
     setPhase('shaking')
 
     // Parallel: API-Call (würfelt server-seitig)
-    let apiResult: { tier: Tier; xp: number } | null = null
+    let apiResult: { tier: Tier; xp: number; newAchievements?: any[] } | null = null
     try {
       const res = await fetch('/api/v1/quests/mystery-box', {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       })
       const json = await res.json()
-      if (json.success) apiResult = { tier: json.data.tier, xp: json.data.xpReward }
+      if (json.success) apiResult = { tier: json.data.tier, xp: json.data.xpReward, newAchievements: json.data.newAchievements }
     } catch {}
 
     // 2. Nach Shake: Deckel auf
@@ -65,6 +68,7 @@ export function MysteryBoxModal() {
         setTimeout(() => {
           if (apiResult) {
             setResult(apiResult)
+            pendingAch.current = apiResult.newAchievements ?? []
             setPhase('reward')
             // XP optimistisch ins Profil (BEIDE: Season + Total, sonst driften sie)
             const p = useUserStore.getState().profile
@@ -175,7 +179,7 @@ export function MysteryBoxModal() {
         </div>
 
         {phase === 'reward' && (
-          <button onClick={close} className="press"
+          <button onClick={() => { const a = pendingAch.current; pendingAch.current = []; close(); if (a.length) setTimeout(() => enqueueAchievements(a), 250) }} className="press"
             style={{ marginTop:22, width:'100%', padding:15, border:'none', borderRadius:16,
               fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, cursor:'pointer', color:'#fff',
               background:'linear-gradient(135deg,#8B5CF6,#5B8DEF)', boxShadow:'0 10px 28px rgba(139,92,246,0.4)' }}>
