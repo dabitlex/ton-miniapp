@@ -69,6 +69,7 @@ function EnergyBoostBadge({ size = 'sm' }: { size?: 'sm' | 'md' }) {
 export default function EcosystemPage() {
   const token          = useAuthStore(s => s.accessToken)
   const { toast }      = useUIStore()
+  const enqueueAchievements = useUIStore(s => s.enqueueAchievements)
   const qc             = useQueryClient()
   const [tonConnectUI] = useTonConnectUI()
   const wallet         = useTonWallet()
@@ -104,10 +105,11 @@ export default function EcosystemPage() {
       if (!json.success) throw new Error(json.error)
       return json.data
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast('success', '✅ Zahlung bestätigt! Dein Boost wird aktiviert.')
       qc.invalidateQueries({ queryKey: ['ecosystem'] })
       setPendingTierKey(null)
+      if (data?.newAchievements?.length) enqueueAchievements(data.newAchievements)
     },
     onError: (e: Error) => {
       toast('error', e.message)
