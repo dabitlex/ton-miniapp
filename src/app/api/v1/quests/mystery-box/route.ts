@@ -1,6 +1,7 @@
 // src/app/api/v1/quests/mystery-box/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient }    from '@/lib/supabase/admin'
+import { checkAchievements } from '@/app/api/v1/_lib/achievements'
 import { todayUTC }          from '@/lib/utils'
 
 export const runtime = 'nodejs'
@@ -63,8 +64,11 @@ export const POST = withAuth(async (ctx) => {
     return err('Box already opened today', 'ALREADY_CLAIMED', 409)
   }
 
+  const newAchievements = await checkAchievements(db, ctx.userId)
+
   return ok({
     tier:     r.out_tier,
     xpReward: r.out_xp,
+    newAchievements,
   })
 })
