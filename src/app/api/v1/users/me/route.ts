@@ -92,6 +92,14 @@ export const GET = withAuth(async (ctx) => {
     .eq('user_id', ctx.userId)
     .maybeSingle()
 
+  // Achievement-Feature-Flag laden (steuert Sichtbarkeit des Profil-Buttons)
+  let achievementsEnabled = false
+  try {
+    const { data: af } = await supabase
+      .rpc('is_feature_enabled', { p_key: 'achievements_enabled' })
+    achievementsEnabled = af === true
+  } catch { /* default false */ }
+
   const u = user as any
 
   return ok({
@@ -103,6 +111,7 @@ export const GET = withAuth(async (ctx) => {
     telegramPhotoUrl:     u.telegram_photo_url,
     telegramIsPremium:    u.telegram_is_premium,
     isFounder:            u.is_founder ?? false,
+    achievementsEnabled,
     level:                u.level,
     xpTotal:              u.xp_total,
     xpCurrentLevel:       u.xp_current_level,
