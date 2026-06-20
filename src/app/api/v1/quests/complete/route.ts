@@ -6,6 +6,7 @@
 import { NextRequest } from 'next/server'
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
+import { checkAchievements } from '@/app/api/v1/_lib/achievements'
 import { todayUTC, getISOWeek } from '@/lib/utils'
 import { autoCompleteSpecialQuest, type SpecialAssignmentRow } from '@/lib/quests/special'
 import type { CompleteQuestRequest } from '@/types/api'
@@ -113,6 +114,8 @@ export const POST = withAuth(async (ctx) => {
 
     const { data: u } = await db.from('users').select('energy_current').eq('id', ctx.userId).single()
 
+    const newAchievements = await checkAchievements(db, ctx.userId)
+
     return ok({
       xpGranted:          result.xpGranted,
       leveledUp:          result.leveledUp,
@@ -121,6 +124,7 @@ export const POST = withAuth(async (ctx) => {
       energyAfter:        (u as any)?.energy_current ?? null,
       softCapped:         result.softCapped,
       mysteryBoxUnlocked: false,
+      newAchievements,
     })
   }
 
@@ -344,6 +348,8 @@ export const POST = withAuth(async (ctx) => {
     }
   }
 
+  const newAchievements = await checkAchievements(db, ctx.userId)
+
   return ok({
     xpGranted:   xp.xp_granted,
     leveledUp:   xp.leveled_up,
@@ -352,6 +358,7 @@ export const POST = withAuth(async (ctx) => {
     energyAfter: energyAfter,
     softCapped:  xp.soft_capped,
     mysteryBoxUnlocked,   // ← Frontend öffnet das Popup wenn true
+    newAchievements,
   })
 })
 
