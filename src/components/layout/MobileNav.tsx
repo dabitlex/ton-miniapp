@@ -2,14 +2,13 @@
 'use client'
 import Link            from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Swords, Trophy, User, Sparkles, Shield } from 'lucide-react'
+import { Home, Swords, Trophy, User, Shield } from 'lucide-react'
 
 const NAV = [
   { href: '/home',        icon: Home,     label: 'Home'   },
   { href: '/quests',      icon: Swords,   label: 'Quests' },
   { href: '/leaderboard', icon: Trophy,   label: 'Ranks'  },
   { href: '/clans',       icon: Shield,   label: 'Clans'  },
-  { href: '/ecosystem',   icon: Sparkles, label: 'Boost'  },
   { href: '/profile',     icon: User,     label: 'You'    },
 ] as const
 
