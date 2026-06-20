@@ -1,6 +1,7 @@
 // src/app/(game)/ecosystem/page.tsx — Redesigned (Aurora OS · Relics Vault)
 'use client'
 import { useState }                                     from 'react'
+import { useRouter }                                    from 'next/navigation'
 import { useQuery, useMutation, useQueryClient }        from '@tanstack/react-query'
 import { useTonConnectUI, useTonWallet }                from '@tonconnect/ui-react'
 import { useAuthStore }      from '@/stores/useAuthStore'
@@ -8,7 +9,7 @@ import { useUIStore }        from '@/stores/useUIStore'
 import { formatNumber }      from '@/lib/utils'
 import { ECOSYSTEM_TIERS, CURRENCY_LABEL, CURRENCY_SHORT }   from '@/lib/constants/game'
 import type { EcosystemSupportTier, ActiveEcosystemBoost } from '@/types/game'
-import { Zap, Wallet, Rocket, Clock } from 'lucide-react'
+import { Zap, Wallet, Rocket, Clock, ChevronLeft } from 'lucide-react'
 
 // TON -> Nano conversion
 function toNano(amount: number): string {
@@ -68,6 +69,7 @@ function EnergyBoostBadge({ size = 'sm' }: { size?: 'sm' | 'md' }) {
 
 export default function EcosystemPage() {
   const token          = useAuthStore(s => s.accessToken)
+  const router         = useRouter()
   const { toast }      = useUIStore()
   const enqueueAchievements = useUIStore(s => s.enqueueAchievements)
   const qc             = useQueryClient()
@@ -216,8 +218,18 @@ export default function EcosystemPage() {
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <div className="px-5 pt-4 pb-4 animate-rise">
-        <h1 className="display-xl text-[24px] text-white leading-none">The Vault</h1>
-        <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+        <div className="flex items-center gap-3 mb-3">
+          <button
+            onClick={() => router.back()}
+            className="flex h-[38px] w-[38px] items-center justify-center rounded-[13px] press shrink-0"
+            style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 0 0 1px var(--edge-soft)', color: 'var(--text-secondary)' }}
+            aria-label="Back"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <h1 className="display-xl text-[24px] text-white leading-none">The Vault</h1>
+        </div>
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
           Unlock status relics that boost your XP for the entire season
         </p>
       </div>
