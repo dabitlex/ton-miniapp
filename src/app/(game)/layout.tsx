@@ -38,4 +38,4 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
       </QueryProvider>
     </AuthProvider>
   )
-}
+} 
