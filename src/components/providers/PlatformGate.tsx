@@ -1,6 +1,6 @@
 // src/components/providers/PlatformGate.tsx
 // Placeholder für nicht-unterstützte Plattformen (Telegram Apps Center 6.1).
-// VEXALGO ist eine mobile-first Mini App. Auf Desktop-Telegram (tdesktop/macos)
+// VEXALGO ist eine mobile-first Mini App. Auf Desktop-Telegram (tdesktop/macos) 
 // zeigen wir einen sauberen Hinweis statt der mobilen UI. Mobile + Web laufen
 // normal durch.
 'use client'
