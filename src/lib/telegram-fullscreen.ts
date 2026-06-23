@@ -34,18 +34,25 @@ export function initTelegramFullscreen(): void {
     root.style.setProperty('--tg-safe-bottom',    `${safeBottom}px`)
   }
 
-  // Fullscreen anfordern (nur wenn unterstützt)
-  try {
-    const supportsFullscreen =
-      typeof tg.requestFullscreen === 'function' &&
-      (typeof tg.isVersionAtLeast !== 'function' || tg.isVersionAtLeast('8.0'))
+  // Fullscreen NUR auf mobilen Clients anfordern. Auf Desktop/Web würde
+  // requestFullscreen() die App über den kompletten Bildschirm legen.
+  const platform: string | undefined = tg.platform
+  const isMobile =
+    platform === 'android' || platform === 'android_x' || platform === 'ios'
 
-    if (supportsFullscreen && !tg.isFullscreen) {
-      tg.requestFullscreen()
-    }
-    // Verhindert versehentliches Schließen durch Wischen im Fullscreen
-    tg.disableVerticalSwipes?.()
-  } catch { /* ältere Clients ignorieren */ }
+  if (isMobile) {
+    try {
+      const supportsFullscreen =
+        typeof tg.requestFullscreen === 'function' &&
+        (typeof tg.isVersionAtLeast !== 'function' || tg.isVersionAtLeast('8.0'))
+
+      if (supportsFullscreen && !tg.isFullscreen) {
+        tg.requestFullscreen()
+      }
+      // Verhindert versehentliches Schließen durch Wischen im Fullscreen
+      tg.disableVerticalSwipes?.()
+    } catch { /* ältere Clients ignorieren */ }
+  }
 
   applyInsets()
 
