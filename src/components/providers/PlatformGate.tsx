@@ -1,20 +1,25 @@
 // src/components/providers/PlatformGate.tsx
 // Placeholder für nicht-unterstützte Plattformen (Telegram Apps Center 6.1).
-// VEXALGO ist eine mobile-first Mini App. Auf Desktop-Telegram (tdesktop/macos) 
-// zeigen wir einen sauberen Hinweis statt der mobilen UI. Mobile + Web laufen
-// normal durch.
+// VEXALGO ist eine mobile-first Mini App. Wir lassen NUR mobile Telegram-Clients
+// durch (android / ios); jedes Desktop- oder Web-Client (tdesktop, macos, weba,
+// webk, web, unknown, …) bekommt den "Open on your phone"-Hinweis.
 'use client'
 
 import { useEffect, useState } from 'react'
 
-const UNSUPPORTED = new Set(['tdesktop', 'macos', 'unknown'])
+// Allowlist statt Blockliste → fängt ALLE Nicht-Mobile-Varianten ab.
+const MOBILE_PLATFORMS = new Set(['android', 'android_x', 'ios'])
 
 export function PlatformGate({ children }: { children: React.ReactNode }) {
   const [blocked, setBlocked] = useState(false)
 
   useEffect(() => {
     const platform: string | undefined = (window as any).Telegram?.WebApp?.platform
-    if (platform && UNSUPPORTED.has(platform)) setBlocked(true)
+    // Nur blockieren, wenn wir eine eindeutige Nicht-Mobile-Plattform erkennen.
+    // (platform === undefined → kein Telegram-Kontext: nicht blocken.)
+    if (platform && !MOBILE_PLATFORMS.has(platform)) {
+      setBlocked(true)
+    }
   }, [])
 
   if (!blocked) return <>{children}</>
