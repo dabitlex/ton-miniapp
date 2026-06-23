@@ -18,6 +18,7 @@
     "@tonconnect/ui-react": "^2.0.6",
     "@tonconnect/sdk": "^3.0.4",
     "@twa-dev/sdk": "^7.10.0",
+    "@telegram-apps/analytics": "^1.6.4",
     "@tanstack/react-query": "^5.60.5",
     "zustand": "^5.0.1",
     "lucide-react": "^0.460.0",
