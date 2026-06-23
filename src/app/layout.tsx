@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
 import './globals.css'
+import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider'
 
 export const metadata: Metadata = {
   title:       'VEXALGO',
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#020207" />
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
       <body suppressHydrationWarning>
-        {children}
+        <AnalyticsProvider>{children}</AnalyticsProvider>
       </body>
     </html>
   )
