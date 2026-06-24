@@ -9,6 +9,9 @@ import { useEnergyStore } from '@/stores/useEnergyStore'
 import { Button }         from '@/components/ui/Button'
 import { SkeletonCard }   from '@/components/ui/Skeleton'
 import { ClanChatCard }   from '@/components/clan/ClanChatCard'
+import { ClanJoinRequests }    from '@/components/clan/ClanJoinRequests'
+import { PendingRequestBanner } from '@/components/clan/PendingRequestBanner'
+import { ClanPolicyToggle }     from '@/components/clan/ClanPolicyToggle'
 import { cn, formatNumber } from '@/lib/utils'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
 import { Users, Search, Shield, LogOut, Swords, Zap, Star, Crown, Sword, ChevronRight } from 'lucide-react'
@@ -124,7 +127,21 @@ export default function ClansPage() {
     await refreshProfile()
     qc.invalidateQueries({ queryKey: ['my-membership'] })
     qc.invalidateQueries({ queryKey: ['clans'] })
+    qc.invalidateQueries({ queryKey: ['my-request'] })
   }
+
+  // Eigene offene Beitrittsanfrage (für "Requested"-Zustand in Discover).
+  const { data: myRequestData } = useQuery({
+    queryKey: ['my-request'],
+    enabled:  !!token,
+    staleTime: 20_000,
+    queryFn: async () => {
+      const res  = await fetch('/api/v1/clans/my-request', { headers })
+      const json = await res.json()
+      return json.success ? json.data : { request: null }
+    },
+  })
+  const myRequestClanId: string | null = myRequestData?.request?.clanId ?? null
 
   const { mutate: joinClan, isPending: joining } = useMutation({
     mutationFn: async (clanId: string) => {
@@ -133,7 +150,14 @@ export default function ClansPage() {
       if (!json.success) throw new Error(json.error)
       return json.data
     },
-    onSuccess: async () => {
+    onSuccess: async (data: any) => {
+      if (data?.requested) {
+        toast(data.alreadyPending ? 'info' : 'success',
+          data.alreadyPending ? 'Request already pending' : 'Request sent')
+        haptic('light')
+        await invalidateAll()
+        return
+      }
       toast('success', '🎉 Joined clan!')
       haptic('success')
       await invalidateAll()
@@ -263,7 +287,11 @@ export default function ClansPage() {
                     </div>
                   </div>
                   {!hasClan
-                    ? <Button size="sm" loading={joining} onClick={() => joinClan(clan.id)} className="h-9 text-xs px-4 shrink-0">Join</Button>
+                    ? (myRequestClanId === clan.id
+                        ? <span className="text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl shrink-0" style={{ color: 'var(--gold)', background: 'var(--gold-dim)', fontFamily: 'var(--font-display)' }}>REQUESTED</span>
+                        : <Button size="sm" loading={joining} onClick={() => joinClan(clan.id)} className="h-9 text-xs px-4 shrink-0">
+                            {clan.join_policy === 'request' ? 'Request' : 'Join'}
+                          </Button>)
                     : myMembership?.clan?.id === clan.id &&
                       <span className="text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl shrink-0" style={{ color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.14)', fontFamily: 'var(--font-display)' }}>YOURS</span>
                   }
@@ -278,14 +306,17 @@ export default function ClansPage() {
           <>
             {loadingMembership ? <SkeletonCard lines={3} />
              : !hasClan ? (
-              <div className="text-center py-12 space-y-3">
-                <Shield size={48} className="mx-auto" style={{ color: 'var(--text-ultra)' }} />
-                <p className="display text-sm" style={{ color: 'var(--text-secondary)' }}>You're not in a clan yet</p>
-                <div className="flex gap-2 justify-center pt-1">
-                  <Button size="sm" variant="secondary" onClick={() => setView('browse')}>Discover</Button>
-                  {canCreate && <Button size="sm" onClick={() => setView('create')}>Create</Button>}
+              <>
+                <PendingRequestBanner />
+                <div className="text-center py-12 space-y-3">
+                  <Shield size={48} className="mx-auto" style={{ color: 'var(--text-ultra)' }} />
+                  <p className="display text-sm" style={{ color: 'var(--text-secondary)' }}>You're not in a clan yet</p>
+                  <div className="flex gap-2 justify-center pt-1">
+                    <Button size="sm" variant="secondary" onClick={() => setView('browse')}>Discover</Button>
+                    {canCreate && <Button size="sm" onClick={() => setView('create')}>Create</Button>}
+                  </div>
                 </div>
-              </div>
+              </>
              ) : myMembership && (
               <>
                 {/* Clan banner */}
@@ -338,6 +369,10 @@ export default function ClansPage() {
                   </div>
                   <ChevronRight size={16} style={{ color: 'var(--text-faint)' }} />
                 </button>
+
+                {/* Join policy (Leader) + Beitrittsanfragen (Leader/Officer) */}
+                {isLeader  && <ClanPolicyToggle  clanId={myMembership.clan.id} />}
+                {canManage && <ClanJoinRequests  clanId={myMembership.clan.id} />}
 
                 {/* Members */}
                 <div className="space-y-2">
