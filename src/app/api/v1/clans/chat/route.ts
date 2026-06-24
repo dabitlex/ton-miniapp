@@ -72,6 +72,14 @@ export const GET = withAuth(async (ctx) => {
 
   if (error) return err('Failed to load chat', 'CHAT_LOAD_FAILED', 500)
 
+  // Öffnen = gelesen: Read-Marker auf jetzt setzen (speist den Unread-Zähler
+  // im "My Clan"-Tab). Bewusst nicht-blockierend behandelt — ein Fehler hier
+  // darf das Laden des Chats nicht verhindern.
+  void supabase
+    .from('clan_members')
+    .update({ last_read_at: new Date().toISOString() })
+    .eq('user_id', ctx.userId)
+
   // chronologisch (älteste oben) für die Anzeige; clanId mitliefern, damit der
   // Realtime-Filter im Hook gesetzt werden kann.
   const messages = (data ?? []).map(mapRow).reverse()
