@@ -22,7 +22,7 @@ export const GET = withAuth(async (ctx) => {
 
   let query = db()
     .from('clans')
-    .select('id,name,slug,description,avatar_url,member_count,season_xp,level,is_public,leader_id', { count: 'exact' })
+    .select('id,name,slug,description,avatar_url,member_count,season_xp,level,is_public,join_policy,leader_id', { count: 'exact' })
     .eq('is_active', true)
     .order('season_xp', { ascending: false })
     .range(offset, offset + limit - 1)
