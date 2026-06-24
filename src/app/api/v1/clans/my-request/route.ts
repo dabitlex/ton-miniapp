@@ -1,4 +1,4 @@
-// src/app/api/v1/clans/my-request/route.ts
+// src/app/api/v1/clans/my-request/route.ts 
 // Eigene offene Beitrittsanfrage des Users.
 //   GET    -> { request: { clanId, clanName, createdAt } | null }
 //   DELETE -> zieht die offene Anfrage zurück (gibt den "eine Anfrage"-Slot frei)
