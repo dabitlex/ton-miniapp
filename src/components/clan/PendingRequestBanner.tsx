@@ -1,5 +1,5 @@
 // src/components/clan/PendingRequestBanner.tsx — offene eigene Beitrittsanfrage
-// Wird im "My Clan"-Leerzustand gezeigt (User ohne Clan, aber mit offener
+// Wird im "My Clan"-Leerzustand gezeigt (User ohne Clan, aber mit offener 
 // Anfrage an einen geschlossenen Clan). Erlaubt das Zurückziehen.
 
 'use client'
