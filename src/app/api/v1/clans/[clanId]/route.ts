@@ -44,33 +44,47 @@ export const GET = withAuth(async (ctx) => {
   return ok({ clan: clanRes.data, members, myRole: myMembership?.role ?? null })
 })
 
-// PATCH — Clan-Einstellungen ändern. Aktuell: join_policy (nur Leader).
+// PATCH — Clan-Einstellungen ändern (nur Leader): join_policy und/oder description.
 export const PATCH = withAuth(async (ctx) => {
   const clanId = ctx.params?.clanId
   if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
 
-  let body: { joinPolicy?: 'open' | 'request' }
+  let body: { joinPolicy?: 'open' | 'request'; description?: string }
   try { body = await ctx.req.json() }
   catch { return err('Invalid body', 'BAD_REQUEST') }
 
-  const { joinPolicy } = body
-  if (!joinPolicy || !['open', 'request'].includes(joinPolicy)) {
-    return err('joinPolicy must be "open" or "request"', 'INVALID_POLICY')
+  const update: Record<string, unknown> = {}
+
+  if (body.joinPolicy !== undefined) {
+    if (!['open', 'request'].includes(body.joinPolicy)) {
+      return err('joinPolicy must be "open" or "request"', 'INVALID_POLICY')
+    }
+    update.join_policy = body.joinPolicy
+  }
+
+  if (body.description !== undefined) {
+    // Leeren erlaubt (= Beschreibung löschen). Spalte ist NOT NULL default ''.
+    const desc = String(body.description).replace(/\s+/g, ' ').trim()
+    if (desc.length > 280) return err('Description too long (max 280)', 'DESC_TOO_LONG')
+    update.description = desc
+  }
+
+  if (Object.keys(update).length === 0) {
+    return err('Nothing to update', 'NO_FIELDS')
   }
 
   const supabase = db()
 
-  // Nur der Leader darf die Policy ändern.
+  // Nur der Leader darf Clan-Einstellungen ändern.
   const { data: membership } = await supabase
     .from('clan_members').select('role')
     .eq('clan_id', clanId).eq('user_id', ctx.userId).maybeSingle()
   if (membership?.role !== 'leader') {
-    return err('Only the clan leader can change the join policy', 'FORBIDDEN', 403)
+    return err('Only the clan leader can edit the clan', 'FORBIDDEN', 403)
   }
 
-  const { error } = await supabase
-    .from('clans').update({ join_policy: joinPolicy }).eq('id', clanId)
-  if (error) return err('Failed to update policy', 'DB_ERROR', 500)
+  const { error } = await supabase.from('clans').update(update).eq('id', clanId)
+  if (error) return err('Failed to update clan', 'DB_ERROR', 500)
 
-  return ok({ joinPolicy })
+  return ok({ updated: Object.keys(update) })
 })
