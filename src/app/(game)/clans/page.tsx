@@ -8,6 +8,7 @@ import { useUIStore }     from '@/stores/useUIStore'
 import { useEnergyStore } from '@/stores/useEnergyStore'
 import { Button }         from '@/components/ui/Button'
 import { SkeletonCard }   from '@/components/ui/Skeleton'
+import { ClanChatCard }   from '@/components/clan/ClanChatCard'
 import { cn, formatNumber } from '@/lib/utils'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
 import { Users, Search, Shield, LogOut, Swords, Zap, Star, Crown, Sword, ChevronRight } from 'lucide-react'
@@ -321,6 +322,9 @@ export default function ClansPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Clan Chat shortcut */}
+                <ClanChatCard />
 
                 {/* Missions shortcut */}
                 <button onClick={() => setView('missions')}
