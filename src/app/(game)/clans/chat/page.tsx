@@ -64,7 +64,7 @@ export default function ClanChatPage() {
   })
 
   const clanName    = membership?.clan?.name ?? 'Clan'
-  const memberCount = membership?.clan?.member_count ?? null
+  const memberCount = membership?.clan?.memberCount ?? null
 
   // Auto-Scroll ans Ende bei neuen Nachrichten.
   const endRef = useRef<HTMLDivElement>(null)
