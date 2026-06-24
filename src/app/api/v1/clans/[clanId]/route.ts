@@ -43,3 +43,34 @@ export const GET = withAuth(async (ctx) => {
 
   return ok({ clan: clanRes.data, members, myRole: myMembership?.role ?? null })
 })
+
+// PATCH — Clan-Einstellungen ändern. Aktuell: join_policy (nur Leader).
+export const PATCH = withAuth(async (ctx) => {
+  const clanId = ctx.params?.clanId
+  if (!clanId) return err('Clan-ID fehlt', 'MISSING_ID')
+
+  let body: { joinPolicy?: 'open' | 'request' }
+  try { body = await ctx.req.json() }
+  catch { return err('Invalid body', 'BAD_REQUEST') }
+
+  const { joinPolicy } = body
+  if (!joinPolicy || !['open', 'request'].includes(joinPolicy)) {
+    return err('joinPolicy must be "open" or "request"', 'INVALID_POLICY')
+  }
+
+  const supabase = db()
+
+  // Nur der Leader darf die Policy ändern.
+  const { data: membership } = await supabase
+    .from('clan_members').select('role')
+    .eq('clan_id', clanId).eq('user_id', ctx.userId).maybeSingle()
+  if (membership?.role !== 'leader') {
+    return err('Only the clan leader can change the join policy', 'FORBIDDEN', 403)
+  }
+
+  const { error } = await supabase
+    .from('clans').update({ join_policy: joinPolicy }).eq('id', clanId)
+  if (error) return err('Failed to update policy', 'DB_ERROR', 500)
+
+  return ok({ joinPolicy })
+})
