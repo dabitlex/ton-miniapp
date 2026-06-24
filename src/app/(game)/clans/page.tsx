@@ -12,9 +12,10 @@ import { ClanChatCard }   from '@/components/clan/ClanChatCard'
 import { ClanJoinRequests }    from '@/components/clan/ClanJoinRequests'
 import { PendingRequestBanner } from '@/components/clan/PendingRequestBanner'
 import { ClanPolicyToggle }     from '@/components/clan/ClanPolicyToggle'
+import { ClanEditSheet }        from '@/components/clan/ClanEditSheet'
 import { cn, formatNumber } from '@/lib/utils'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
-import { Users, Search, Shield, LogOut, Swords, Zap, Star, Crown, Sword, ChevronRight } from 'lucide-react'
+import { Users, Search, Shield, LogOut, Swords, Zap, Star, Crown, Sword, ChevronRight, Pencil } from 'lucide-react'
 import type { UserProfile } from '@/types/game'
 import { v4 as uuidv4 }  from 'uuid'
 
@@ -22,6 +23,7 @@ type Tab = 'browse' | 'mine' | 'missions' | 'create'
 
 export default function ClansPage() {
   const [view, setView]     = useState<Tab>('browse')
+  const [editOpen, setEditOpen] = useState(false)
   const [search, setSearch] = useState('')
   const token               = useAuthStore(s => s.accessToken)
   const profile             = useUserStore(s => s.profile)
@@ -271,9 +273,12 @@ export default function ClansPage() {
               )
               : (clansData ?? []).map((clan: any, i: number) => (
                 <div key={clan.id} className="surface p-3.5 flex items-center gap-3.5 animate-rise" style={{ animationDelay: `${i * 40}ms` }}>
-                  <div className="flex items-center justify-center w-12 h-12 rounded-2xl shrink-0 display text-base text-white"
+                  <div className="flex items-center justify-center w-12 h-12 rounded-2xl shrink-0 overflow-hidden display text-base text-white"
                     style={{ background: 'var(--aurora)', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
-                    {clanInitials(clan.name)}
+                    {clan.avatar_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={clan.avatar_url} alt="" className="w-full h-full object-cover" />
+                      : clanInitials(clan.name)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -323,10 +328,20 @@ export default function ClansPage() {
                 <div className="surface-accent relative overflow-hidden p-5 animate-rise">
                   <div className="absolute -top-10 -right-8 w-40 h-40 pointer-events-none"
                     style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.28), transparent 70%)' }} />
+                  {isLeader && (
+                    <button onClick={() => setEditOpen(true)} aria-label="Edit clan"
+                      className="press absolute top-3 right-3 z-10 w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{ background: 'var(--surface-2)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
+                      <Pencil size={15} style={{ color: 'var(--text-secondary)' }} />
+                    </button>
+                  )}
                   <div className="relative flex items-start gap-4">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-3xl shrink-0 display-xl text-xl text-white"
+                    <div className="flex items-center justify-center w-16 h-16 rounded-3xl shrink-0 overflow-hidden display-xl text-xl text-white"
                       style={{ background: 'var(--aurora)', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}>
-                      {clanInitials(myMembership.clan.name)}
+                      {myMembership.clan.avatarUrl
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={myMembership.clan.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        : clanInitials(myMembership.clan.name)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -373,6 +388,7 @@ export default function ClansPage() {
                 {/* Join policy (Leader) + Beitrittsanfragen (Leader/Officer) */}
                 {isLeader  && <ClanPolicyToggle  clanId={myMembership.clan.id} />}
                 {canManage && <ClanJoinRequests  clanId={myMembership.clan.id} />}
+                {isLeader  && <ClanEditSheet clanId={myMembership.clan.id} open={editOpen} onClose={() => setEditOpen(false)} />}
 
                 {/* Members */}
                 <div className="space-y-2">
