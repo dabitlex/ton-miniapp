@@ -57,18 +57,21 @@ export function useClanChat() {
 
   // ── Realtime-Nachrichten (separat gehalten, mit Initiallast gemerged) ──────
   const [live, setLive] = useState<ChatMessage[]>([])
+  // Soft-gelöschte IDs (per Moderation) -> aus der Anzeige filtern.
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
 
-  // Bei Clan-Wechsel die Live-Liste leeren.
-  useEffect(() => { setLive([]) }, [clanId])
+  // Bei Clan-Wechsel die Live-Liste + Lösch-Set leeren.
+  useEffect(() => { setLive([]); setDeletedIds(new Set()) }, [clanId])
 
   const messages = useMemo(() => {
     const map = new Map<string, ChatMessage>()
     for (const m of data?.messages ?? []) map.set(m.id, m)
     for (const m of live)                 map.set(m.id, m)
+    for (const id of deletedIds)          map.delete(id)
     return [...map.values()]
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
       .slice(-MAX_IN_MEMORY)
-  }, [data?.messages, live])
+  }, [data?.messages, live, deletedIds])
 
   // ── Senden ──────────────────────────────────────────────────────────────────
   const sendMutation = useMutation({
@@ -90,6 +93,26 @@ export function useClanChat() {
     if (!trimmed) return Promise.resolve()
     return sendMutation.mutateAsync(trimmed.slice(0, 200))
   }, [sendMutation])
+
+  // ── Moderation: Nachricht löschen (Leader/Officer) ─────────────────────────
+  const deleteMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const res  = await fetch(`/api/v1/clans/chat/${messageId}`, {
+        method:  'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error ?? 'Failed to delete')
+      return messageId
+    },
+    // Optimistisch ausblenden; das Realtime-UPDATE bestätigt es für alle.
+    onSuccess: (id) => setDeletedIds(prev => new Set(prev).add(id)),
+  })
+
+  const deleteMessage = useCallback(
+    (messageId: string) => deleteMutation.mutateAsync(messageId),
+    [deleteMutation],
+  )
 
   // ── Realtime-Subscription (Cleanup am SELBEN Client -> kein Leak) ──────────
   const clientRef  = useRef<any>(null)
@@ -121,6 +144,14 @@ export function useClanChat() {
             }])
           },
         )
+        .on('postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'clan_chat_messages', filter: `clan_id=eq.${clanId}` },
+          (payload: any) => {
+            const r = payload.new
+            // Moderation: deleted_at gesetzt -> Nachricht ausblenden.
+            if (r?.deleted_at) setDeletedIds(prev => new Set(prev).add(r.id))
+          },
+        )
         .subscribe()
       channelRef.current = channel
     })
@@ -144,6 +175,8 @@ export function useClanChat() {
     isSending: sendMutation.isPending,
     sendError: sendMutation.error as Error | null,
     send,
+    deleteMessage,
+    isDeleting: deleteMutation.isPending,
     reload: refetch,
   }
 }
