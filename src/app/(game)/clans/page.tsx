@@ -1,6 +1,6 @@
 // src/app/(game)/clans/page.tsx — Redesigned (Aurora OS · Social Hub)
 'use client'
-import { useState }                                     from 'react'
+import { useState, useEffect }                          from 'react'
 import { useQuery, useMutation, useQueryClient }        from '@tanstack/react-query'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
@@ -30,6 +30,16 @@ export default function ClansPage() {
     return 'browse'
   })
   const [editOpen, setEditOpen] = useState(false)
+
+  // Fallback: beim Mounten den ?tab=-Parameter anwenden (z.B. Rücknavigation
+  // aus dem Clan-Chat -> /clans?tab=mine). Greift auch, falls der State-
+  // Initializer das Timing der URL-Aktualisierung verpasst.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t === 'mine' || t === 'browse' || t === 'missions' || t === 'create') {
+      setView(t as Tab)
+    }
+  }, [])
   const [search, setSearch] = useState('')
   const token               = useAuthStore(s => s.accessToken)
   const profile             = useUserStore(s => s.profile)
