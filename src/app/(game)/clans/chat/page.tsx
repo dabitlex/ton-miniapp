@@ -15,7 +15,7 @@ import { useClanChat }  from '@/features/clan/hooks'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUserStore } from '@/stores/useUserStore'
 import { useUIStore }   from '@/stores/useUIStore'
-import { ChevronLeft, Users, ArrowUp, Shield } from 'lucide-react'
+import { ChevronLeft, Users, ArrowUp, Shield, Trash2 } from 'lucide-react'
 
 const BODY_MAX = 200
 
@@ -47,8 +47,17 @@ export default function ClanChatPage() {
   const myId    = useUserStore(s => s.profile?.id) ?? null
   const haptic  = useUIStore(s => s.haptic)
 
-  const { messages, clanId, notInClan, isLoading, isSending, sendError, send } = useClanChat()
+  const { messages, clanId, role, notInClan, isLoading, isSending, sendError, send, deleteMessage } = useClanChat()
   const [text, setText] = useState('')
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const canModerate = role === 'leader' || role === 'officer'
+
+  async function handleDelete(id: string) {
+    setConfirmId(null)
+    haptic?.('medium')
+    try { await deleteMessage(id) }
+    catch (e) { useUIStore.getState().toast('error', (e as Error).message) }
+  }
 
   // Clan-Metadaten (Name + Mitgliederzahl) aus dem bestehenden Endpoint —
   // wir duplizieren das nicht in den Chat-Response.
@@ -139,6 +148,7 @@ export default function ClanChatPage() {
         ) : (
           messages.map(m => {
             const mine = m.user_id === myId
+            const selected = canModerate && confirmId === m.id
             return (
               <div key={m.id}
                 className={`flex gap-2 max-w-[84%] animate-rise ${mine ? 'self-end flex-row-reverse' : ''}`}>
@@ -156,18 +166,34 @@ export default function ClanChatPage() {
                       {m.author_name}
                     </div>
                   )}
-                  <div className="inline-block px-3 py-2 text-[13.5px] leading-snug text-left"
-                    style={mine ? {
-                      background: 'linear-gradient(155deg,rgba(139,92,246,0.34),rgba(91,141,239,0.18))',
-                      borderRadius: '15px', borderTopRightRadius: '5px',
-                      boxShadow: 'inset 0 1px 0 rgba(167,139,250,0.3), 0 6px 18px rgba(124,58,237,0.22)',
-                    } : {
-                      background: 'var(--surface-2)',
-                      borderRadius: '15px', borderTopLeftRadius: '5px',
-                      boxShadow: 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)',
+                  <div
+                    onClick={canModerate ? () => setConfirmId(selected ? null : m.id) : undefined}
+                    className="inline-block px-3 py-2 text-[13.5px] leading-snug text-left"
+                    style={{
+                      ...(mine ? {
+                        background: 'linear-gradient(155deg,rgba(139,92,246,0.34),rgba(91,141,239,0.18))',
+                        borderRadius: '15px', borderTopRightRadius: '5px',
+                        boxShadow: 'inset 0 1px 0 rgba(167,139,250,0.3), 0 6px 18px rgba(124,58,237,0.22)',
+                      } : {
+                        background: 'var(--surface-2)',
+                        borderRadius: '15px', borderTopLeftRadius: '5px',
+                        boxShadow: 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)',
+                      }),
+                      ...(canModerate ? { cursor: 'pointer' } : {}),
+                      ...(selected ? { outline: '1.5px solid var(--rose)', outlineOffset: '1px' } : {}),
                     }}>
                     {m.body}
                   </div>
+                  {selected && (
+                    <div className={`mt-1 ${mine ? 'text-right' : ''}`}>
+                      <button
+                        onClick={() => handleDelete(m.id)}
+                        className="press inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg"
+                        style={{ color: 'var(--rose)', background: 'rgba(251,113,133,0.14)', fontFamily: 'var(--font-display)' }}>
+                        <Trash2 size={12} /> Delete message
+                      </button>
+                    </div>
+                  )}
                   <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{fmtTime(m.created_at)}</div>
                 </div>
               </div>
