@@ -1,13 +1,15 @@
 // src/components/clan/ClanRoster.tsx
 // Roster als Beitrags-Leaderboard. Mitglieder kommen bereits nach
 // contributedXp sortiert aus /api/v1/clans/my. Eigene Zeile hervorgehoben.
-// ⋯-Management (promote/demote/kick) rollen-adaptiv, wired auf die manage-Route
-// über den onManage-Callback der Seite.
+// ⋯-Sheet (Leader/Officer): "View info" (zuletzt online / zuletzt für den Clan
+// aktiv / beigetreten) + rollen-adaptives Management (promote/demote/kick).
 
 'use client'
 import { useState } from 'react'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { Crown, ChevronUp, ChevronDown, UserMinus, MoreHorizontal } from 'lucide-react'
+import { Crown, ChevronUp, ChevronDown, UserMinus, MoreHorizontal,
+         Info, ChevronLeft, CalendarPlus, Clock, Activity } from 'lucide-react'
 
 export interface RosterMember {
   userId:            string
@@ -18,6 +20,12 @@ export interface RosterMember {
   telegramPhotoUrl?:  string | null
   level?:            number
   lastActiveAt?:     string | null
+}
+
+interface MemberInfo {
+  joinedAt:           string | null
+  lastOnlineAt:       string | null
+  lastClanActivityAt: string | null
 }
 
 type ManageAction = 'promote' | 'demote' | 'kick'
@@ -34,6 +42,21 @@ function displayName(m: RosterMember) {
 function initials(m: RosterMember) {
   return (displayName(m)[0] ?? 'P').toUpperCase()
 }
+function formatWhen(iso: string | null): { rel: string; abs: string } {
+  if (!iso) return { rel: 'Never', abs: '' }
+  const d = new Date(iso)
+  const diff = Date.now() - d.getTime()
+  const mins = Math.floor(diff / 60000), hrs = Math.floor(mins / 60), days = Math.floor(hrs / 24)
+  let rel: string
+  if (mins < 1)       rel = 'Just now'
+  else if (mins < 60) rel = `${mins}m ago`
+  else if (hrs < 24)  rel = `${hrs}h ago`
+  else if (days < 7)  rel = `${days}d ago`
+  else if (days < 30) rel = `${Math.floor(days / 7)}w ago`
+  else                rel = `${Math.floor(days / 30)}mo ago`
+  const abs = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return { rel, abs }
+}
 
 // Welche Aktionen darf myRole auf target ausführen? (spiegelt manage/route.ts)
 function actionsFor(myRole: string, myUserId: string, target: RosterMember): ManageAction[] {
@@ -41,7 +64,6 @@ function actionsFor(myRole: string, myUserId: string, target: RosterMember): Man
   if (target.userId === myUserId) return []
   if (target.role === 'leader') return []
   if (myRole === 'officer') return target.role === 'member' ? ['kick'] : []
-  // Leader:
   const acts: ManageAction[] = []
   if (target.role === 'member')  acts.push('promote')
   if (target.role === 'officer') acts.push('demote')
@@ -49,18 +71,39 @@ function actionsFor(myRole: string, myUserId: string, target: RosterMember): Man
   return acts
 }
 
-export function ClanRoster({ members, myUserId, myRole, onManage, isManaging }: {
+export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isManaging }: {
   members:    RosterMember[]
   myUserId:   string
   myRole:     'leader' | 'officer' | 'member'
+  clanId:     string
   onManage:   (action: ManageAction, targetUserId: string) => void
   isManaging: boolean
 }) {
-  const [target, setTarget] = useState<RosterMember | null>(null)
+  const token = useAuthStore(s => s.accessToken)
+  const [target, setTarget]   = useState<RosterMember | null>(null)
+  const [mode, setMode]       = useState<'actions' | 'info'>('actions')
+  const [info, setInfo]       = useState<MemberInfo | null>(null)
+  const [infoLoading, setInfoLoading] = useState(false)
 
+  const canViewInfo = myRole === 'leader' || myRole === 'officer'
   const maxXp = Math.max(1, ...members.map(m => m.contributedXp || 0))
   const onlineCount = members.filter(m => isOnline(m.lastActiveAt)).length
   const targetActions = target ? actionsFor(myRole, myUserId, target) : []
+
+  function openSheet(m: RosterMember) { setTarget(m); setMode('actions'); setInfo(null) }
+  function closeSheet() { setTarget(null); setMode('actions'); setInfo(null) }
+
+  async function loadInfo(m: RosterMember) {
+    setMode('info'); setInfo(null); setInfoLoading(true)
+    try {
+      const res  = await fetch(`/api/v1/clans/${clanId}/members/${m.userId}/info`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      if (json.success) setInfo(json.data as MemberInfo)
+    } catch { /* leise */ }
+    setInfoLoading(false)
+  }
 
   return (
     <div>
@@ -77,7 +120,6 @@ export function ClanRoster({ members, myUserId, myRole, onManage, isManaging }: 
           const rank    = i + 1
           const online  = isOnline(m.lastActiveAt)
           const pct     = Math.round(((m.contributedXp || 0) / maxXp) * 100)
-          const canMng  = actionsFor(myRole, myUserId, m).length > 0
           const rankCol = rank === 1 ? '#FBBF24' : rank === 2 ? '#C4B5FD' : rank === 3 ? '#FB923C' : 'var(--text-muted)'
           return (
             <div key={m.userId} className="flex items-center gap-2.5 px-2 py-2 rounded-2xl"
@@ -116,8 +158,8 @@ export function ClanRoster({ members, myUserId, myRole, onManage, isManaging }: 
                 <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>season</div>
               </div>
 
-              {canMng && (
-                <button onClick={() => setTarget(m)} className="press p-1 shrink-0" aria-label="Manage member">
+              {canViewInfo && (
+                <button onClick={() => openSheet(m)} className="press p-1 shrink-0" aria-label="Member options">
                   <MoreHorizontal size={17} style={{ color: 'var(--text-muted)' }} />
                 </button>
               )}
@@ -126,25 +168,65 @@ export function ClanRoster({ members, myUserId, myRole, onManage, isManaging }: 
         })}
       </div>
 
-      {/* Management-Sheet pro Mitglied */}
-      <BottomSheet open={!!target} onClose={() => setTarget(null)} title={target ? displayName(target) : ''}>
-        {target && (
+      <BottomSheet open={!!target} onClose={closeSheet} title={target ? displayName(target) : ''}>
+        {target && mode === 'actions' && (
           <div className="space-y-2">
+            {canViewInfo && (
+              <ActionBtn icon={<Info size={16} />} label="View info" color="var(--text-primary)"
+                onClick={() => loadInfo(target)} />
+            )}
             {targetActions.includes('promote') && (
               <ActionBtn icon={<ChevronUp size={16} />} label="Promote to officer" color="#34D399"
-                disabled={isManaging} onClick={() => { onManage('promote', target.userId); setTarget(null) }} />
+                disabled={isManaging} onClick={() => { onManage('promote', target.userId); closeSheet() }} />
             )}
             {targetActions.includes('demote') && (
               <ActionBtn icon={<ChevronDown size={16} />} label="Demote to member" color="#93C5FD"
-                disabled={isManaging} onClick={() => { onManage('demote', target.userId); setTarget(null) }} />
+                disabled={isManaging} onClick={() => { onManage('demote', target.userId); closeSheet() }} />
             )}
             {targetActions.includes('kick') && (
               <ActionBtn icon={<UserMinus size={16} />} label="Remove from clan" color="#FB7185"
-                disabled={isManaging} onClick={() => { onManage('kick', target.userId); setTarget(null) }} />
+                disabled={isManaging} onClick={() => { onManage('kick', target.userId); closeSheet() }} />
+            )}
+          </div>
+        )}
+
+        {target && mode === 'info' && (
+          <div>
+            <button onClick={() => setMode('actions')}
+              className="press flex items-center gap-1 mb-3 text-[12px] font-bold"
+              style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
+              <ChevronLeft size={15} /> Back
+            </button>
+            {infoLoading ? (
+              <div className="flex justify-center py-6">
+                <div className="w-5 h-5 rounded-full border-2 animate-spin"
+                  style={{ borderColor: 'rgba(139,92,246,0.3)', borderTopColor: '#A78BFA' }} />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <InfoRow icon={<Clock size={15} />}        label="Last online"        iso={info?.lastOnlineAt ?? null} />
+                <InfoRow icon={<Activity size={15} />}     label="Last clan activity" iso={info?.lastClanActivityAt ?? null} />
+                <InfoRow icon={<CalendarPlus size={15} />} label="Joined clan"        iso={info?.joinedAt ?? null} />
+              </div>
             )}
           </div>
         )}
       </BottomSheet>
+    </div>
+  )
+}
+
+function InfoRow({ icon, label, iso }: { icon: React.ReactNode; label: string; iso: string | null }) {
+  const { rel, abs } = formatWhen(iso)
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+      style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
+      <span style={{ color: 'var(--violet-bright)' }}>{icon}</span>
+      <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      <div className="ml-auto text-right">
+        <div className="text-[13px] font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{rel}</div>
+        {abs && <div className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{abs}</div>}
+      </div>
     </div>
   )
 }
