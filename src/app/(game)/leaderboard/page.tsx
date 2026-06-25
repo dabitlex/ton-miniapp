@@ -202,16 +202,18 @@ export default function LeaderboardPage() {
           <h1 className="display-xl text-[24px] text-white leading-none">Arena</h1>
           <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Global season rankings</p>
         </div>
-        <button
-          onClick={() => setRewardsOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl press mt-0.5"
-          style={{
-            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
-            color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.12)',
-            border: '1px solid rgba(139,92,246,0.25)', whiteSpace: 'nowrap',
-          }}>
-          <Gift size={13} /> Rewards
-        </button>
+        {board === 'players' && (
+          <button
+            onClick={() => setRewardsOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl press mt-0.5"
+            style={{
+              fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+              color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.12)',
+              border: '1px solid rgba(139,92,246,0.25)', whiteSpace: 'nowrap',
+            }}>
+            <Gift size={13} /> Rewards
+          </button>
+        )}
       </div>
 
       {/* ── Players | Clans Umschalter ─────────────────────────── */}
