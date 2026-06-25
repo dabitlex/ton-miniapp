@@ -22,7 +22,13 @@ import { v4 as uuidv4 }  from 'uuid'
 type Tab = 'browse' | 'mine' | 'missions' | 'create'
 
 export default function ClansPage() {
-  const [view, setView]     = useState<Tab>('browse')
+  const [view, setView]     = useState<Tab>(() => {
+    if (typeof window !== 'undefined') {
+      const t = new URLSearchParams(window.location.search).get('tab')
+      if (t === 'mine' || t === 'browse' || t === 'missions' || t === 'create') return t
+    }
+    return 'browse'
+  })
   const [editOpen, setEditOpen] = useState(false)
   const [search, setSearch] = useState('')
   const token               = useAuthStore(s => s.accessToken)
