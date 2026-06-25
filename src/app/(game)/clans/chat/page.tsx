@@ -47,7 +47,7 @@ export default function ClanChatPage() {
   const myId    = useUserStore(s => s.profile?.id) ?? null
   const haptic  = useUIStore(s => s.haptic)
 
-  const { messages, clanId, isLoading, isSending, sendError, send } = useClanChat()
+  const { messages, clanId, notInClan, isLoading, isSending, sendError, send } = useClanChat()
   const [text, setText] = useState('')
 
   // Clan-Metadaten (Name + Mitgliederzahl) aus dem bestehenden Endpoint —
@@ -82,7 +82,7 @@ export default function ClanChatPage() {
   }
 
   // ── Kein Clan → freundlicher Leerzustand ──────────────────────────────────
-  if (!isLoading && !clanId) {
+  if (notInClan) {
     return (
       <div className="h-full flex flex-col items-center justify-center px-8 text-center gap-4">
         <div className="w-16 h-16 rounded-2xl surface-2 flex items-center justify-center">
@@ -108,7 +108,7 @@ export default function ClanChatPage() {
       {/* ── Clan-Kontextleiste ───────────────────────────────────────────── */}
       <div className="shrink-0 flex items-center gap-2.5 px-3 py-2.5"
         style={{ background: 'linear-gradient(180deg,rgba(10,10,18,0.6),transparent)' }}>
-        <button onClick={() => router.back()} className="press p-1" aria-label="Back">
+        <button onClick={() => router.push('/clans?tab=mine')} className="press p-1" aria-label="Back">
           <ChevronLeft size={22} style={{ color: 'var(--text-secondary)' }} />
         </button>
         <div className="w-9 h-9 rounded-[11px] flex items-center justify-center font-display font-extrabold"
