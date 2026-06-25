@@ -77,11 +77,24 @@ export const POST = withAuth(async (ctx) => {
 
   const now = new Date().toISOString()
 
+  // Clan-Name für die Notification-Payload (beide Zweige).
+  const { data: clanRow } = await db.from('clans').select('name').eq('id', clanId).single()
+  const clanName = clanRow?.name ?? 'the clan'
+
   // ── REJECT ────────────────────────────────────────────────────────────────
   if (action === 'reject') {
     await db.from('clan_join_requests')
       .update({ status: 'declined', decided_by: ctx.userId, decided_at: now })
       .eq('id', requestId)
+
+    // Anfragenden benachrichtigen (Opt-out wird respektiert).
+    await db.rpc('enqueue_notification', {
+      p_user_id: req.user_id,
+      p_kind:    'clan_request_declined',
+      p_payload: { clan_name: clanName },
+      p_bypass:  false,
+    })
+
     return ok({ decided: 'rejected', requestId })
   }
 
@@ -113,6 +126,14 @@ export const POST = withAuth(async (ctx) => {
   await db.from('clan_join_requests')
     .update({ status: 'accepted', decided_by: ctx.userId, decided_at: now })
     .eq('id', requestId)
+
+  // Anfragenden benachrichtigen (Opt-out wird respektiert).
+  await db.rpc('enqueue_notification', {
+    p_user_id: req.user_id,
+    p_kind:    'clan_request_approved',
+    p_payload: { clan_name: clanName },
+    p_bypass:  false,
+  })
 
   return ok({ decided: 'approved', requestId, userId: req.user_id })
 })
