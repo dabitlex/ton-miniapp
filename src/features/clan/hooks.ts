@@ -1,6 +1,6 @@
 // src/features/clan/hooks.ts
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 
@@ -14,80 +14,75 @@ export interface ChatMessage {
 }
 
 interface ChatLoad {
-  clanId:   string
-  role:     string
-  messages: ChatMessage[]
+  clanId:    string | null
+  role:      string | null
+  messages:  ChatMessage[]
+  notInClan: boolean
 }
 
-async function apiFetch<T>(url: string, token: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...options?.headers },
-  })
-  const json = await res.json()
-  if (!json.success) throw new Error(json.error ?? 'Request failed')
-  return json.data as T
-}
-
-// In-Memory-Cap: wir halten clientseitig nie mehr als so viele Nachrichten.
 const MAX_IN_MEMORY = 80
 
 export function useClanChat() {
   const token = useAuthStore(s => s.accessToken)
 
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [clanId, setClanId]     = useState<string | null>(null)
-  const [role, setRole]         = useState<string | null>(null)
-
-  // Dedupe-Set: dieselbe Nachricht kommt sowohl aus dem POST-Result als auch
-  // (für den Absender) aus dem Realtime-INSERT zurück.
-  const seenIds = useRef<Set<string>>(new Set())
-
-  const upsert = useCallback((incoming: ChatMessage[]) => {
-    setMessages(prev => {
-      const next = [...prev]
-      for (const m of incoming) {
-        if (seenIds.current.has(m.id)) continue
-        seenIds.current.add(m.id)
-        next.push(m)
-      }
-      next.sort((a, b) => a.created_at.localeCompare(b.created_at))
-      // Cap einhalten (älteste vorne abschneiden)
-      if (next.length > MAX_IN_MEMORY) {
-        const dropped = next.splice(0, next.length - MAX_IN_MEMORY)
-        for (const d of dropped) seenIds.current.delete(d.id)
-      }
-      return next
-    })
-  }, [])
-
-  // ── Initiales Laden (letzte 30) ───────────────────────────────────────────
-  const { isLoading, refetch } = useQuery({
-    queryKey: ['clan', 'chat'],
-    enabled:  !!token,
-    staleTime: 30_000,
+  // ── Initiales Laden ────────────────────────────────────────────────────────
+  // WICHTIG: clanId/messages werden AUS den Query-Daten abgeleitet, nicht per
+  // Seiteneffekt gesetzt. So liefert auch ein Cache-Treffer (ohne erneuten
+  // queryFn-Lauf) korrekt clanId -> kein falsches "No clan yet".
+  const { data, isLoading, isError, refetch } = useQuery<ChatLoad>({
+    queryKey:  ['clan', 'chat'],
+    enabled:   !!token,
+    staleTime: 15_000,
     queryFn: async () => {
-      const data = await apiFetch<ChatLoad>('/api/v1/clans/chat', token!)
-      setClanId(data.clanId)
-      setRole(data.role)
-      // frischer Stand: seen-Set zurücksetzen, dann befüllen
-      seenIds.current = new Set()
-      setMessages([])
-      upsert(data.messages)
-      return data
+      const res  = await fetch('/api/v1/clans/chat', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      if (!json.success) {
+        // 403 = wirklich kein Clan. Andere Fehler werfen (transient -> nicht als
+        // "kein Clan" interpretieren).
+        if (res.status === 403) {
+          return { clanId: null, role: null, messages: [], notInClan: true }
+        }
+        throw new Error(json.error ?? 'Failed to load chat')
+      }
+      const d = json.data as { clanId: string; role: string; messages: ChatMessage[] }
+      return { clanId: d.clanId, role: d.role, messages: d.messages ?? [], notInClan: false }
     },
   })
 
-  // ── Senden ────────────────────────────────────────────────────────────────
+  const clanId    = data?.clanId ?? null
+  const role      = data?.role ?? null
+  const notInClan = data?.notInClan ?? false
+
+  // ── Realtime-Nachrichten (separat gehalten, mit Initiallast gemerged) ──────
+  const [live, setLive] = useState<ChatMessage[]>([])
+
+  // Bei Clan-Wechsel die Live-Liste leeren.
+  useEffect(() => { setLive([]) }, [clanId])
+
+  const messages = useMemo(() => {
+    const map = new Map<string, ChatMessage>()
+    for (const m of data?.messages ?? []) map.set(m.id, m)
+    for (const m of live)                 map.set(m.id, m)
+    return [...map.values()]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .slice(-MAX_IN_MEMORY)
+  }, [data?.messages, live])
+
+  // ── Senden ──────────────────────────────────────────────────────────────────
   const sendMutation = useMutation({
     mutationFn: async (body: string) => {
-      const data = await apiFetch<{ message: ChatMessage }>(
-        '/api/v1/clans/chat', token!,
-        { method: 'POST', body: JSON.stringify({ body }) },
-      )
-      return data.message
+      const res  = await fetch('/api/v1/clans/chat', {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ body }),
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error ?? 'Failed to send')
+      return json.data.message as ChatMessage
     },
-    onSuccess: (msg) => upsert([msg]),
+    onSuccess: (msg) => setLive(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]),
   })
 
   const send = useCallback((body: string) => {
@@ -96,63 +91,56 @@ export function useClanChat() {
     return sendMutation.mutateAsync(trimmed.slice(0, 200))
   }, [sendMutation])
 
-  // ── Realtime: neue Nachrichten des eigenen Clans live empfangen ───────────
+  // ── Realtime-Subscription (Cleanup am SELBEN Client -> kein Leak) ──────────
+  const clientRef  = useRef<any>(null)
+  const channelRef = useRef<any>(null)
+
   useEffect(() => {
     if (!token || !clanId) return
-    let channel: any = null
-    let active = true
+    let cancelled = false
 
     import('@/lib/supabase/client').then(async ({ createSupabaseBrowserClient }) => {
-      if (!active) return
+      if (cancelled) return
       const supabase = createSupabaseBrowserClient()
+      clientRef.current = supabase
 
-      // KRITISCH: Realtime mit dem User-JWT authentifizieren, sonst läuft die
-      // Verbindung als anon und die RLS-Policy (TO authenticated / auth.uid())
-      // liefert NICHTS. Ohne diese Zeile bleibt der Live-Stream stumm.
+      // KRITISCH: Realtime mit User-JWT authentifizieren, sonst greift die
+      // RLS-Policy (TO authenticated / auth.uid()) nicht.
       try { await supabase.realtime.setAuth(token) } catch { /* noop */ }
 
-      channel = supabase
+      const channel = supabase
         .channel(`clan-chat-${clanId}`)
         .on('postgres_changes',
-          {
-            event:  'INSERT',
-            schema: 'public',
-            table:  'clan_chat_messages',
-            // Effizienz-Filter; die eigentliche Grenze bleibt die RLS.
-            filter: `clan_id=eq.${clanId}`,
-          },
+          { event: 'INSERT', schema: 'public', table: 'clan_chat_messages', filter: `clan_id=eq.${clanId}` },
           (payload: any) => {
             const r = payload.new
             if (!r || r.deleted_at) return
-            upsert([{
-              id:            r.id,
-              user_id:       r.user_id,
-              author_name:   r.author_name,
-              author_avatar: r.author_avatar ?? null,
-              body:          r.body,
-              created_at:    r.created_at,
+            setLive(prev => prev.some(m => m.id === r.id) ? prev : [...prev, {
+              id: r.id, user_id: r.user_id, author_name: r.author_name,
+              author_avatar: r.author_avatar ?? null, body: r.body, created_at: r.created_at,
             }])
           },
         )
         .subscribe()
+      channelRef.current = channel
     })
 
     return () => {
-      active = false
-      if (channel) {
-        import('@/lib/supabase/client')
-          .then(({ createSupabaseBrowserClient }) =>
-            createSupabaseBrowserClient().removeChannel(channel))
-          .catch(() => {})
-      }
+      cancelled = true
+      const supabase = clientRef.current
+      const channel  = channelRef.current
+      if (supabase && channel) { try { supabase.removeChannel(channel) } catch { /* noop */ } }
+      channelRef.current = null
     }
-  }, [token, clanId, upsert])
+  }, [token, clanId])
 
   return {
     messages,
     clanId,
     role,
+    notInClan,
     isLoading,
+    isError,
     isSending: sendMutation.isPending,
     sendError: sendMutation.error as Error | null,
     send,
