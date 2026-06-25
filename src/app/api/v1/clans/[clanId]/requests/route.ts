@@ -29,7 +29,7 @@ export const GET = withAuth(async (ctx) => {
 
   const { data, error } = await db
     .from('clan_join_requests')
-    .select('id, user_id, message, created_at, users(telegram_first_name, telegram_username, telegram_photo_url, level)')
+    .select('id, user_id, message, created_at, users!user_id(telegram_first_name, telegram_username, telegram_photo_url, level)')
     .eq('clan_id', clanId)
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
