@@ -342,6 +342,7 @@ export default function ClansPage() {
                 members={(myMembership.members ?? [])}
                 myUserId={profile?.id ?? ''}
                 myRole={myRole}
+                clanId={myMembership.clan.id}
                 onManage={(action, targetUserId) => manageMember({ action, targetUserId })}
                 isManaging={isManaging}
               />
