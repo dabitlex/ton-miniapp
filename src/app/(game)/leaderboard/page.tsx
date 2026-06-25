@@ -2,8 +2,10 @@
 'use client'
 import { useCallback, useRef, forwardRef, useState, useEffect, useLayoutEffect } from 'react'
 import { Crown, Gift, X } from 'lucide-react'
+import { useQuery }         from '@tanstack/react-query'
 import { useLeaderboard }   from '@/features/leaderboard/hooks'
 import { useUserStore }     from '@/stores/useUserStore'
+import { useAuthStore }     from '@/stores/useAuthStore'
 import { TelegramAvatar }   from '@/components/layout/GameHeader'
 import type { LeaderboardEntry } from '@/types/game'
 
@@ -94,6 +96,19 @@ export default function LeaderboardPage() {
   useUserStore(s => s.profile)
   const league = null // League filter disabled until Season 2
   const [rewardsOpen, setRewardsOpen] = useState(false)
+  const token = useAuthStore(s => s.accessToken)
+
+  // Players | Clans — Default 'players'; ?board=clans öffnet direkt die
+  // Clan-Rangliste (Deep-Link aus dem "Global #N"-Chip der Clan-Overview).
+  const [board, setBoard] = useState<'players' | 'clans'>(() => {
+    if (typeof window !== 'undefined'
+      && new URLSearchParams(window.location.search).get('board') === 'clans') return 'clans'
+    return 'players'
+  })
+  useEffect(() => {
+    const b = new URLSearchParams(window.location.search).get('board')
+    if (b === 'clans' || b === 'players') setBoard(b)
+  }, [])
 
   const { entries, userRank, isLoading, hasMore, refreshedAt, loadMore,
           focusMode, neighbors, total, fetchRange, appendNeighbors, prependNeighbors } =
@@ -199,6 +214,25 @@ export default function LeaderboardPage() {
         </button>
       </div>
 
+      {/* ── Players | Clans Umschalter ─────────────────────────── */}
+      <div className="shrink-0 px-5 pb-1.5">
+        <div className="flex gap-1 p-1 rounded-2xl"
+          style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
+          {(['players', 'clans'] as const).map((b) => (
+            <button key={b} onClick={() => setBoard(b)} className="flex-1 py-2 rounded-xl press"
+              style={{
+                fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 700,
+                color:      board === b ? '#0A0A12' : 'var(--text-muted)',
+                background:  board === b ? 'linear-gradient(150deg,#8B5CF6,#5B8DEF)' : 'transparent',
+                boxShadow:  board === b ? '0 5px 14px rgba(139,92,246,0.4)' : 'none',
+              }}>
+              {b === 'players' ? 'Players' : 'Clans'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {board === 'players' && (<>
       {/* ── Podium: IMMER fest oben (beide Modi), scrollt nicht mit ── */}
       <div className="shrink-0 px-5">
         {isLoading && entries.length === 0 ? (
@@ -274,6 +308,9 @@ export default function LeaderboardPage() {
           )}
         </div>
       )}
+      </>)}
+
+      {board === 'clans' && <ClanBoard token={token} />}
 
       {/* ── Season Rewards Sheet ──────────────────────────────── */}
       <RewardsSheet open={rewardsOpen} onClose={() => setRewardsOpen(false)} userRank={userRank} />
@@ -449,3 +486,93 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
   )
 })
 EntryRow.displayName = 'EntryRow'
+
+// ── Clan-Rangliste (Clans-Ansicht des Umschalters) ────────────
+// Liest /api/v1/leaderboard/clans (Cache, all-time nach season_xp).
+// Eigener Clan wird hervorgehoben.
+interface ClanRow {
+  rank: number; clanId: string; name: string; avatarUrl: string | null
+  score: number; level: number; memberCount: number | null; wins: number
+}
+
+function ClanBoard({ token }: { token: string | null }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['clan-leaderboard'],
+    enabled:  !!token,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const res  = await fetch('/api/v1/leaderboard/clans', { headers: { Authorization: `Bearer ${token}` } })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error ?? 'Failed to load')
+      return json.data as { clans: ClanRow[]; myClanId: string | null; myRank: number | null }
+    },
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex justify-center pt-12">
+        <div className="w-5 h-5 rounded-full border-2 animate-spin"
+          style={{ borderColor: 'rgba(139,92,246,0.3)', borderTopColor: '#A78BFA' }} />
+      </div>
+    )
+  }
+
+  const clans    = data?.clans ?? []
+  const myClanId = data?.myClanId ?? null
+
+  if (clans.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No clans ranked yet.</p>
+        <p className="text-xs mt-1.5" style={{ color: 'var(--text-ultra)' }}>Check back as the community grows.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto px-5 pb-6 pt-2">
+      <div className="space-y-1.5">
+        {clans.map((c) => {
+          const mine = c.clanId === myClanId
+          const rankColor = c.rank === 1 ? '#FBBF24' : c.rank === 2 ? '#C4B5FD' : c.rank === 3 ? '#FB923C' : 'var(--text-muted)'
+          return (
+            <div key={c.clanId} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
+              style={{
+                background: mine ? 'linear-gradient(155deg, rgba(139,92,246,0.2), rgba(91,141,239,0.06))' : 'var(--surface-1)',
+                boxShadow:  mine ? 'inset 0 1px 0 rgba(167,139,250,0.24)' : 'inset 0 1px 0 var(--edge-light)',
+              }}>
+              <div className="w-6 text-center font-display font-extrabold text-[15px]" style={{ color: rankColor }}>
+                {c.rank}
+              </div>
+              {c.avatarUrl
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={c.avatarUrl} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                : <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center font-display font-extrabold text-[14px]"
+                    style={{ background: 'linear-gradient(150deg,#8B5CF6,#5B8DEF 60%,#5EEAD4)', color: '#0A0A12' }}>
+                    {(c.name?.[0] ?? 'C').toUpperCase()}
+                  </div>}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-[14px] truncate" style={{ color: 'var(--text-primary)' }}>{c.name}</span>
+                  {mine && (
+                    <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0"
+                      style={{ color: '#C4B5FD', background: 'rgba(139,92,246,0.28)', fontFamily: 'var(--font-display)' }}>
+                      YOUR CLAN
+                    </span>
+                  )}
+                </div>
+                {c.memberCount != null && (
+                  <div className="text-[10.5px]" style={{ color: 'var(--text-muted)' }}>{c.memberCount} members</div>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-display font-extrabold text-[13px]" style={{ color: '#C4B5FD' }}>{c.score.toLocaleString()}</div>
+                <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>season XP</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
