@@ -13,10 +13,11 @@ import { WalletConnect }   from '@/components/ton/WalletConnect'
 import { ReferralSection } from '@/components/game/ReferralSection'
 import { NotificationSettings } from '@/components/game/NotificationSettings'
 import { BottomSheet }     from '@/components/ui/BottomSheet'
+import { XpHistorySheet }  from '@/components/game/XpHistorySheet'
 import { formatNumber }    from '@/lib/utils'
-import { Wallet, Users, Settings, ChevronRight, Flame, Zap, TrendingUp, Trophy } from 'lucide-react'
+import { Wallet, Users, Settings, ChevronRight, Flame, Zap, TrendingUp, Trophy, History } from 'lucide-react'
 
-type SheetId = 'wallet' | 'referral' | 'settings' | null
+type SheetId = 'wallet' | 'referral' | 'settings' | 'activity' | null
 
 const RING_R = 52
 const RING_C = 2 * Math.PI * RING_R // ≈ 326.7
@@ -289,6 +290,29 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* ── Activity — XP history (live) ───────────────────────── */}
+      <div className="mx-5 mt-6 animate-rise" style={{ animationDelay: '250ms' }}>
+        <h3 className="eyebrow mb-2.5">Activity</h3>
+        <div className="rounded-[22px] overflow-hidden" style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
+          <button
+            onClick={() => setSheet('activity')}
+            className="w-full flex items-center gap-[13px] px-4 py-[15px] min-h-[60px] text-left transition-colors active:bg-white/[0.025]"
+          >
+            <div className="w-[38px] h-[38px] rounded-[13px] shrink-0 flex items-center justify-center"
+              style={{ background: 'rgba(139,92,246,0.12)', boxShadow: 'inset 0 0 0 1px rgba(139,92,246,0.22)' }}>
+              <History size={18} style={{ color: '#A78BFA' }} strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>XP History</p>
+              <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
+                See when and where your XP came from
+              </p>
+            </div>
+            <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-faint)' }} />
+          </button>
+        </div>
+      </div>
+
       {/* ── Account — progressive disclosure rows ──────────────── */}
       <div className="mx-5 mt-6 animate-rise" style={{ animationDelay: '260ms' }}>
         <h3 className="eyebrow mb-2.5">Account</h3>
@@ -363,6 +387,8 @@ export default function ProfilePage() {
       <BottomSheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Settings">
         <NotificationSettings />
       </BottomSheet>
+
+      <XpHistorySheet open={sheet === 'activity'} onClose={() => setSheet(null)} />
     </div>
   )
 }
