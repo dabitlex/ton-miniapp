@@ -19,6 +19,7 @@ import {
 interface XpEntry {
   id: string; createdAt: string; source: string
   xp: number; boostPercent: number; level: number | null; leveledUp: boolean
+  doubled?: boolean
 }
 type Cat = 'all' | 'quests' | 'clan' | 'bonuses'
 
@@ -137,6 +138,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
                 id: r.id, createdAt: r.created_at, source: r.source_type,
                 xp: r.xp_granted, boostPercent: r.boost_percent ?? 0,
                 level: r.leveled_up ? r.level_after : null, leveledUp: r.leveled_up,
+                doubled: false,
               }
               setEntries(prev => [e, ...prev])
               setFresh(prev => new Set(prev).add(e.id))
@@ -250,6 +252,12 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
                     <p className="text-[13.5px] font-bold leading-tight" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{m.label}</p>
                     <p className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                       {rel(e.createdAt)}
+                      {e.doubled && (
+                        <span className="text-[9px] font-extrabold px-1.5 py-px rounded-full"
+                          style={{ color: '#6EE7B7', background: 'rgba(52,211,153,.16)', fontFamily: 'var(--font-display)' }}>
+                          ×2
+                        </span>
+                      )}
                       {e.leveledUp && e.level != null && (
                         <span className="text-[9px] font-extrabold px-1.5 py-px rounded-full"
                           style={{ color: '#C4B5FD', background: 'rgba(139,92,246,.2)', fontFamily: 'var(--font-display)' }}>
@@ -297,7 +305,13 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
               style={{ background: dm.bg, color: dm.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.2)' }}>
               <dm.Icon size={28} strokeWidth={1.9} />
             </div>
-            <div className="eyebrow" style={{ color: 'var(--text-faint)' }}>{dm.label}</div>
+            <div className="flex items-center justify-center gap-2">
+              <div className="eyebrow" style={{ color: 'var(--text-faint)' }}>{dm.label}</div>
+              {detail.entry.doubled && (
+                <span className="text-[9px] font-extrabold px-1.5 py-px rounded-full"
+                  style={{ color: '#6EE7B7', background: 'rgba(52,211,153,.16)', fontFamily: 'var(--font-display)' }}>×2</span>
+              )}
+            </div>
 
             {detail.loading ? (
               <div className="flex justify-center py-5">
