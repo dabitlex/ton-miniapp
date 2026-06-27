@@ -6,7 +6,7 @@ import { v4 as uuidv4 }  from 'uuid'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useQuestStore }  from '@/stores/useQuestStore'
 import { useEnergyStore } from '@/stores/useEnergyStore'
-import { useMysteryBoxStore } from '@/stores/useMysteryBoxStore'
+import { useQuestRewardStore } from '@/stores/useQuestRewardStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
@@ -88,7 +88,7 @@ export function useQuests() {
       return { questId, prevEnergy }
     },
 
-    onSuccess: (data, { questType }, context) => {
+    onSuccess: (data, { questId, questType }, context) => {
       // Energie vom Server übernehmen
       energy.hydrate({
         current:       data.energyAfter,
@@ -134,10 +134,19 @@ export function useQuests() {
       // → kein App-Neustart mehr nötig, damit die Zahlen konsistent sind.
       useUserStore.getState().refreshProfile()
 
-      // Mystery Box: wenn mit dieser Quest alle Daily Quests fertig sind → Popup
-      if (data.mysteryBoxUnlocked) {
-        // kleine Verzögerung damit die XP-Animation zuerst läuft
-        setTimeout(() => useMysteryBoxStore.getState().trigger(), 600)
+      // Reward-Popup: zeigt die verdiente XP + Option "Werbung für ×2".
+      // Wenn mit dieser Quest alle Daily Quests fertig sind, öffnet das Popup
+      // danach die Mystery Box (Verkettung statt zwei gleichzeitiger Modals).
+      {
+        const q = [...useQuestStore.getState().daily, ...useQuestStore.getState().weekly]
+          .find(x => x.id === questId)
+        useQuestRewardStore.getState().show({
+          questId,
+          questType,
+          baseXp:          data.xpGranted,
+          title:           q?.template?.title,
+          mysteryBoxAfter: !!data.mysteryBoxUnlocked,
+        })
       }
     },
 
