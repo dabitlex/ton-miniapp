@@ -2,20 +2,18 @@
 // XP-Verlauf im You-Tab. BottomSheet, nach Tagen gruppiert, paginiert.
 // LIVE: Supabase Realtime auf xp_logs (INSERT, gefiltert auf user_id) ->
 // neue Einträge erscheinen sofort oben mit kurzem Highlight.
-//
-// Voraussetzungen:
-//   • xp_logs in der Realtime-Publication (siehe xp_logs_realtime.sql)
-//   • RLS xp_logs_read_own (auth.uid() = user_id) — bereits vorhanden
-//   • Browser-Client trägt die Supabase-Session (wie im AuthProvider)
+// POPUP: Daily/Weekly Quests und Achievements sind antippbar -> Detail-Fenster
+// (Titel + Beschreibung) wird beim Tippen lazy aufgelöst.
 
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUserStore } from '@/stores/useUserStore'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import {
   Target, CalendarCheck, Gift, Shield, Swords, Flame, UserPlus, Medal,
-  Play, Crown, Sparkles, RefreshCw, Loader2, type LucideIcon,
+  Play, Crown, Sparkles, RefreshCw, Loader2, ChevronRight, X, type LucideIcon,
 } from 'lucide-react'
 
 interface XpEntry {
@@ -42,6 +40,9 @@ const SRC: Record<string, { label: string; cat: Cat; color: string; bg: string; 
 const FALLBACK = { label: 'XP', cat: 'bonuses' as Cat, color: '#ffffff', bg: 'rgba(255,255,255,.08)', Icon: Sparkles }
 const meta = (s: string) => SRC[s] ?? FALLBACK
 
+// Welche Quellen ein Detail-Popup haben (auflösbar via source_ref_id)
+const DETAILABLE = new Set(['quest_daily', 'quest_weekly', 'achievement'])
+
 const CHIPS: { id: Cat; label: string }[] = [
   { id: 'all', label: 'All' }, { id: 'quests', label: 'Quests' },
   { id: 'clan', label: 'Clan' }, { id: 'bonuses', label: 'Bonuses' },
@@ -57,6 +58,11 @@ function rel(iso: string): string {
   if (d < 30) return `${Math.floor(d / 7)}w ago`
   return `${Math.floor(d / 30)}mo ago`
 }
+function fullWhen(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+       + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
@@ -66,6 +72,11 @@ function dayLabel(iso: string): string {
   const y = new Date(now); y.setDate(now.getDate() - 1)
   if (sameDay(d, y)) return 'Yesterday'
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+interface DetailState {
+  open: boolean; loading: boolean; entry: XpEntry | null
+  title: string | null; description: string | null
 }
 
 export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -79,6 +90,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
   const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter]         = useState<Cat>('all')
   const [fresh, setFresh]           = useState<Set<string>>(new Set())
+  const [detail, setDetail]         = useState<DetailState>({ open: false, loading: false, entry: null, title: null, description: null })
   const seen = useRef<Set<string>>(new Set())
 
   const fetchPage = useCallback(async (before: string | null) => {
@@ -154,7 +166,18 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
     setLoadingMore(false)
   }
 
-  // Filtern + nach Tagen gruppieren (Reihenfolge bleibt, da bereits desc sortiert)
+  async function openDetail(e: XpEntry) {
+    setDetail({ open: true, loading: true, entry: e, title: null, description: null })
+    try {
+      const res  = await fetch(`/api/v1/users/xp-history/${e.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      const json = await res.json()
+      if (json.success) setDetail(d => ({ ...d, loading: false, title: json.data.title, description: json.data.description }))
+      else setDetail(d => ({ ...d, loading: false }))
+    } catch { setDetail(d => ({ ...d, loading: false })) }
+  }
+  const closeDetail = () => setDetail(d => ({ ...d, open: false }))
+
+  // Filtern + nach Tagen gruppieren
   const visible = filter === 'all' ? entries : entries.filter(e => meta(e.source).cat === filter)
   const groups: { label: string; items: XpEntry[] }[] = []
   for (const e of visible) {
@@ -164,9 +187,11 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
     else groups.push({ label: lbl, items: [e] })
   }
 
+  const dm = detail.entry ? meta(detail.entry.source) : null
+
   return (
     <BottomSheet open={open} onClose={onClose} title="Activity">
-      <style>{`@keyframes xpPop{0%{opacity:0;transform:translateY(-10px) scale(.97)}100%{opacity:1;transform:none}}`}</style>
+      <style>{`@keyframes xpPop{0%{opacity:0;transform:translateY(-10px) scale(.97)}100%{opacity:1;transform:none}}@keyframes xpPopIn{0%{opacity:0;transform:scale(.9) translateY(10px)}100%{opacity:1;transform:none}}`}</style>
 
       {/* Filter chips */}
       <div className="flex gap-2 mb-3 overflow-x-auto [scrollbar-width:none]" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -184,14 +209,12 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
         })}
       </div>
 
-      {/* Initial loading */}
       {loading && (
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[58px] rounded-2xl shimmer" />)}
         </div>
       )}
 
-      {/* Empty */}
       {!loading && visible.length === 0 && (
         <div className="text-center py-10">
           <p className="text-sm font-bold" style={{ color: 'var(--text-secondary)' }}>No XP activity yet</p>
@@ -199,7 +222,6 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
         </div>
       )}
 
-      {/* Grouped list */}
       {!loading && groups.map(g => (
         <div key={g.label}>
           <div className="sticky top-0 z-[1] py-2 px-1.5 eyebrow"
@@ -208,10 +230,13 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
           </div>
           <div className="space-y-1.5">
             {g.items.map(e => {
-              const m = meta(e.source); const Icon = m.Icon; const isFresh = fresh.has(e.id)
+              const m = meta(e.source); const Icon = m.Icon
+              const isFresh = fresh.has(e.id); const tappable = DETAILABLE.has(e.source)
               return (
-                <div key={e.id} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
+                <div key={e.id} onClick={tappable ? () => openDetail(e) : undefined}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
                   style={{
+                    cursor: tappable ? 'pointer' : 'default',
                     background: isFresh ? 'linear-gradient(155deg,rgba(139,92,246,.2),rgba(91,141,239,.05))' : 'rgba(255,255,255,.035)',
                     boxShadow: isFresh ? 'inset 0 1px 0 rgba(167,139,250,.4), 0 0 0 1px rgba(139,92,246,.45), 0 6px 18px rgba(124,58,237,.35)' : 'none',
                     transition: 'background 1.4s ease, box-shadow 1.4s ease',
@@ -233,6 +258,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
                       )}
                     </p>
                   </div>
+                  {tappable && <ChevronRight size={15} className="shrink-0" style={{ color: 'var(--text-faint)' }} />}
                   <div className="text-right shrink-0">
                     <div className="text-[15px] font-extrabold tabular-nums"
                       style={{ color: e.xp < 0 ? '#FB7185' : '#34D399', fontFamily: 'var(--font-display)' }}>
@@ -246,13 +272,63 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
         </div>
       ))}
 
-      {/* Load more */}
       {!loading && hasMore && filter === 'all' && (
         <button onClick={loadMore} disabled={loadingMore}
           className="press w-full mt-3 rounded-2xl py-3 text-[12px] font-bold flex items-center justify-center gap-2"
           style={{ color: 'var(--violet-bright)', background: 'rgba(139,92,246,.1)', fontFamily: 'var(--font-display)' }}>
           {loadingMore ? <><Loader2 size={14} className="animate-spin" /> Loading…</> : 'Load more'}
         </button>
+      )}
+
+      {/* Detail popup — portal to body, above the sheet */}
+      {detail.open && detail.entry && dm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6" role="dialog" aria-modal="true">
+          <div className="absolute inset-0" onClick={closeDetail}
+            style={{ background: 'rgba(3,2,8,.7)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' }} />
+          <div className="relative w-full max-w-[320px] rounded-3xl p-6 text-center"
+            style={{ background: 'linear-gradient(180deg,rgba(28,22,48,.97),rgba(14,11,26,.97))',
+              boxShadow: '0 30px 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1)',
+              animation: 'xpPopIn .3s cubic-bezier(.2,1.2,.4,1)' }}>
+            <button onClick={closeDetail} aria-label="Close"
+              className="absolute top-3.5 right-3.5 w-8 h-8 rounded-xl flex items-center justify-center press"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}><X size={15} /></button>
+
+            <div className="w-[60px] h-[60px] rounded-[18px] mx-auto mb-3.5 flex items-center justify-center"
+              style={{ background: dm.bg, color: dm.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.2)' }}>
+              <dm.Icon size={28} strokeWidth={1.9} />
+            </div>
+            <div className="eyebrow" style={{ color: 'var(--text-faint)' }}>{dm.label}</div>
+
+            {detail.loading ? (
+              <div className="flex justify-center py-5">
+                <Loader2 size={20} className="animate-spin" style={{ color: dm.color }} />
+              </div>
+            ) : (
+              <>
+                <h3 className="display text-[19px] mt-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {detail.title ?? dm.label}
+                </h3>
+                <p className="text-[12.5px] mt-2.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                  {detail.description
+                    ?? (detail.entry.source === 'achievement'
+                        ? 'Unlocked before detailed tracking was enabled.'
+                        : 'No description available for this entry.')}
+                </p>
+                <div className="flex gap-2.5 mt-4">
+                  <div className="flex-1 rounded-2xl py-2.5 px-3" style={{ background: 'rgba(255,255,255,.04)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
+                    <div className="text-[9.5px] uppercase tracking-wide font-semibold" style={{ color: 'var(--text-faint)' }}>Reward</div>
+                    <div className="display text-[14px] mt-0.5" style={{ color: '#34D399' }}>+{detail.entry.xp.toLocaleString('en-US')} XP</div>
+                  </div>
+                  <div className="flex-1 rounded-2xl py-2.5 px-3" style={{ background: 'rgba(255,255,255,.04)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
+                    <div className="text-[9.5px] uppercase tracking-wide font-semibold" style={{ color: 'var(--text-faint)' }}>When</div>
+                    <div className="display text-[12.5px] mt-0.5" style={{ color: 'var(--text-primary)' }}>{fullWhen(detail.entry.createdAt)}</div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </BottomSheet>
   )
