@@ -183,9 +183,8 @@ export function QuestRewardPopup() {
               background: 'linear-gradient(180deg,#6EE7B7,#10B981)', padding: '4px 10px', borderRadius: 999, boxShadow: '0 6px 16px rgba(16,185,129,.5)' }}>×2</span>
           )}
           <span className="display tabular-nums" style={{ fontSize: 44, lineHeight: 1,
-            background: doubled ? 'linear-gradient(180deg,#fff,#6EE7B7)' : 'linear-gradient(180deg,#fff,#FCD34D)',
-            WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            filter: `drop-shadow(0 2px 16px ${doubled ? 'rgba(52,211,153,.6)' : 'rgba(251,191,36,.5)'})` }}>
+            color: doubled ? '#6EE7B7' : '#FCD34D',
+            textShadow: `0 0 22px ${doubled ? 'rgba(52,211,153,.55)' : 'rgba(251,191,36,.5)'}` }}>
             {display.toLocaleString('en-US')}
           </span>
           <span className="display" style={{ fontSize: 16, color: 'var(--violet-bright)' }}>XP</span>
