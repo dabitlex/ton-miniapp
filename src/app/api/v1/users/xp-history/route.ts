@@ -27,7 +27,7 @@ export const GET = withAuth(async (ctx) => {
   const supabase = db()
   let q = supabase
     .from('xp_logs')
-    .select('id, created_at, source_type, xp_granted, boost_percent, level_after, leveled_up')
+    .select('id, created_at, source_type, source_ref_id, xp_granted, boost_percent, level_after, leveled_up')
     .eq('user_id', ctx.userId)
     .order('created_at', { ascending: false })
     .order('id',         { ascending: false })
@@ -41,6 +41,17 @@ export const GET = withAuth(async (ctx) => {
   const hasMore = rows.length > limit
   const slice   = hasMore ? rows.slice(0, limit) : rows
 
+  // ×2-Markierung: welche dieser Quest-Einträge wurden gedoppelt?
+  const questRefs = slice
+    .filter(r => (r.source_type === 'quest_daily' || r.source_type === 'quest_weekly') && r.source_ref_id)
+    .map(r => r.source_ref_id as string)
+  let doubledSet = new Set<string>()
+  if (questRefs.length) {
+    const { data: dbls } = await supabase
+      .from('quest_doubles').select('assignment_id').in('assignment_id', questRefs)
+    doubledSet = new Set((dbls ?? []).map((d: any) => d.assignment_id as string))
+  }
+
   const entries = slice.map((r) => ({
     id:           r.id,
     createdAt:    r.created_at,
@@ -49,6 +60,7 @@ export const GET = withAuth(async (ctx) => {
     boostPercent: r.boost_percent ?? 0,
     level:        r.leveled_up ? r.level_after : null,
     leveledUp:    r.leveled_up,
+    doubled:      !!(r.source_ref_id && doubledSet.has(r.source_ref_id)),
   }))
 
   const nextCursor = hasMore ? slice[slice.length - 1].created_at : null
