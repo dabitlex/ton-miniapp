@@ -7,6 +7,7 @@ import { AuroraBackground } from '@/components/layout/AuroraBackground'
 import { MobileNav }        from '@/components/layout/MobileNav'
 import { EnergyTicker }     from '@/components/layout/EnergyTicker'
 import { MysteryBoxModal }  from '@/components/game/MysteryBoxModal'
+import { QuestRewardPopup } from '@/components/game/QuestRewardPopup'
 import { AchievementPopup } from '@/components/game/AchievementPopup'
 import { MaintenanceGate }  from '@/components/layout/MaintenanceGate'
 import { PlatformGate }     from '@/components/providers/PlatformGate'
@@ -31,6 +32,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
                 <MobileNav />
               </div>
               <MysteryBoxModal />
+              <QuestRewardPopup />
               <AchievementPopup />
             </MaintenanceGate>
           </PlatformGate>
@@ -38,4 +40,4 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
       </QueryProvider>
     </AuthProvider>
   )
-} 
+}
