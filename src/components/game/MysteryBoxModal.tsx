@@ -2,7 +2,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useMysteryBoxStore } from '@/stores/useMysteryBoxStore'
-import { useAuthStore }       from '@/stores/useAuthStore'
+import { authedFetch }        from '@/lib/authedFetch'
 import { useUserStore }       from '@/stores/useUserStore'
 import { useUIStore }         from '@/stores/useUIStore'
 import { useQueryClient }     from '@tanstack/react-query'
@@ -22,7 +22,6 @@ const TIER_STYLE: Record<Tier, TierStyle> = {
 export function MysteryBoxModal() {
   const isOpen = useMysteryBoxStore(s => s.isOpen)
   const close  = useMysteryBoxStore(s => s.close)
-  const token  = useAuthStore(s => s.accessToken)
   const enqueueAchievements = useUIStore(s => s.enqueueAchievements)
   const pendingAch = useRef<any[]>([])
   const qc     = useQueryClient()
@@ -50,9 +49,9 @@ export function MysteryBoxModal() {
     // Parallel: API-Call (würfelt server-seitig)
     let apiResult: { tier: Tier; xp: number; newAchievements?: any[] } | null = null
     try {
-      const res = await fetch('/api/v1/quests/mystery-box', {
+      const res = await authedFetch('/api/v1/quests/mystery-box', {
         method:  'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
       })
       const json = await res.json()
       if (json.success) apiResult = { tier: json.data.tier, xp: json.data.xpReward, newAchievements: json.data.newAchievements }
