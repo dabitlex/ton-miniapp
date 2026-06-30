@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuestRewardStore } from '@/stores/useQuestRewardStore'
 import { useMysteryBoxStore }  from '@/stores/useMysteryBoxStore'
-import { useAuthStore }        from '@/stores/useAuthStore'
+import { authedFetch }         from '@/lib/authedFetch'
 import { useUserStore }        from '@/stores/useUserStore'
 import { useUIStore }          from '@/stores/useUIStore'
 import { showDoubleAd, getDoubleBlockId } from '@/lib/adsgram'
@@ -27,7 +27,6 @@ export function QuestRewardPopup() {
   const isOpen = useQuestRewardStore(s => s.isOpen)
   const data   = useQuestRewardStore(s => s.data)
   const close  = useQuestRewardStore(s => s.close)
-  const token  = useAuthStore(s => s.accessToken)
   const { toast, haptic } = useUIStore()
 
   const [phase, setPhase]     = useState<Phase>('offer')
@@ -98,9 +97,9 @@ export function QuestRewardPopup() {
     // ist nur noch für kurzzeitige Netzwerkfehler nötig (nicht mehr für Gutschriften).
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const r = await fetch('/api/v1/quests/double', {
+        const r = await authedFetch('/api/v1/quests/double', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questId: data!.questId, questType: data!.questType }),
         })
         const json = await r.json()
