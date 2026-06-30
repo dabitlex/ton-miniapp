@@ -94,8 +94,9 @@ export function QuestRewardPopup() {
   }
 
   async function creditDouble() {
-    const maxAttempts = 4
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // Der Bonus wird jetzt direkt auf das "watched"-Signal gebucht; ein Retry
+    // ist nur noch für kurzzeitige Netzwerkfehler nötig (nicht mehr für Gutschriften).
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const r = await fetch('/api/v1/quests/double', {
           method: 'POST',
@@ -106,12 +107,12 @@ export function QuestRewardPopup() {
         if (json.success && json.data.doubled) { applyDoubled(json.data.bonus); return }
 
         const reason = json.data?.reason
-        if (reason === 'no_ad_credit' && attempt < maxAttempts) { await sleep(1500); continue }
         if (reason === 'already_doubled') { toast('warning', 'This quest was already doubled.'); handleClose(); return }
-        toast('warning', 'Could not confirm the ad — your base reward is safe.')
+        // Logischer Fehlschlag (z.B. invalid_quest) -> nicht erneut versuchen, Basis bleibt sicher
+        toast('warning', 'Could not double right now — your base reward is safe.')
         setPhase('offer'); return
       } catch {
-        if (attempt < maxAttempts) { await sleep(1500); continue }
+        if (attempt < 2) { await sleep(1200); continue }
         toast('error', 'Network error — your base reward is safe.')
         setPhase('offer'); return
       }
