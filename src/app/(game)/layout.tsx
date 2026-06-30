@@ -8,6 +8,7 @@ import { MobileNav }        from '@/components/layout/MobileNav'
 import { EnergyTicker }     from '@/components/layout/EnergyTicker'
 import { MysteryBoxModal }  from '@/components/game/MysteryBoxModal'
 import { QuestRewardPopup } from '@/components/game/QuestRewardPopup'
+import { MysteryBoxSideButton } from '@/components/game/MysteryBoxSideButton'
 import { AchievementPopup } from '@/components/game/AchievementPopup'
 import { MaintenanceGate }  from '@/components/layout/MaintenanceGate'
 import { PlatformGate }     from '@/components/providers/PlatformGate'
@@ -33,6 +34,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               </div>
               <MysteryBoxModal />
               <QuestRewardPopup />
+              <MysteryBoxSideButton />
               <AchievementPopup />
             </MaintenanceGate>
           </PlatformGate>
