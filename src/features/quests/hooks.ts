@@ -11,13 +11,34 @@ import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
 
+// In-Flight-Guard für Quest-Completions: bewusst AUSSERHALB von React-State,
+// weil React-State-Updates gebatcht/verzögert sein können (v.a. auf
+// langsamen Geräten mit Render-Lag) — ein Set-Zugriff ist synchron und
+// verhindert zuverlässig, dass ein zweiter Tap auf denselben Quest-Button
+// eine zweite parallele Complete-Anfrage auslöst, bevor React neu gerendert
+// hat. Das war die eigentliche Ursache für "Energie weg & sofort wieder da,
+// kein XP, Quest bleibt available" auf manchen Geräten.
+const inFlightQuestIds = new Set<string>()
+
+// Trägt den API-Fehlercode (z.B. 'ALREADY_COMPLETED') zusätzlich zur
+// Nachricht mit — vorher konnte man Fehlerarten nur per (unzuverlässigem)
+// Substring-Match auf die menschenlesbare Nachricht unterscheiden, die
+// serverseitig oft ein anderer Text als der Code ist.
+export class ApiError extends Error {
+  code?: string
+  constructor(message: string, code?: string) {
+    super(message)
+    this.code = code
+  }
+}
+
 async function apiFetch<T>(url: string, token: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...options,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...options?.headers },
   })
   const json = await res.json()
-  if (!json.success) throw new Error(json.error ?? 'Request failed')
+  if (!json.success) throw new ApiError(json.error ?? 'Request failed', json.code)
   return json.data as T
 }
 
@@ -151,18 +172,43 @@ export function useQuests() {
     },
 
     onError: (error: Error, _, context) => {
-      if (context?.questId) questStore.rollbackComplete(context.questId)
-      if (context?.prevEnergy !== undefined) energy.restore(context.prevEnergy)
+      // ALREADY_COMPLETED heißt: eine andere (i.d.R. die echte, erfolgreiche)
+      // Anfrage für dieselbe Quest ist bereits durchgelaufen. Der lokale
+      // State darf dann NICHT zurückgerollt werden — sonst überschreiben wir
+      // genau das korrekte "completed" wieder mit "available", obwohl Server-
+      // seitig längst XP vergeben wurde. Der In-Flight-Guard unten verhindert
+      // diesen Fall inzwischen von vornherein; dieser Check bleibt als
+      // zweite Absicherung (z.B. falls ein Request trotz Guard clientseitig
+      // gecancelt und erneut gestellt wurde).
+      const isAlreadyCompleted = error instanceof ApiError && error.code === 'ALREADY_COMPLETED'
+
+      if (!isAlreadyCompleted) {
+        if (context?.questId) questStore.rollbackComplete(context.questId)
+        if (context?.prevEnergy !== undefined) energy.restore(context.prevEnergy)
+      }
 
       // Verifikationsfehler verständlich anzeigen
-      if (error.message.includes('QUEST_CONDITION_NOT_MET') ||
+      if (isAlreadyCompleted) {
+        // still — kein Toast/Haptic, der Nutzer hat die Quest ja tatsächlich
+        // abgeschlossen; der nächste Refetch zeigt den korrekten Stand.
+      } else if (error.message.includes('QUEST_CONDITION_NOT_MET') ||
           error.message.includes('nicht erfüllt') ||
           error.message.includes('noch nicht')) {
         toast('warning', `⚠️ ${error.message}`)
       } else {
         toast('error', error.message)
       }
-      haptic('error')
+      if (!isAlreadyCompleted) haptic('error')
+    },
+
+    onSettled: (_data, _error, _vars, context) => {
+      // Läuft IMMER (Erfolg oder Fehler) — gibt den In-Flight-Guard und den
+      // sichtbaren "completing"-Zustand zuverlässig frei, unabhängig davon,
+      // welcher der beiden Handler oben gefeuert hat.
+      if (context?.questId) {
+        inFlightQuestIds.delete(context.questId)
+        questStore.setCompleting(null)
+      }
     },
   })
 
@@ -172,8 +218,14 @@ export function useQuests() {
     isLoadingDaily:  isLoadingDaily || questStore.isLoadingDaily,
     isLoadingWeekly: isLoadingWeekly || questStore.isLoadingWeekly,
     completingId:    questStore.completingId,
-    completeQuest:   (questId: string, questType: 'daily' | 'weekly') =>
-      completeQuest({ questId, questType }),
+    completeQuest:   (questId: string, questType: 'daily' | 'weekly') => {
+      // Synchroner Guard: läuft für diese Quest schon eine Anfrage,
+      // wird der zweite Tap ignoriert — komplett unabhängig davon, ob
+      // React zwischenzeitlich schon neu gerendert hat.
+      if (inFlightQuestIds.has(questId)) return
+      inFlightQuestIds.add(questId)
+      completeQuest({ questId, questType })
+    },
     refetchDaily,
   }
 }
