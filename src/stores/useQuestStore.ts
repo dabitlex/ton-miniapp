@@ -39,13 +39,24 @@ export const useQuestStore = create<QuestState>()(
     setLoadingWeekly: (isLoadingWeekly) => set({ isLoadingWeekly }),
     setCompleting:    (completingId)    => set({ completingId }),
 
+    // WICHTIG: rührt bewusst NICHT an completingId. Vorher wurde hier
+    // completingId im selben Tick wieder auf null gesetzt (überschrieb
+    // setCompleting()) — dadurch griff disabled={completing} in QuestCard
+    // praktisch nie, und auf langsamen Geräten (Render-Lag) konnte ein
+    // zweiter Tap vor dem ersten Re-Render eine zweite parallele
+    // Complete-Anfrage für dieselbe Quest auslösen. Das führte zu dem
+    // gemeldeten Muster: Energie kurz weg + wieder da, kein XP sichtbar,
+    // Quest fällt zurück auf "available", obwohl der Server sie bereits
+    // korrekt abgeschlossen hatte (die zweite, verlierende Anfrage bekam
+    // 409 ALREADY_COMPLETED und rollte den lokalen State zurück).
+    // completingId wird jetzt ausschließlich in onSettled der Mutation
+    // (hooks.ts) gesetzt/gelöscht.
     optimisticComplete(id) {
       const mark = <T extends { id: string; status: string }>(list: T[]): T[] =>
         list.map(q => q.id === id ? { ...q, status: 'completed' as const } : q)
       set(s => ({
-        daily:        mark(s.daily)  as DailyQuest[],
-        weekly:       mark(s.weekly) as WeeklyQuest[],
-        completingId: null,
+        daily:  mark(s.daily)  as DailyQuest[],
+        weekly: mark(s.weekly) as WeeklyQuest[],
       }))
     },
 
