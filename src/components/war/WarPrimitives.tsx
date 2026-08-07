@@ -1,4 +1,4 @@
-// src/components/war/WarPrimitives.tsx
+// src/components/war/WarPrimitives.tsx 
 // Game-Grade-Bausteine für Clan Wars (Aurora-Design V3):
 //   <WarStyles/>   — einmalige Keyframes/Klassen (in WarCard & War-Page gemountet)
 //   <Crest/>       — Clan-Wappen (SVG-Schild, Monogramm, Level-Gem, Glow)
