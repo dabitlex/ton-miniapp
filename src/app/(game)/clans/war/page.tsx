@@ -1,5 +1,5 @@
 // src/app/(game)/clans/war/page.tsx — Schlachtfeld (Clan-War-Detailscreen)
-// Game-Grade V3: großes Wappen-Duell, XL-Beam-Clash, Top-Kämpfer beider
+// Game-Grade V3: großes Wappen-Duell, XL-Beam-Clash, Top-Kämpfer beider 
 // Seiten mit Medaillen, Loot-Vorschau. Fällt bei fehlendem Krieg sauber
 // auf den Clans-Tab zurück.
 'use client'
