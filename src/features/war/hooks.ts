@@ -1,5 +1,5 @@
 // src/features/war/hooks.ts
-// Clan-Wars-Datenhaken: Live-Status (mit sanftem Auto-Refresh), Result-Ack
+// Clan-Wars-Datenhaken: Live-Status (mit sanftem Auto-Refresh), Result-Ack 
 // und Kriegs-Historie. Nutzt authedFetch (automatischer Token-Refresh).
 'use client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
