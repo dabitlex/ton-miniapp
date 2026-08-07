@@ -11,6 +11,8 @@ import { QuestRewardPopup } from '@/components/game/QuestRewardPopup'
 import { MysteryBoxSideButton } from '@/components/game/MysteryBoxSideButton'
 import { AchievementPopup } from '@/components/game/AchievementPopup'
 import { MaintenanceGate }  from '@/components/layout/MaintenanceGate'
+import { WarResultModal }   from '@/components/war/WarResultModal'
+import { SeasonKickoffModal } from '@/components/game/SeasonKickoffModal'
 import { PlatformGate }     from '@/components/providers/PlatformGate'
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +38,9 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               <QuestRewardPopup />
               <MysteryBoxSideButton />
               <AchievementPopup />
+              {/* Clan-Wars-Ergebnis (So-Auswertung) + Season-Auftakt (einmalig) */}
+              <WarResultModal />
+              <SeasonKickoffModal />
             </MaintenanceGate>
           </PlatformGate>
         </TonProvider>
