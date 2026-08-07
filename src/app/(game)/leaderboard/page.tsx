@@ -7,7 +7,7 @@ import { useLeaderboard }   from '@/features/leaderboard/hooks'
 import { useUserStore }     from '@/stores/useUserStore'
 import { useAuthStore }     from '@/stores/useAuthStore'
 import { TelegramAvatar }   from '@/components/layout/GameHeader'
-import type { LeaderboardEntry } from '@/types/game'
+import type { LeaderboardEntry, LeagueTier } from '@/types/game'
 
 // ── Season reward tiers (mirrors calc_season_reward SQL) ─────
 interface RewardTier { label: string; medal: string; xp: number; min: number; max: number }
@@ -94,7 +94,9 @@ function RelicGem({ tier, size = 14 }: { tier: string; size?: number }) {
 
 export default function LeaderboardPage() {
   useUserStore(s => s.profile)
-  const league = null // League filter disabled until Season 2
+  // Season-2-Feature: Liga-Filter (null = Global). Chips unter dem
+  // Players|Clans-Umschalter; Wechsel resettet den Store (useLeaderboard).
+  const [league, setLeague] = useState<LeagueTier | null>(null)
   const [rewardsOpen, setRewardsOpen] = useState(false)
   const token = useAuthStore(s => s.accessToken)
 
@@ -233,6 +235,34 @@ export default function LeaderboardPage() {
           ))}
         </div>
       </div>
+
+      {/* ── Liga-Filter (Season 2) — nur im Players-Board ──────── */}
+      {board === 'players' && (
+        <div className="shrink-0 px-5 pb-2">
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar" style={{ paddingBottom: 2 }}>
+            {([null, 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'legendary'] as (LeagueTier | null)[]).map((lg) => {
+              const active = league === lg
+              const label  = lg === null ? '🌐 Global'
+                : lg === 'bronze' ? '🥉 Bronze' : lg === 'silver' ? '🥈 Silver'
+                : lg === 'gold' ? '🥇 Gold' : lg === 'platinum' ? '💠 Platinum'
+                : lg === 'diamond' ? '💎 Diamond' : '👑 Legendary'
+              return (
+                <button key={lg ?? 'all'} onClick={() => setLeague(lg)} className="press shrink-0"
+                  style={{
+                    fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+                    padding: '7px 12px', borderRadius: 999, whiteSpace: 'nowrap',
+                    color:      active ? '#0A0A12' : 'var(--text-muted)',
+                    background: active ? 'linear-gradient(150deg,#8B5CF6,#5B8DEF)' : 'var(--surface-1)',
+                    boxShadow:  active ? '0 5px 14px rgba(139,92,246,0.4)' : 'inset 0 1px 0 var(--edge-light)',
+                    border: 'none',
+                  }}>
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {board === 'players' && (<>
       {/* ── Podium: IMMER fest oben (beide Modi), scrollt nicht mit ── */}
