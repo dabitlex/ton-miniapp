@@ -1,4 +1,4 @@
-// src/app/api/v1/auth/telegram/route.ts
+// src/app/api/v1/auth/telegram/route.ts 
 import { NextRequest }    from 'next/server'
 import { validateTelegramInitData, parseTelegramInitData } from '@/lib/telegram/initData'
 import { ok, err }        from '@/app/api/v1/_lib/handler'
