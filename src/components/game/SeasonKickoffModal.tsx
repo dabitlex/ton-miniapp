@@ -1,4 +1,4 @@
-// src/components/game/SeasonKickoffModal.tsx
+// src/components/game/SeasonKickoffModal.tsx 
 // Einmaliges Auftakt-Modal beim ersten Öffnen nach einem Season-Start
 // (Design: V1-Stil — Aurora-Lichtkuppel, ruhige Feature-Zeilen).
 // Gemerkt wird pro Season-Nummer in localStorage (vex_season_intro_<n>).
