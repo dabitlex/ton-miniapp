@@ -1,5 +1,5 @@
 // src/app/(game)/clans/page.tsx — Redesigned (Aurora OS · Social Hub v2)
-// Zwei Modi nach Mitgliedschaft:
+// Zwei Modi nach Mitgliedschaft: 
 //   - ohne Clan -> "Find a Clan" (Create-CTA + Suche + Discover)
 //   - mit Clan  -> "My Clan" mit Unter-Tabs Overview · Roster · Wars
 // Rollen-adaptiv durchgängig. Rang-Chip in der Overview deep-linkt in den
