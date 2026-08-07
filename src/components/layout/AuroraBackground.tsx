@@ -95,7 +95,7 @@ export function AuroraBackground() {
       <div
         className="absolute inset-0"
         style={{
-          opacity: 0.04,
+          opacity: 0.05,
           backgroundImage: HEX_SVG,
           maskImage: 'linear-gradient(180deg, #000 0%, transparent 55%)',
           WebkitMaskImage: 'linear-gradient(180deg, #000 0%, transparent 55%)',
