@@ -20,6 +20,7 @@ import { PendingRequestBanner } from '@/components/clan/PendingRequestBanner'
 import { ClanPolicyToggle }     from '@/components/clan/ClanPolicyToggle'
 import { ClanEditSheet }        from '@/components/clan/ClanEditSheet'
 import { ClanRoster }           from '@/components/clan/ClanRoster'
+import { WarCard }              from '@/components/war/WarCard'
 import { formatNumber } from '@/lib/utils'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
 import { Users, Search, Shield, LogOut, Swords, Zap, Star, ChevronRight, Pencil, Trophy, ArrowLeft, Plus } from 'lucide-react'
@@ -350,16 +351,8 @@ export default function ClansPage() {
 
             {/* ── WARS (Platzhalter) ───────────────────────────── */}
             {clanView === 'wars' && (
-              <div className="surface-accent p-8 text-center space-y-3 animate-rise">
-                <div className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center" style={{ background: 'var(--surface-2)' }}>
-                  <Swords size={28} style={{ color: 'var(--violet-bright)' }} />
-                </div>
-                <p className="display text-base text-white">Clan Wars</p>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                  Weekly clan-vs-clan battles are coming soon. Keep earning Clan XP — your roster contribution will count toward the war.
-                </p>
-                <span className="inline-block text-[10px] font-extrabold px-2.5 py-1 rounded-full"
-                  style={{ color: 'var(--gold)', background: 'var(--gold-dim)', fontFamily: 'var(--font-display)' }}>COMING SOON</span>
+              <div className="animate-rise">
+                <WarCard />
               </div>
             )}
 
