@@ -1,4 +1,4 @@
-// src/app/(game)/leaderboard/page.tsx — Redesigned + Relic Gem + Season Rewards
+// src/app/(game)/leaderboard/page.tsx — Redesigned + Relic Gem + Season Rewards 
 'use client'
 import { useCallback, useRef, forwardRef, useState, useEffect, useLayoutEffect } from 'react'
 import { Crown, Gift, X } from 'lucide-react'
