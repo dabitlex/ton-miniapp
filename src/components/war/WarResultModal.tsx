@@ -1,4 +1,4 @@
-// src/components/war/WarResultModal.tsx
+// src/components/war/WarResultModal.tsx 
 // Vollbild-Ergebnis nach der Kriegs-Auswertung (Sonntag 23:45).
 // Erscheint automatisch, sobald /clans/war state='result' liefert (also beim
 // nächsten App-Öffnen), und wird per POST { warId } bestätigt.
