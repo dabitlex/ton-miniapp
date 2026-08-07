@@ -216,6 +216,23 @@ export async function POST(req: NextRequest) {
   })
 }
 
+// ── Fallback-Zuweisung für Nutzer, die der 00:00-Cron noch nicht kennt
+// (v.a. Neuregistrierungen im Tagesverlauf).
+// FIX (Season 2): identische Rotations-Logik wie die quest-assignment Edge
+// Function — vorher wurden Difficulty-Slices ohne ORDER BY gezogen, wodurch
+// Sets OHNE Login-Quest entstehen konnten (aus dem Kaltstart unlösbar:
+// Energie-/Quest-Zähler-Quests brauchen einen ersten Claim → Deadlock).
+// Jetzt bekommt jeder Nutzer exakt das offizielle, garantiert lösbare
+// Tages-Set (fixe Bootstrap-Slots + deterministische Tagesrotation).
+const DAILY_FIXED_EASY = ['daily_easy_login', 'daily_easy_energy5']
+const DAILY_FIXED_MED  = ['daily_med_quests']
+const DAILY_THIRD_EASY = ['daily_easy_quests2', 'daily_easy_energy']
+const DAILY_SECOND_MED = ['daily_med_quests4', 'daily_med_energy25']
+const DAILY_HARD       = ['daily_hard_champion', 'daily_hard_quests5', 'daily_hard_energy35']
+
+const pickDaily = <T,>(arr: T[], n: number): T =>
+  arr[((n % arr.length) + arr.length) % arr.length]!
+
 async function ensureDailyQuests(db: any, userId: string, seasonId: string | null) {
   const today = todayUTC()
   const { count } = await db
@@ -229,17 +246,30 @@ async function ensureDailyQuests(db: any, userId: string, seasonId: string | nul
   }
 
   const { data: templates } = await db
-    .from('quest_templates').select('id, difficulty')
-    .eq('quest_type', 'daily').eq('is_active', true)
+    .from('quest_templates').select('id, internal_code, is_active')
+    .eq('quest_type', 'daily')
 
   if (!templates?.length) return
+  const byCode = new Map<string, any>(templates.map((t: any) => [t.internal_code, t]))
 
-  const easy   = templates.filter((t: any) => t.difficulty === 'easy').slice(0, 3)
-  const medium = templates.filter((t: any) => t.difficulty === 'medium').slice(0, 2)
-  const hard   = templates.filter((t: any) => t.difficulty === 'hard').slice(0, 1)
+  // Gleiches Set wie der Cron: dayNum-Seed → identische Rotation für alle
+  const dayNum = Math.floor(Date.parse(today) / 86_400_000)
+  const codes = [
+    ...DAILY_FIXED_EASY,
+    pickDaily(DAILY_THIRD_EASY, dayNum),
+    ...DAILY_FIXED_MED,
+    pickDaily(DAILY_SECOND_MED, dayNum),
+    pickDaily(DAILY_HARD, dayNum),
+  ]
+
+  const toAssign = codes
+    .map(code => byCode.get(code))
+    .filter((t: any) => !!t && t.is_active !== false)
+
+  if (!toAssign.length) return
 
   await db.from('daily_quest_assignments').upsert(
-    [...easy, ...medium, ...hard].map((t: any) => ({
+    toAssign.map((t: any) => ({
       user_id: userId, template_id: t.id,
       quest_date: today, season_id: seasonId, status: 'available',
     })),
