@@ -1,7 +1,7 @@
 // src/components/war/WarCard.tsx
 // Hero-Karte des Wars-Untertabs im Clan-Screen.
 // Zustände: live (Duell + Beam + eigener Cap + CTA), idle (Countdown bis
-// Montag + Regeln), plus Kriegs-Historie darunter.
+// Montag + Regeln), plus Kriegs-Historie darunter. 
 'use client'
 import { useRouter } from 'next/navigation'
 import { useClanWar, useWarHistory } from '@/features/war/hooks'
