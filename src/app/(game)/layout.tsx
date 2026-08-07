@@ -1,4 +1,4 @@
-// src/app/(game)/layout.tsx
+// src/app/(game)/layout.tsx 
 import { AuthProvider }     from '@/components/providers/AuthProvider'
 import { TonProvider }      from '@/components/providers/TonProvider'
 import { QueryProvider }    from '@/components/providers/QueryProvider'
