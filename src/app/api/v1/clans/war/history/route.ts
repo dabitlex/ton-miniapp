@@ -1,4 +1,4 @@
-// src/app/api/v1/clans/war/history/route.ts
+// src/app/api/v1/clans/war/history/route.ts 
 // GET — die letzten (max. 10) ausgewerteten Kriege des eigenen Clans,
 //        inkl. Gegner, Ergebnis und persönlicher Belohnung.
 import { withAuth, ok } from '@/app/api/v1/_lib/handler'
