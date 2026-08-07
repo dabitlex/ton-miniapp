@@ -239,9 +239,6 @@ export default function ClansPage() {
                         boxShadow: active ? 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)' : 'none',
                       }}>
                       <span className="text-[12px] font-bold" style={{ color: active ? 'white' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>{label}</span>
-                      {v === 'wars' && (
-                        <span className="text-[7px] font-extrabold px-1 py-0.5 rounded-full" style={{ color: 'var(--gold)', background: 'var(--gold-dim)', fontFamily: 'var(--font-display)' }}>SOON</span>
-                      )}
                     </button>
                   )
                 })}
