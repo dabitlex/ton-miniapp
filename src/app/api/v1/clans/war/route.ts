@@ -1,4 +1,4 @@
-// src/app/api/v1/clans/war/route.ts
+// src/app/api/v1/clans/war/route.ts 
 // GET  — Kriegs-Status des eigenen Clans:
 //          { state: 'no_clan' | 'idle' | 'live' | 'result', ... }
 //        'live'   → laufender Krieg mit Scores, Per-Capita, eigenem Beitrag,
