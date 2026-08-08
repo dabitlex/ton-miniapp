@@ -125,13 +125,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Bestehenden User prüfen ob er schon einen Referrer hat
+  // Bestehenden User prüfen: Referrer + aktuelle Season-Zuordnung
   let existingReferredBy: string | null = null
+  let existingSeasonId:   string | null = null
   if (!isNewUser) {
     const { data: existingUser } = await (db as any)
-      .from('users').select('referred_by_user_id')
+      .from('users').select('referred_by_user_id, current_season_id')
       .eq('id', authUserId).single()
     existingReferredBy = existingUser?.referred_by_user_id ?? null
+    existingSeasonId   = existingUser?.current_season_id   ?? null
   }
 
   // User-Profil upserten
@@ -146,6 +148,17 @@ export async function POST(req: NextRequest) {
     telegram_is_premium:    tgUser.is_premium    ?? false,
     last_active_at:         new Date().toISOString(),
     current_season_id:      (season as any)?.id  ?? null,
+  }
+
+  // SEASON-GUARD (Fix Aug 2026): Wird der User hier auf eine ANDERE Season
+  // umgehängt als bisher, muss season_xp mit zurückgesetzt werden — sonst
+  // schleppt er seine XP der Vorsaison ins neue Leaderboard.
+  // Betrifft vor allem User, die der season-rollover-Cron nicht erfasst hat
+  // (current_season_id war NULL oder zeigte auf eine alte Season): deren
+  // Migration passierte faktisch erst hier beim Login, aber ohne Reset.
+  // Neu-Registrierungen brauchen den Reset nicht (season_xp startet bei 0).
+  if (!isNewUser && (season as any)?.id && existingSeasonId !== (season as any).id) {
+    upsertData.season_xp = 0
   }
 
   // Referrer setzen: bei neuem User ODER wenn noch kein Referrer gesetzt
