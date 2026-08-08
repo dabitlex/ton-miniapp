@@ -2,7 +2,7 @@
 // Zwei Modi nach Mitgliedschaft: 
 //   - ohne Clan -> "Find a Clan" (Create-CTA + Suche + Discover)
 //   - mit Clan  -> "My Clan" mit Unter-Tabs Overview · Roster · Wars
-// Rollen-adaptiv durchgängig. Rang-Chip in der Overview deep-linkt in den
+// Rollen-adaptiv durchgängig. Rang-Chip in der Overview deep-linkt in den 
 // Ranks-Tab (Clans-Ansicht).
 'use client'
 import { useState } from 'react'
