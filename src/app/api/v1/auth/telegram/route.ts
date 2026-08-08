@@ -147,7 +147,9 @@ export async function POST(req: NextRequest) {
     telegram_language_code: tgUser.language_code ?? 'en',
     telegram_is_premium:    tgUser.is_premium    ?? false,
     last_active_at:         new Date().toISOString(),
-    current_season_id:      (season as any)?.id  ?? null,
+    // current_season_id wird NICHT hier gesetzt — siehe Season-Guard unten.
+    // (Früher: `(season as any)?.id ?? null` — schrieb bei leerer/fehlgeschlagener
+    //  Season-Abfrage NULL, was beim Folge-Login fälschlich season_xp=0 auslöste.)
   }
 
   // SEASON-GUARD (Fix Aug 2026): Wird der User hier auf eine ANDERE Season
@@ -157,9 +159,24 @@ export async function POST(req: NextRequest) {
   // (current_season_id war NULL oder zeigte auf eine alte Season): deren
   // Migration passierte faktisch erst hier beim Login, aber ohne Reset.
   // Neu-Registrierungen brauchen den Reset nicht (season_xp startet bei 0).
-  if (!isNewUser && (season as any)?.id && existingSeasonId !== (season as any).id) {
-    upsertData.season_xp = 0
+  const activeSeasonId: string | null = (season as any)?.id ?? null
+
+  if (activeSeasonId) {
+    // Season-Zuordnung nur setzen, wenn eine aktive Season ermittelt wurde.
+    upsertData.current_season_id = activeSeasonId
+
+    // Wechselt der User auf eine ANDERE Season als bisher, muss season_xp mit
+    // zurückgesetzt werden — sonst schleppt er XP der Vorsaison ins neue
+    // Leaderboard. Greift auch bei existingSeasonId = NULL (User, die der
+    // season-rollover-Cron nicht erfasst hat). Während einer Off-Season wird
+    // ohnehin keine season_xp vergeben, der Reset ist dort also folgenlos.
+    if (!isNewUser && existingSeasonId !== activeSeasonId) {
+      upsertData.season_xp = 0
+    }
   }
+  // Kein activeSeasonId (Off-Season oder fehlgeschlagene Abfrage): current_season_id
+  // bleibt unverändert stehen. Niemals NULL schreiben — das würde beim nächsten
+  // Login als "Season-Wechsel" gewertet und die XP des Users löschen.
 
   // Referrer setzen: bei neuem User ODER wenn noch kein Referrer gesetzt
   if (referredByUserId && (isNewUser || !existingReferredBy)) {
