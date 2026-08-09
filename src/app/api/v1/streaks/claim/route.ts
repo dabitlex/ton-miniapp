@@ -87,13 +87,28 @@ export const POST = withAuth(async (ctx) => {
   }).eq('id', ctx.userId)
 
   // Grant XP for streak (daily base reward)
+  // FIX Aug 2026: Der Fehler von grant_xp wurde bisher verschluckt. Da der
+  // Streak-Status oben BEREITS auf heute gesetzt wurde, war der Tages-Claim
+  // in dem Fall verbraucht, ohne dass XP ankamen — die Antwort meldete
+  // trotzdem Erfolg. Jetzt: Fehler pruefen und den Streak-Stand
+  // zuruecksetzen, damit der Nutzer es erneut versuchen kann.
   if (xpGranted > 0) {
-    await db.rpc('grant_xp', {
+    const { error: xpErr } = await db.rpc('grant_xp', {
       p_user_id:       ctx.userId,
       p_xp_base:       xpGranted,
       p_source_type:   'streak_bonus',
       p_source_ref_id: null,
     })
+
+    if (xpErr) {
+      await db.from('users').update({
+        streak_current:          user.streak_current,
+        streak_longest:          user.streak_longest,
+        streak_last_active_date: user.streak_last_active_date,
+        streak_miss_eligible_at: user.streak_miss_eligible_at,
+      }).eq('id', ctx.userId)
+      return err(`XP error: ${xpErr.message}`, 'XP_ERROR', 500)
+    }
   }
 
   // ── Streak-Meilensteine prüfen (Bonus zusätzlich zur Basis-XP) ──
