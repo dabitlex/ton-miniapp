@@ -180,15 +180,31 @@ export function useQuests() {
       // diesen Fall inzwischen von vornherein; dieser Check bleibt als
       // zweite Absicherung (z.B. falls ein Request trotz Guard clientseitig
       // gecancelt und erneut gestellt wurde).
-      const isAlreadyCompleted = error instanceof ApiError && error.code === 'ALREADY_COMPLETED'
+      // FIX Aug 2026 ("Marii-Bug"): Bisher galt nur ALREADY_COMPLETED als
+      // "kein echter Fehler". Die Codes aus dem Status-Check der Route
+      // (QUEST_COMPLETED / QUEST_EXPIRED / QUEST_LOCKED) erzeugten dagegen
+      // einen roten Fehler-Toast — und die Quest-Liste wurde NIE neu geladen
+      // (invalidate lief nur im Erfolgsfall). Ergebnis: Die Quest wirkte
+      // weiter offen, der Nutzer tippte endlos ins Leere (29x in wenigen
+      // Minuten, bis zum Rate-Limit).
+      const isStatusMismatch = error instanceof ApiError && (
+        error.code === 'ALREADY_COMPLETED' ||
+        error.code === 'QUEST_COMPLETED'   ||
+        error.code === 'QUEST_EXPIRED'     ||
+        error.code === 'QUEST_LOCKED'
+      )
 
-      if (!isAlreadyCompleted) {
+      if (!isStatusMismatch) {
         if (context?.questId) questStore.rollbackComplete(context.questId)
         if (context?.prevEnergy !== undefined) energy.restore(context.prevEnergy)
       }
 
       // Verifikationsfehler verständlich anzeigen
-      if (isAlreadyCompleted) {
+      if (isStatusMismatch) {
+        // Kein Fehler-Toast (es ist keiner) — aber die Listen SOFORT neu laden,
+        // damit der veraltete Eintrag verschwindet.
+        qc.invalidateQueries({ queryKey: ['quests', 'daily'] })
+        qc.invalidateQueries({ queryKey: ['quests', 'weekly'] })
         // still — kein Toast/Haptic, der Nutzer hat die Quest ja tatsächlich
         // abgeschlossen; der nächste Refetch zeigt den korrekten Stand.
       } else if (error.message.includes('QUEST_CONDITION_NOT_MET') ||
@@ -198,7 +214,7 @@ export function useQuests() {
       } else {
         toast('error', error.message)
       }
-      if (!isAlreadyCompleted) haptic('error')
+      if (!isStatusMismatch) haptic('error')
     },
 
     onSettled: (_data, _error, _vars, context) => {
