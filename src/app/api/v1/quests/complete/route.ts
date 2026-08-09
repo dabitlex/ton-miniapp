@@ -249,10 +249,24 @@ export const POST = withAuth(async (ctx) => {
   }
 
   // Helfer: Abschluss zurücknehmen, falls ein Folgeschritt scheitert
+  // FIX Aug 2026: revertClaim rollte nur den Quest-Status zurueck — bereits
+  // abgezogene Energie blieb verloren (belegt: Vanessa, 07.08., 3x 20 Energie
+  // bei fehlgeschlagenem grant_xp). Jetzt wird sie miterstattet.
+  let energyConsumed = 0
   const revertClaim = async () => {
     await db.from(table as 'daily_quest_assignments')
       .update({ status: 'available', completed_at: null, completion_nonce: null } as any)
       .eq('id', questId)
+
+    if (energyConsumed > 0) {
+      await db.rpc('refund_energy' as any, {
+        p_user_id: ctx.userId,
+        p_amount:  energyConsumed,
+        p_reason:  'quest_refund',
+        p_ref_id:  questId,
+      })
+      energyConsumed = 0
+    }
   }
 
   // ── 5. Energie abziehen (Ad-Quest: keine Energiekosten) ───────
@@ -274,7 +288,8 @@ export const POST = withAuth(async (ctx) => {
       await revertClaim()
       return err(energyRes?.failure_reason ?? 'Insufficient energy', 'NO_ENERGY')
     }
-    energyAfter = energyRes.energy_after
+    energyAfter   = energyRes.energy_after
+    energyConsumed = energyCost   // ab hier muss ein Rollback die Energie erstatten
   } else {
     // keine Energiekosten: aktuellen Stand für die Antwort lesen
     const { data: u } = await db.from('users').select('energy_current').eq('id', ctx.userId).single()
