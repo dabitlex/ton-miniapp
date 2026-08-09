@@ -104,29 +104,53 @@ export const POST = withAuth(async (ctx) => {
   if (!mission) return err('Mission nicht gefunden', 'NOT_FOUND', 404)
   if (mission.status !== 'available') return err('Mission bereits abgeschlossen', 'ALREADY_DONE')
 
-  const { data: energyResult } = await supabase.rpc('consume_energy', {
+  // FIX Aug 2026: Vorher wurden die Fehler von consume_energy UND grant_xp
+  // komplett ignoriert. Scheiterte grant_xp (z.B. an einer DB-Constraint oder
+  // einem Sperrkonflikt bei Doppeltippen), lief der Code trotzdem weiter:
+  // Mission wurde auf 'completed' gesetzt und bekam per Fallback
+  // `?? mission.xp_reward` die VOLLE Belohnung ins Protokoll, obwohl null XP
+  // vergeben wurden. Energie weg, Mission verbraucht, xp_granted gelogen.
+  // Belegt: Robin 2x (08.08.), Marii 1x (07.08.).
+  const { data: energyResult, error: energyErr } = await supabase.rpc('consume_energy', {
     p_user_id: ctx.userId,
     p_amount:  mission.energy_cost,
     p_reason:  'clan_mission',
     p_ref_id:  missionId,
   })
+  if (energyErr) {
+    return err(`Energy error: ${energyErr.message}`, 'ENERGY_ERROR', 500)
+  }
   const energyRes = (energyResult as any[])?.[0]
   if (!energyRes?.success) {
     return err(energyRes?.failure_reason ?? 'Nicht genug Energie', 'NO_ENERGY')
   }
 
-  const { data: xpResult } = await supabase.rpc('grant_xp', {
+  const { data: xpResult, error: xpErr } = await supabase.rpc('grant_xp', {
     p_user_id:       ctx.userId,
     p_xp_base:       mission.xp_reward,
     p_source_type:   'clan_mission',
     p_source_ref_id: missionId,
   })
+
+  if (xpErr) {
+    // Energie zurueckgeben und die Mission NICHT abschliessen, damit der
+    // Nutzer es erneut versuchen kann.
+    await supabase.rpc('refund_energy' as any, {
+      p_user_id: ctx.userId,
+      p_amount:  mission.energy_cost,
+      p_reason:  'clan_mission_refund',
+      p_ref_id:  missionId,
+    })
+    return err(`XP error: ${xpErr.message}`, 'XP_ERROR', 500)
+  }
+
   const xp = (xpResult as any[])?.[0]
 
+  // Nur den TATSAECHLICH vergebenen Betrag eintragen (kein Fallback mehr).
   await supabase.from('clan_missions').update({
     status:       'completed',
     completed_at: new Date().toISOString(),
-    xp_granted:   xp?.xp_granted ?? mission.xp_reward,
+    xp_granted:   xp?.xp_granted ?? 0,
   }).eq('id', missionId)
 
   await supabase.rpc('increment_clan_xp' as any, {
@@ -144,7 +168,7 @@ export const POST = withAuth(async (ctx) => {
   const newAchievements = await checkAchievements(supabase, ctx.userId)
 
   return ok({
-    xpGranted:    xp?.xp_granted ?? mission.xp_reward,
+    xpGranted:    xp?.xp_granted ?? 0,
     clanXpGained: mission.xp_clan_reward,
     leveledUp:    xp?.leveled_up ?? false,
     newLevel:     xp?.new_level ?? null,
