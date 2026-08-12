@@ -5,82 +5,87 @@
 
 /* ── Typography — Premium fintech pairing ─────────────────────── */
 /* Display: Sora (geometric, premium) · Body: Plus Jakarta Sans (legible, refined) */
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
 
 /* ── Design Tokens ───────────────────────────────────────────── */
 :root {
-  /* Canvas — deep space, layered depth */
-  --bg-void:        #07070C;
-  --bg-deep:        #0A0A12;
-  --bg-base:        #07070C;
+  /* ══ VEXALGO 2.0 — Deep Navy + ein blauer Akzent ══
+     Die Variablennamen bleiben aus Kompatibilitaetsgruenden erhalten;
+     nur ihre Werte wurden auf das neue System umgestellt. */
 
-  /* Elevation by light — surfaces, not bordered boxes */
-  --surface-1:      rgba(255,255,255,0.038);
-  --surface-2:      rgba(255,255,255,0.060);
-  --surface-3:      rgba(255,255,255,0.085);
-  --surface-accent: rgba(139,92,246,0.10);
-  --surface-press:  rgba(255,255,255,0.025);
+  /* Canvas */
+  --bg-void:        #080D18;
+  --bg-deep:        #0B1220;
+  --bg-base:        #080D18;
 
-  /* Top-edge highlight (gives surfaces a lit upper rim) */
-  --edge-light:     rgba(255,255,255,0.10);
-  --edge-soft:      rgba(255,255,255,0.05);
+  /* Glass-Flaechen (halbtransparent, mit Lichtkante oben) */
+  --surface-1:      rgba(255,255,255,0.055);
+  --surface-2:      rgba(255,255,255,0.10);
+  --surface-3:      rgba(255,255,255,0.14);
+  --surface-accent: rgba(37,99,255,0.16);
+  --surface-press:  rgba(255,255,255,0.035);
 
-  /* Brand — electric violet → ultra blue → soft cyan */
-  --violet:         #8B5CF6;
-  --violet-bright:  #A78BFA;
-  --violet-deep:    #7C3AED;
-  --violet-glow:    rgba(139,92,246,0.40);
-  --neon:           #A78BFA;
-  --neon-dim:       rgba(167,139,250,0.14);
-  --blue-accent:    #5B8DEF;
-  --ultra-blue:     #5B8DEF;
-  --cyan-accent:    #5EEAD4;
-  --cyan-soft:      #67E8F9;
+  --edge-light:     rgba(255,255,255,0.20);
+  --edge-soft:      rgba(255,255,255,0.09);
 
-  /* Status */
-  --emerald:        #34D399;
-  --emerald-deep:   #10B981;
-  --gold:           #FBBF24;
-  --gold-deep:      #F59E0B;
-  --gold-dim:       rgba(251,191,36,0.14);
-  --rose:           #FB7185;
+  /* Marke — EINE Akzentfarbe */
+  --blue:           #2563FF;
+  --blue-2:         #5B8DFF;
+  --blue-3:         #8FB4FF;
+  --blue-deep:      #1D4ED8;
+
+  /* Legacy-Namen zeigen jetzt auf Blau (halten Alt-Komponenten stimmig) */
+  --violet:         #2563FF;
+  --violet-bright:  #5B8DFF;
+  --violet-deep:    #1D4ED8;
+  --violet-glow:    rgba(37,99,255,0.40);
+  --neon:           #5B8DFF;
+  --neon-dim:       rgba(91,141,255,0.14);
+  --blue-accent:    #5B8DFF;
+  --ultra-blue:     #2563FF;
+  --cyan-accent:    #22D3EE;
+  --cyan-soft:      #7FE3E0;
+
+  /* Status — entsaettigt, damit Blau die Buehne behaelt */
+  --emerald:        #7FE3A8;
+  --emerald-deep:   #22C55E;
+  --gold:           #FFD27A;
+  --gold-deep:      #F5A524;
+  --gold-dim:       rgba(255,210,122,0.14);
+  --rose:           #FF8FA6;
   --rose-deep:      #F43F5E;
 
-  /* Aurora gradient (used as light, not borders) */
-  --aurora:         linear-gradient(135deg, #8B5CF6 0%, #5B8DEF 55%, #5EEAD4 120%);
-  --aurora-soft:    linear-gradient(135deg, rgba(139,92,246,0.9), rgba(91,141,239,0.85));
-  --aurora-text:    linear-gradient(120deg, #C4B5FD 0%, #93C5FD 55%, #99F6E4 110%);
+  /* Verlaeufe */
+  --aurora:         linear-gradient(135deg, #5B8DFF 0%, #2563FF 55%, #1D4ED8 110%);
+  --aurora-soft:    linear-gradient(135deg, rgba(91,141,255,0.9), rgba(37,99,255,0.85));
+  --aurora-text:    linear-gradient(120deg, #FFFFFF 0%, #BFD4FF 60%, #8FB4FF 110%);
 
-  /* Typography */
-  --text-primary:   rgba(255,255,255,0.96);
+  /* Typografie */
+  --text-primary:   #FFFFFF;
   --text-secondary: rgba(255,255,255,0.58);
   --text-muted:     rgba(255,255,255,0.34);
   --text-faint:     rgba(255,255,255,0.20);
   --text-ultra:     rgba(255,255,255,0.10);
 
-  /* Borders — hairline, used sparingly */
-  --border:         rgba(255,255,255,0.06);
-  --border-soft:    rgba(255,255,255,0.04);
-  --border-glow:    rgba(139,92,246,0.28);
-  --border-active:  rgba(167,139,250,0.45);
+  --border:         rgba(255,255,255,0.09);
+  --border-soft:    rgba(255,255,255,0.06);
+  --border-glow:    rgba(91,141,255,0.28);
+  --border-active:  rgba(143,180,255,0.45);
 
-  /* Shadows — soft ambient depth */
-  --shadow-sm:      0 2px 12px rgba(0,0,0,0.35);
-  --shadow-md:      0 8px 28px rgba(0,0,0,0.45);
-  --shadow-lg:      0 18px 48px rgba(0,0,0,0.55);
-  --shadow-glow:    0 12px 40px rgba(139,92,246,0.28);
-  --shadow-violet:  0 10px 34px rgba(124,58,237,0.32);
+  --shadow-sm:      0 8px 22px rgba(0,0,0,0.38);
+  --shadow-md:      0 14px 32px rgba(0,0,0,0.45);
+  --shadow-lg:      0 18px 44px rgba(0,0,0,0.55);
+  --shadow-glow:    0 12px 30px rgba(37,99,255,0.35);
+  --shadow-violet:  0 10px 26px rgba(37,99,255,0.40);
 
-  /* Fonts — referenced everywhere via these vars */
-  --font-display:   'Sora', system-ui, sans-serif;
-  --font-body:      'Plus Jakarta Sans', system-ui, sans-serif;
+  /* Schrift — eine Familie, Gewicht macht die Hierarchie */
+  --font-display:   'Poppins', system-ui, sans-serif;
+  --font-body:      'Poppins', system-ui, sans-serif;
 
-  /* Layout */
-  --nav-height:     72px;
+  --nav-height:     84px;
   --header-height:  56px;
   --strip-height:   34px;
 
-  /* Spring easing */
   --spring:         cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out:       cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -109,67 +114,74 @@ body {
 * { scrollbar-width: none; }
 *::-webkit-scrollbar { display: none; }
 
-/* ── Ambient Aurora — single coherent light source ───────────── */
+/* ── Signature: harte blaue Diagonalflaeche (kein Glow) ─────── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(120% 70% at 50% -10%, rgba(139,92,246,0.16) 0%, rgba(91,141,239,0.05) 38%, transparent 64%),
-    radial-gradient(80% 50% at 88% 8%, rgba(94,234,212,0.05) 0%, transparent 55%),
-    radial-gradient(90% 60% at 50% 118%, rgba(124,58,237,0.07) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
-  animation: aurora-breathe 16s ease-in-out infinite;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(8,13,24,0.30) 0%, rgba(8,13,24,0.10) 34%,
+                    rgba(8,13,24,0.52) 74%, rgba(8,13,24,0.94) 100%);
 }
 
-@keyframes aurora-breathe {
-  0%, 100% { opacity: 0.85; transform: translateY(0) scale(1); }
-  50%      { opacity: 1;    transform: translateY(8px) scale(1.04); }
-}
-
-/* Fine grain overlay for texture / depth */
+/* Der Keil selbst — separates Element, damit er sauber beschnitten wird */
 body::after {
   content: '';
   position: fixed;
-  inset: 0;
+  top: -8%; left: -8%;
+  width: 130%; height: 126%;
   pointer-events: none;
-  z-index: 0;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: -1;
+  opacity: 0.60;
+  background: linear-gradient(158deg, #2B5DD6 0%, #1C46A8 40%, #12307B 72%, #0C2154 100%);
+  clip-path: polygon(72% 0, 100% 0, 100% 100%, 34% 100%);
 }
 
 /* ── Surface System — elevation by light ─────────────────────── */
 .surface {
   position: relative;
-  background: var(--surface-1);
-  border-radius: 22px;
+  background: linear-gradient(150deg, rgba(255,255,255,0.16) 0%,
+              rgba(255,255,255,0.06) 42%, rgba(255,255,255,0.035) 100%);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-radius: 24px;
   box-shadow:
-    inset 0 1px 0 0 var(--edge-light),
+    inset 0 1px 0 rgba(255,255,255,0.28),
+    inset 0 0 0 0.5px rgba(255,255,255,0.10),
     var(--shadow-sm);
 }
 .surface-2 {
   position: relative;
-  background: var(--surface-2);
-  border-radius: 20px;
+  background: linear-gradient(150deg, rgba(255,255,255,0.10) 0%,
+              rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 22px;
   box-shadow:
-    inset 0 1px 0 0 var(--edge-light),
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 0 0 0.5px rgba(255,255,255,0.07),
     var(--shadow-md);
 }
 .surface-accent {
   position: relative;
-  background:
-    linear-gradient(160deg, rgba(139,92,246,0.16) 0%, rgba(91,141,239,0.05) 60%, transparent 100%),
-    var(--surface-1);
-  border-radius: 22px;
+  background: linear-gradient(150deg, rgba(91,141,255,0.30) 0%,
+              rgba(37,99,255,0.16) 55%, rgba(19,65,196,0.12) 100%);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-radius: 24px;
   box-shadow:
-    inset 0 1px 0 0 rgba(167,139,250,0.22),
-    0 14px 40px rgba(124,58,237,0.16);
+    inset 0 1px 0 rgba(255,255,255,0.32),
+    inset 0 0 0 0.5px rgba(143,180,255,0.22),
+    0 18px 44px rgba(21,64,190,0.30);
 }
 .surface-quiet {
-  background: var(--surface-press);
+  background: linear-gradient(150deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
   border-radius: 18px;
-  box-shadow: inset 0 1px 0 0 var(--edge-soft);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14),
+              inset 0 0 0 0.5px rgba(255,255,255,0.06);
 }
 
 /* Floating chip / pill */
@@ -179,10 +191,11 @@ body::after {
   gap: 6px;
   padding: 7px 12px;
   border-radius: 999px;
-  background: var(--surface-2);
-  box-shadow: inset 0 1px 0 0 var(--edge-light), var(--shadow-sm);
+  background: linear-gradient(150deg, rgba(255,255,255,0.13), rgba(255,255,255,0.04));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), inset 0 0 0 0.5px rgba(255,255,255,0.07);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -213,24 +226,24 @@ body::after {
 /* ── Typography helpers ──────────────────────────────────────── */
 .font-display { font-family: var(--font-display); }
 .font-body    { font-family: var(--font-body); }
-.display-xl   { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; }
-.display      { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; }
+.display-xl   { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.03em; }
+.display      { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; }
 .eyebrow {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-weight: 500;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 /* ── Glow utilities (ambient, restrained) ────────────────────── */
-.glow-violet  { box-shadow: 0 8px 30px rgba(139,92,246,0.35); }
-.glow-neon    { box-shadow: 0 8px 30px rgba(167,139,250,0.35); }
+.glow-violet  { box-shadow: 0 8px 30px rgba(37,99,255,0.40); }
+.glow-neon    { box-shadow: 0 8px 30px rgba(91,141,255,0.40); }
 .glow-emerald { box-shadow: 0 8px 30px rgba(52,211,153,0.30); }
 .glow-gold    { box-shadow: 0 8px 30px rgba(251,191,36,0.30); }
 
-.text-glow-violet { text-shadow: 0 0 24px rgba(167,139,250,0.55); }
+.text-glow-violet { text-shadow: 0 0 24px rgba(91,141,255,0.55); }
 .text-glow-gold   { text-shadow: 0 0 24px rgba(251,191,36,0.55); }
 
 /* ── Gradient text ───────────────────────────────────────────── */
@@ -329,47 +342,53 @@ body::after {
 .progress-bar {
   height: 6px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.13);
   overflow: hidden;
-  position: relative;
 }
 .progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--aurora);
-  box-shadow: 0 0 14px rgba(139,92,246,0.5);
-  transition: width 0.9s var(--ease-out);
-  position: relative;
+  background: linear-gradient(90deg, #7BA5FF, #2563FF);
+  transition: width 0.5s var(--ease-out);
 }
 
 /* ── Button system ───────────────────────────────────────────── */
 .btn-primary {
-  position: relative;
-  background: var(--aurora);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  height: 48px;
   border: none;
-  border-radius: 14px;
-  color: white;
-  font-family: var(--font-body);
-  font-weight: 700;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #5B8DFF 0%, #2563FF 55%, #1D4ED8 100%);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 500;
   font-size: 14px;
   letter-spacing: -0.01em;
-  box-shadow: 0 8px 24px rgba(124,58,237,0.34), inset 0 1px 0 rgba(255,255,255,0.22);
-  transition: transform 0.18s var(--spring), box-shadow 0.2s ease;
-  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(37,99,255,0.40), inset 0 1px 0 rgba(255,255,255,0.35);
+  transition: transform 0.18s var(--spring);
 }
-.btn-primary:active { transform: scale(0.96); box-shadow: 0 4px 14px rgba(124,58,237,0.3); }
+.btn-primary:active { transform: scale(0.96); box-shadow: 0 4px 14px rgba(37,99,255,0.30); }
 
 .btn-secondary {
-  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  height: 48px;
   border: none;
-  border-radius: 14px;
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-weight: 600;
+  border-radius: 16px;
+  background: linear-gradient(150deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-weight: 500;
   font-size: 14px;
-  box-shadow: inset 0 1px 0 var(--edge-light);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 0 0 0.5px rgba(255,255,255,0.08);
   transition: transform 0.18s var(--spring);
-  cursor: pointer;
 }
 .btn-secondary:active { transform: scale(0.96); }
 
