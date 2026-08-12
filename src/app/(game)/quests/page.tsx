@@ -1,4 +1,4 @@
-// src/app/(game)/quests/page.tsx — Redesigned (Aurora OS · Mission Interface)
+// src/app/(game)/quests/page.tsx — VEXALGO 2.0
 'use client'
 import { useState }     from 'react'
 import { useQuests }    from '@/features/quests/hooks'
@@ -7,10 +7,12 @@ import { useUserStore } from '@/stores/useUserStore'
 import { useEnergy }    from '@/features/hooks'
 import { QuestCard }    from '@/components/game/QuestCard'
 import { OnboardingQuests } from '@/components/game/OnboardingQuests'
+import { Icon }         from '@/components/ui/Icon'
+import { GAME_CONSTANTS } from '@/lib/constants/game'
 import type { DailyQuest } from '@/types/game'
-import { Swords, CalendarDays, ClipboardList, Zap } from 'lucide-react'
 
 type Tab = 'daily' | 'weekly'
+const fd: React.CSSProperties = { fontFamily: 'var(--font-display)' }
 
 export default function QuestsPage() {
   const [tab, setTab] = useState<Tab>('daily')
@@ -21,171 +23,159 @@ export default function QuestsPage() {
   const activeBoost = profile?.ecosystemBoost ?? 0
 
   // Synthetische "Watch Ads"-Tageskarte (kein DB-Quest; gespeist aus /ads/status).
-  // Jede Ad gibt +50 XP server-seitig; bei 5/5 zeigt die Karte "Done".
   const watchAdsDone = ads.watchedToday >= ads.dailyLimit
   const watchAdsQuest: DailyQuest = {
-    id:          'watch-ads-daily',
-    templateId:  'watch-ads-daily',
-    questDate:   '',
-    status:      watchAdsDone ? 'completed' : 'available',
-    expiresAt:   '',
-    xpGranted:   null,
-    energySpent: null,
+    id: 'watch-ads-daily', templateId: 'watch-ads-daily', questDate: '',
+    status: watchAdsDone ? 'completed' : 'available',
+    expiresAt: '', xpGranted: null, energySpent: null,
     template: {
-      id:           'watch-ads-daily',
-      internalCode: 'daily_watch_ads',
-      title:        'Watch Ads',
-      description:  'Watch a short ad to earn XP and support the pool.',
-      difficulty:   'medium',
-      questType:    'daily',
-      energyCost:   0,
-      xpReward:     ads.xpPerAd,
-      tokenReward:  0,
-      iconKey:      '📺',
-      sortOrder:    -1,
+      id: 'watch-ads-daily', internalCode: 'daily_watch_ads',
+      title: 'Werbung ansehen',
+      description: 'Sieh dir eine kurze Werbung an und sammle XP.',
+      difficulty: 'medium', questType: 'daily', energyCost: 0,
+      xpReward: ads.xpPerAd, tokenReward: 0, iconKey: '📺', sortOrder: -1,
     },
-    progress: {
-      current: ads.watchedToday,
-      target:  ads.dailyLimit,
-      type:    'countable',
-      isMet:   watchAdsDone,
-    },
+    progress: { current: ads.watchedToday, target: ads.dailyLimit, type: 'countable', isMet: watchAdsDone },
   }
 
-  const quests    = tab === 'daily' ? daily   : weekly
+  const quests    = tab === 'daily' ? daily : weekly
   const isLoading = tab === 'daily' ? isLoadingDaily : isLoadingWeekly
-  // Watch-Ads erst in die Statistik einrechnen, wenn der Ad-Stand geladen ist
-  // (verhindert kurzes Springen von Fortschrittsbalken/Zähler beim Start).
-  const adsReady    = !ads.isLoading
+
+  const adsReady      = !ads.isLoading
   const watchAdsDone2 = adsReady && watchAdsDone
-  const doneD     = daily.filter(q => q.status === 'completed').length + (watchAdsDone2 ? 1 : 0)
-  const doneW     = weekly.filter(q => q.status === 'completed').length
-  const totalD    = daily.length + (adsReady ? 1 : 0)   // + synthetische "Watch Ads"-Karte
-  const totalW    = weekly.length
-  const done      = tab === 'daily' ? doneD : doneW
-  const total     = tab === 'daily' ? totalD : totalW
-  const pct       = total > 0 ? Math.round((done / total) * 100) : 0
+  const doneD  = daily.filter(q => q.status === 'completed').length + (watchAdsDone2 ? 1 : 0)
+  const doneW  = weekly.filter(q => q.status === 'completed').length
+  const totalD = daily.length + (adsReady ? 1 : 0)
+  const totalW = weekly.length
+  const done   = tab === 'daily' ? doneD : doneW
+  const total  = tab === 'daily' ? totalD : totalW
+  const pct    = total > 0 ? Math.round((done / total) * 100) : 0
+
+  const R = 22, C = 2 * Math.PI * R
+  const energyPct = Math.min(100, (energy.current / GAME_CONSTANTS.MAX_ENERGY) * 100)
+
+  // Zeit bis zum naechsten UTC-Mitternacht (Quest-Reset)
+  const resetIn = (() => {
+    const now = new Date()
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1))
+    const diff = next.getTime() - now.getTime()
+    const h = Math.floor(diff / 3600000)
+    const m = Math.floor((diff % 3600000) / 60000)
+    return `${h} Std ${m} Min`
+  })()
 
   return (
     <div className="flex flex-col h-full relative z-10">
 
-      {/* ── Header with progress ───────────────────────────────── */}
-      <div className="shrink-0 px-5 pt-4 pb-3 animate-rise">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="display-xl text-[24px] text-white leading-none">Missions</h1>
-            <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Complete to earn XP</p>
+      {/* ── Kopfzeile ─────────────────────────────────────────── */}
+      <div className="shrink-0 animate-rise" style={{ padding: '24px 20px 0' }}>
+        <div className="flex items-start justify-between" style={{ marginBottom: 18 }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ ...fd, fontSize: 21, fontWeight: 600, letterSpacing: '-0.02em' }}>Quests</h1>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+              {tab === 'daily' ? `Zurücksetzen in ${resetIn}` : 'Wöchentlich · endet Sonntag'}
+            </p>
           </div>
-          <div className="text-right">
-            <span className="display-xl text-[22px] gradient-text tabular-nums">{pct}%</span>
-            <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{done}/{total} done</p>
-          </div>
-        </div>
-        <div className="progress-bar mt-3">
-          <div className="progress-fill" style={{ width: `${pct}%` }} />
-        </div>
-      </div>
 
-      {/* ── Segmented tabs ─────────────────────────────────────── */}
-      <div className="shrink-0 px-5 pb-3 animate-rise" style={{ animationDelay: '60ms' }}>
-        <div className="flex p-1 rounded-2xl gap-1" style={{ background: 'var(--surface-press)' }}>
-          {([
-            { key: 'daily'  as Tab, label: 'Daily',  icon: Swords,       done: doneD, total: totalD },
-            { key: 'weekly' as Tab, label: 'Weekly', icon: CalendarDays, done: doneW, total: totalW },
-          ]).map(({ key, label, icon: Icon, done, total }) => {
-            const active  = tab === key
-            const allDone = total > 0 && done === total
-            return (
-              <button key={key} onClick={() => setTab(key)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all press"
-                style={{
-                  background: active ? 'var(--surface-2)' : 'transparent',
-                  boxShadow: active ? 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)' : 'none',
-                }}>
-                <Icon size={15} style={{ color: active ? 'var(--violet-bright)' : 'var(--text-faint)' }} />
-                <span className="text-sm font-bold" style={{ color: active ? 'white' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
-                  {label}
-                </span>
-                {total > 0 && (
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-lg"
-                    style={{
-                      background: allDone ? 'rgba(52,211,153,0.16)' : 'rgba(255,255,255,0.07)',
-                      color: allDone ? 'var(--emerald)' : 'var(--text-muted)',
-                    }}>
-                    {done}/{total}
-                  </span>
-                )}
+          <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+            <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="26" cy="26" r={R} fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="4" />
+              <defs>
+                <linearGradient id="qRing" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor="#7BA5FF" /><stop offset="1" stopColor="#2563FF" />
+                </linearGradient>
+              </defs>
+              <circle cx="26" cy="26" r={R} fill="none" stroke="url(#qRing)" strokeWidth="4"
+                strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} />
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex',
+              alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ ...fd, fontSize: 13, fontWeight: 500, color: 'var(--blue-2)' }}>{pct}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Umschalter */}
+        <div style={{ display: 'flex', gap: 6, padding: 5, borderRadius: 18,
+          background: 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
+          {([['daily', 'Täglich', doneD, totalD], ['weekly', 'Wöchentlich', doneW, totalW]] as const)
+            .map(([key, label, d, t]) => (
+              <button key={key} onClick={() => setTab(key as Tab)}
+                style={{ flex: 1, textAlign: 'center', padding: '10px 0', borderRadius: 13,
+                  border: 'none', fontFamily: 'var(--font-display)', fontSize: 12.5,
+                  fontWeight: tab === key ? 500 : 400,
+                  color: tab === key ? '#fff' : 'var(--text-secondary)',
+                  background: tab === key
+                    ? 'linear-gradient(135deg,#5B8DFF,#1D4ED8)' : 'transparent',
+                  boxShadow: tab === key ? '0 6px 16px rgba(37,99,255,.4)' : 'none' }}>
+                {label} · {d}/{t}
               </button>
-            )
-          })}
+            ))}
+        </div>
+
+        {/* Energie */}
+        <div className="surface-2" style={{ display: 'flex', alignItems: 'center', gap: 12,
+          padding: '13px 16px', borderRadius: 18, margin: '13px 0 14px' }}>
+          <Icon name="bolt" size={16} strokeWidth={1.6} style={{ color: 'var(--blue-2)' }} />
+          <div className="progress-bar" style={{ flex: 1, height: 5 }}>
+            <div className="progress-fill" style={{ width: `${energyPct}%` }} />
+          </div>
+          <p style={{ ...fd, fontSize: 13, whiteSpace: 'nowrap' }}>
+            {energy.current}<span style={{ color: 'var(--text-muted)' }}>/{GAME_CONSTANTS.MAX_ENERGY}</span>
+          </p>
         </div>
       </div>
 
-      {/* ── Energy meter ───────────────────────────────────────── */}
-      <div className="shrink-0 mx-5 mb-3 px-3.5 py-2.5 rounded-2xl flex items-center gap-2.5 animate-rise"
-        style={{
-          animationDelay: '90ms',
-          background: energy.isLow ? 'rgba(244,63,94,0.10)' : 'var(--surface-1)',
-          boxShadow: energy.isLow ? 'inset 0 0 0 1px rgba(244,63,94,0.25)' : 'inset 0 1px 0 var(--edge-light)',
-        }}>
-        <Zap size={14} fill={energy.isLow ? '#FB7185' : '#A78BFA'} style={{ color: energy.isLow ? '#FB7185' : '#A78BFA' }} />
-        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <div className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${energy.pct}%`, background: energy.isLow ? 'linear-gradient(90deg,#F43F5E,#FB7185)' : 'var(--aurora)' }} />
-        </div>
-        <span className="text-[11px] font-bold tabular-nums" style={{ color: energy.isLow ? '#FB7185' : 'var(--violet-bright)' }}>
-          {energy.current}/100
-        </span>
-        {!energy.isFull && <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{energy.timeToFull}</span>}
-      </div>
-
-      {/* ── Mission timeline ───────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-5 pb-6">
-        {/* "First Steps" — shown on both tabs, scrolls with the list */}
+      {/* ── Liste ─────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto" style={{ padding: '0 20px 24px' }}>
         <OnboardingQuests />
 
-        {tab === 'daily' && (
-          ads.isLoading ? (
-            // Watch-Ads-Karte lädt noch → Shimmer statt vorschnell "available".
-            <div className="h-[92px] shimmer mb-2.5" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {tab === 'daily' && (
+            ads.isLoading ? (
+              <div className="surface-2" style={{ height: 74, borderRadius: 20 }} />
+            ) : (
+              <QuestCard
+                quest={watchAdsQuest}
+                onComplete={() => {}}
+                completing={false}
+                activeBoostPct={activeBoost}
+                watchMode
+                watching={ads.watching}
+                onWatch={ads.watchAd}
+                watchDisabled={watchAdsDone}
+              />
+            )
+          )}
+
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="surface-2" style={{ height: 74, borderRadius: 20, opacity: 0.5 }} />
+            ))
+          ) : quests.length === 0 ? (
+            <div className="surface-2" style={{ padding: 28, borderRadius: 20, textAlign: 'center' }}>
+              <Icon name="quest" size={26} style={{ color: 'var(--text-muted)', margin: '0 auto 12px' }} />
+              <p style={{ ...fd, fontSize: 14, fontWeight: 500 }}>Keine Quests</p>
+              <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 5 }}>
+                {tab === 'daily'
+                  ? 'Neue Quests gibt es um Mitternacht UTC.'
+                  : 'Neue Wochen-Quests gibt es Montag.'}
+              </p>
+            </div>
           ) : (
-            <QuestCard
-              quest={watchAdsQuest}
-              onComplete={() => {}}
-              completing={false}
-              activeBoostPct={activeBoost}
-              index={0}
-              watchMode
-              watching={ads.watching}
-              onWatch={ads.watchAd}
-            />
-          )
-        )}
-        {isLoading ? (
-          <div className="space-y-2.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-[92px] shimmer ml-[30px]" />
-            ))}
-          </div>
-        ) : quests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-44 text-center">
-            <ClipboardList size={42} className="mb-3" style={{ color: 'var(--text-ultra)' }} />
-            <p className="display text-sm" style={{ color: 'var(--text-muted)' }}>No missions available</p>
-          </div>
-        ) : (
-          <div>
-            {quests.map((q, i) => (
+            quests.map((q, i) => (
               <QuestCard
                 key={q.id}
                 quest={q}
-                onComplete={() => completeQuest(q.id, tab)}
+                onComplete={(id, type) => completeQuest(id, type)}
                 completing={completingId === q.id}
                 activeBoostPct={activeBoost}
                 index={i}
               />
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   )
