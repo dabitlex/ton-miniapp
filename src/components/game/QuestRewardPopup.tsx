@@ -1,4 +1,5 @@
-// src/components/game/QuestRewardPopup.tsx
+// src/components/game/QuestRewardPopup.tsx — VEXALGO 2.0
+// Die gesamte Ad-/Verdopplungs-Logik ist unveraendert; nur die Darstellung ist neu.
 // Reward-Popup nach Abschluss einer Daily/Weekly-Quest.
 // Zeigt die verdiente XP (bereits gutgeschrieben) + Option "Werbung für ×2".
 // Global gemountet in src/app/(game)/layout.tsx (wie MysteryBoxModal).
@@ -18,7 +19,7 @@ import { authedFetch }         from '@/lib/authedFetch'
 import { useUserStore }        from '@/stores/useUserStore'
 import { useUIStore }          from '@/stores/useUIStore'
 import { showDoubleAd, getDoubleBlockId } from '@/lib/adsgram'
-import { Loader2, Play } from 'lucide-react'
+import { Icon, IconTile } from '@/components/ui/Icon'
 
 type Phase = 'offer' | 'loadingAd' | 'crediting' | 'doubled'
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
@@ -132,100 +133,91 @@ export function QuestRewardPopup() {
     await creditDouble()
   }
 
-  const accent = doubled ? '#34D399' : '#FBBF24'
+  const fd: React.CSSProperties = { fontFamily: 'var(--font-display)' }
+  const busy = phase === 'loadingAd' || phase === 'crediting'
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-6" role="dialog" aria-modal="true">
-      <style>{`
-        @keyframes qrFloat{0%,100%{transform:translateY(-4px)}50%{transform:translateY(4px)}}
-        @keyframes qrIn{0%{opacity:0;transform:scale(.9) translateY(10px)}100%{opacity:1;transform:none}}
-        @keyframes qrStamp{0%{opacity:0;transform:scale(0) rotate(-12deg)}100%{opacity:1;transform:scale(1) rotate(-12deg)}}
-      `}</style>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center"
+         style={{ padding: 24 }} role="dialog" aria-modal="true">
+      <div onClick={handleClose}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(4,7,16,.78)',
+          backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
 
-      <div className="absolute inset-0" onClick={phase === 'offer' || doubled ? handleClose : undefined}
-        style={{ background: 'rgba(3,2,8,.72)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' }} />
+      <div ref={cardRef} className="surface animate-pop"
+        style={{ position: 'relative', width: '100%', maxWidth: 320,
+          padding: '26px 22px 22px', textAlign: 'center', borderRadius: 28, overflow: 'hidden' }}>
 
-      <div ref={cardRef} className="relative w-full max-w-[330px] rounded-[28px] p-6 pt-7 text-center overflow-hidden"
-        style={{ background: 'linear-gradient(180deg,rgba(30,23,52,.98),rgba(13,10,25,.98))',
-          boxShadow: '0 30px 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1)',
-          animation: 'qrIn .35s cubic-bezier(.2,1.3,.4,1)' }}>
+        {/* Lichtschein oben — wechselt bei Verdopplung auf Gruen */}
+        <div aria-hidden style={{ position: 'absolute', left: '50%', top: -40,
+          transform: 'translateX(-50%)', width: 230, height: 170, pointerEvents: 'none',
+          transition: 'background .5s',
+          background: doubled
+            ? 'radial-gradient(circle, rgba(34,197,94,.34), transparent 66%)'
+            : 'radial-gradient(circle, rgba(37,99,255,.38), transparent 66%)' }} />
 
-        {/* glow */}
-        <div className="absolute left-1/2 pointer-events-none" style={{ top: -30, transform: 'translateX(-50%)', width: 220, height: 160,
-          background: `radial-gradient(circle, ${doubled ? 'rgba(52,211,153,.4)' : 'rgba(251,191,36,.3)'}, transparent 65%)`, transition: 'background .5s' }} />
-
-        {/* crystal */}
-        <div className="relative mx-auto mb-3" style={{ width: 78, height: 88, animation: 'qrFloat 5s ease-in-out infinite' }}>
-          <svg width="78" height="88" viewBox="0 0 78 88">
-            <defs>
-              <linearGradient id="qrT" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#E9D5FF"/><stop offset="1" stopColor="#A5F3FC"/></linearGradient>
-              <linearGradient id="qrL" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#C4B5FD"/><stop offset="1" stopColor="#7C3AED"/></linearGradient>
-              <linearGradient id="qrR" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#67E8F9"/><stop offset="1" stopColor="#4F46E5"/></linearGradient>
-              <linearGradient id="qrB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7C3AED"/><stop offset="1" stopColor="#3B2A8C"/></linearGradient>
-            </defs>
-            <polygon points="39,3 61,20 39,29 17,20" fill="url(#qrT)"/>
-            <polygon points="17,20 39,29 31,62 12,40" fill="url(#qrL)"/>
-            <polygon points="61,20 66,40 47,62 39,29" fill="url(#qrR)"/>
-            <polygon points="31,62 47,62 39,86" fill="url(#qrB)"/>
-            <polygon points="39,3 39,29 17,20" fill="#fff" opacity=".22"/>
-            <polygon points="39,3 52,12 45,18 39,9" fill="#fff" opacity=".7"/>
-          </svg>
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+          <IconTile name="check" size={62} active />
         </div>
 
-        <div className="eyebrow" style={{ color: accent }}>{doubled ? 'Doubled!' : 'Quest Complete'}</div>
-        <h3 className="display text-[18px] mt-1.5" style={{ color: 'var(--text-primary)' }}>{data.title ?? 'Reward earned'}</h3>
+        <p className="eyebrow" style={{ position: 'relative',
+          color: doubled ? 'var(--emerald)' : 'var(--blue-2)' }}>
+          {doubled ? 'Verdoppelt!' : 'Quest abgeschlossen'}
+        </p>
 
-        {/* reward number */}
-        <div className="relative flex items-center justify-center gap-2.5 mt-4 mb-1">
+        <h2 style={{ ...fd, fontSize: 17, fontWeight: 600, marginTop: 7, position: 'relative' }}>
+          {data.title}
+        </h2>
+
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'baseline',
+          justifyContent: 'center', gap: 8, margin: '18px 0 4px' }}>
           {doubled && (
-            <span className="absolute" style={{ top: -8, right: 28, animation: 'qrStamp .5s cubic-bezier(.2,1.5,.4,1) forwards',
-              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#06251f',
-              background: 'linear-gradient(180deg,#6EE7B7,#10B981)', padding: '4px 10px', borderRadius: 999, boxShadow: '0 6px 16px rgba(16,185,129,.5)' }}>×2</span>
+            <span style={{ position: 'absolute', top: -10, right: 14, ...fd, fontSize: 13,
+              fontWeight: 600, color: '#04231a', padding: '3px 10px', borderRadius: 999,
+              background: 'linear-gradient(180deg,#8FF0C0,#22C55E)',
+              boxShadow: '0 6px 16px rgba(34,197,94,.45)' }}>×2</span>
           )}
-          <span className="display tabular-nums" style={{ fontSize: 44, lineHeight: 1,
-            color: doubled ? '#6EE7B7' : '#FCD34D',
-            textShadow: `0 0 22px ${doubled ? 'rgba(52,211,153,.55)' : 'rgba(251,191,36,.5)'}` }}>
-            {display.toLocaleString('en-US')}
+          <span style={{ ...fd, fontSize: 44, fontWeight: 500, lineHeight: 1,
+            color: doubled ? 'var(--emerald)' : '#fff' }}>
+            {display.toLocaleString('de-DE')}
           </span>
-          <span className="display" style={{ fontSize: 16, color: 'var(--violet-bright)' }}>XP</span>
+          <span style={{ ...fd, fontSize: 16, color: 'var(--text-secondary)' }}>XP</span>
         </div>
 
-        {/* actions */}
-        <div className="mt-5 flex flex-col gap-2.5">
-          {phase === 'crediting' || phase === 'loadingAd' ? (
-            <div className="flex items-center justify-center gap-2 py-4" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13 }}>
-              <Loader2 size={16} className="animate-spin" />
-              {phase === 'loadingAd' ? 'Loading ad…' : 'Crediting your reward…'}
-            </div>
-          ) : doubled ? (
-            <button onClick={handleClose}
-              className="press w-full rounded-2xl py-4"
-              style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#06251f',
-                background: 'linear-gradient(180deg,#6EE7B7,#10B981)',
-                boxShadow: '0 6px 0 #047857,0 14px 26px rgba(16,185,129,.45),inset 0 2px 0 rgba(255,255,255,.5)' }}>
-              Claim {display.toLocaleString('en-US')} XP 🎉
-            </button>
-          ) : (
-            <>
-              {adAvailable && (
-                <button onClick={watchAd}
-                  className="press w-full rounded-2xl py-4 flex items-center justify-center gap-2"
-                  style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14.5, color: '#2a1c06',
-                    background: 'linear-gradient(180deg,#FCD34D,#F59E0B)',
-                    boxShadow: '0 6px 0 #b45309,0 14px 26px rgba(245,158,11,.45),inset 0 2px 0 rgba(255,255,255,.5)' }}>
-                  <Play size={17} fill="currentColor" /> Watch ad to double
-                  <span style={{ fontSize: 11, background: 'rgba(0,0,0,.18)', padding: '2px 7px', borderRadius: 999 }}>×2</span>
-                </button>
-              )}
-              <button onClick={handleClose}
-                className="press w-full rounded-[15px] py-3"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13.5,
-                  color: 'var(--violet-bright)', background: 'rgba(139,92,246,.14)', boxShadow: 'inset 0 0 0 1px rgba(139,92,246,.22)' }}>
-                Claim {data.baseXp.toLocaleString('en-US')} XP
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', position: 'relative' }}>
+          {doubled ? 'Bonus gutgeschrieben · zählt auf Season-XP' : 'bereits gutgeschrieben'}
+        </p>
+
+        {busy ? (
+          <div style={{ marginTop: 22, padding: '14px 0', position: 'relative' }}>
+            <div style={{ width: 22, height: 22, margin: '0 auto 10px', borderRadius: '50%',
+              border: '2px solid rgba(255,255,255,.15)', borderTopColor: 'var(--blue-2)',
+              animation: 'ring-spin .8s linear infinite' }} />
+            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {phase === 'loadingAd' ? 'Werbung wird geladen…' : 'Bonus wird gutgeschrieben…'}
+            </p>
+          </div>
+        ) : (
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column',
+            gap: 10, position: 'relative' }}>
+            {!doubled && adAvailable && (
+              <button className="btn-primary press" onClick={watchAd}>
+                <Icon name="tv" size={17} />
+                Werbung ansehen für ×2
               </button>
-            </>
-          )}
-        </div>
+            )}
+            <button
+              className={doubled ? 'btn-primary press' : 'btn-secondary press'}
+              onClick={handleClose}
+              style={doubled ? {
+                background: 'linear-gradient(135deg,#8FF0C0,#22C55E 55%,#15803D)',
+                color: '#04231a',
+                boxShadow: '0 10px 26px rgba(34,197,94,.4), inset 0 1px 0 rgba(255,255,255,.45)',
+              } : { height: 44 }}
+            >
+              Belohnung annehmen
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body
