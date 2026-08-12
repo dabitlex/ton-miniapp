@@ -205,8 +205,9 @@ export default function LeaderboardPage() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="shrink-0 px-5 pt-4 pb-2 animate-rise flex items-start justify-between">
         <div>
-          <h1 className="display-xl text-[24px] text-white leading-none">Arena</h1>
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Global season rankings</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
+            letterSpacing: '-0.02em', color: '#fff' }}>Rangliste</h1>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Season-Wertung</p>
         </div>
         {/* Rewards-Button vorübergehend ausgeblendet (Aug 2026): Die Staffel in
             REWARD_TIERS stammt aus Season 1 und stimmt für Season 2 nicht mehr.
@@ -228,15 +229,17 @@ export default function LeaderboardPage() {
 
       {/* ── Players | Clans Umschalter ─────────────────────────── */}
       <div className="shrink-0 px-5 pb-1.5">
-        <div className="flex gap-1 p-1 rounded-2xl"
-          style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
+        <div className="flex" style={{ gap: 6, padding: 5, borderRadius: 18,
+          background: 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
           {(['players', 'clans'] as const).map((b) => (
             <button key={b} onClick={() => setBoard(b)} className="flex-1 py-2 rounded-xl press"
               style={{
-                fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 700,
-                color:      board === b ? '#0A0A12' : 'var(--text-muted)',
-                background:  board === b ? 'linear-gradient(150deg,#8B5CF6,#5B8DEF)' : 'transparent',
-                boxShadow:  board === b ? '0 5px 14px rgba(139,92,246,0.4)' : 'none',
+                fontFamily: 'var(--font-display)', fontSize: 12.5,
+                fontWeight: board === b ? 500 : 400, borderRadius: 13, padding: '10px 0',
+                color:      board === b ? '#fff' : 'var(--text-secondary)',
+                background: board === b ? 'linear-gradient(135deg,#5B8DFF,#1D4ED8)' : 'transparent',
+                boxShadow:  board === b ? '0 6px 16px rgba(37,99,255,.4)' : 'none',
               }}>
               {b === 'players' ? 'Players' : 'Clans'}
             </button>
@@ -247,21 +250,29 @@ export default function LeaderboardPage() {
       {/* ── Liga-Filter (Season 2) — nur im Players-Board ──────── */}
       {board === 'players' && (
         <div className="shrink-0 px-5 pb-2">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar" style={{ paddingBottom: 2 }}>
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar" style={{ paddingBottom: 2,
+            paddingRight: 26,
+            maskImage: 'linear-gradient(90deg,#000 0,#000 86%,transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(90deg,#000 0,#000 86%,transparent 100%)' }}>
             {([null, 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'legendary'] as (LeagueTier | null)[]).map((lg) => {
               const active = league === lg
-              const label  = lg === null ? '🌐 Global'
-                : lg === 'bronze' ? '🥉 Bronze' : lg === 'silver' ? '🥈 Silver'
-                : lg === 'gold' ? '🥇 Gold' : lg === 'platinum' ? '💠 Platinum'
-                : lg === 'diamond' ? '💎 Diamond' : '👑 Legendary'
+              const label  = lg === null ? 'Global'
+                : lg === 'bronze' ? 'Bronze' : lg === 'silver' ? 'Silber'
+                : lg === 'gold' ? 'Gold' : lg === 'platinum' ? 'Platin'
+                : lg === 'diamond' ? 'Diamant' : 'Legendary'
               return (
                 <button key={lg ?? 'all'} onClick={() => setLeague(lg)} className="press shrink-0"
                   style={{
-                    fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
-                    padding: '7px 12px', borderRadius: 999, whiteSpace: 'nowrap',
-                    color:      active ? '#0A0A12' : 'var(--text-muted)',
-                    background: active ? 'linear-gradient(150deg,#8B5CF6,#5B8DEF)' : 'var(--surface-1)',
-                    boxShadow:  active ? '0 5px 14px rgba(139,92,246,0.4)' : 'inset 0 1px 0 var(--edge-light)',
+                    fontFamily: 'var(--font-display)', fontSize: 11.5,
+                    padding: '8px 13px', borderRadius: 999, whiteSpace: 'nowrap',
+                    color:      active ? '#fff' : 'var(--text-secondary)',
+                    fontWeight: active ? 500 : 400,
+                    background: active
+                      ? 'linear-gradient(135deg,#5B8DFF,#1D4ED8)'
+                      : 'linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.04))',
+                    boxShadow:  active
+                      ? '0 6px 16px rgba(37,99,255,.35)'
+                      : 'inset 0 1px 0 rgba(255,255,255,.20), inset 0 0 0 .5px rgba(255,255,255,.07)',
                     border: 'none',
                   }}>
                   {label}
@@ -440,16 +451,16 @@ function RewardsSheet({ open, onClose, userRank }: { open: boolean; onClose: () 
 // ── Podium pillar ─────────────────────────────────────────────
 function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 | 3 }) {
   const cfg = {
-    1: { ring: 'linear-gradient(135deg,#FBBF24,#F59E0B)', glow: 'rgba(251,191,36,0.55)', size: 64, h: 96, label: '#FBBF24' },
-    2: { ring: 'linear-gradient(135deg,#D1D5DB,#9CA3AF)', glow: 'rgba(209,213,219,0.4)',  size: 52, h: 74, label: '#D1D5DB' },
-    3: { ring: 'linear-gradient(135deg,#E0A06A,#CD7F32)', glow: 'rgba(205,127,50,0.4)',   size: 52, h: 62, label: '#E0A06A' },
+    1: { ring: 'linear-gradient(140deg,#7BA5FF,#1D4ED8)', glow: 'rgba(37,99,255,0.50)',    size: 62, h: 82, label: 'var(--blue-2)' },
+    2: { ring: 'linear-gradient(140deg,rgba(255,255,255,.28),rgba(255,255,255,.10))', glow: 'rgba(255,255,255,0.14)', size: 50, h: 56, label: 'var(--text-secondary)' },
+    3: { ring: 'linear-gradient(140deg,rgba(255,255,255,.22),rgba(255,255,255,.08))', glow: 'rgba(255,255,255,0.10)', size: 50, h: 42, label: 'var(--text-secondary)' },
   }[place]
 
   const relicTier = entry.relicTier as string | null
 
   return (
     <div className="flex flex-col items-center flex-1 max-w-[110px]">
-      {place === 1 && <Crown size={20} fill="#FBBF24" style={{ color: '#FBBF24', filter: 'drop-shadow(0 0 8px rgba(251,191,36,0.7))', marginBottom: 2 }} />}
+      {place === 1 && <Crown size={18} fill="var(--gold)" style={{ color: 'var(--gold)', filter: 'drop-shadow(0 0 8px rgba(255,210,122,0.6))', marginBottom: 2 }} />}
       <div className="rounded-full p-[2.5px] animate-pop" style={{ background: cfg.ring, boxShadow: `0 0 18px ${cfg.glow}` }}>
         <div className="rounded-full p-[2px]" style={{ background: 'var(--bg-void)' }}>
           <TelegramAvatar photoUrl={entry.photoUrl ?? null} firstName={entry.firstName} size={cfg.size} />
@@ -463,18 +474,22 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
         {entry.isFounder && <FounderBadge size={11} />}
         {relicTier && <RelicGem tier={relicTier} size={10} />}
       </div>
-      <p className="text-[11px] font-extrabold tabular-nums" style={{ color: cfg.label, fontFamily: 'var(--font-display)' }}>
-        {entry.seasonXp.toLocaleString()}
+      <p className="tabular-nums" style={{ color: cfg.label, fontFamily: 'var(--font-display)',
+        fontSize: place === 1 ? 14 : 12.5, fontWeight: 500, marginTop: 2 }}>
+        {entry.seasonXp.toLocaleString('de-DE')}
       </p>
       <div className="w-full rounded-t-2xl mt-2 flex items-start justify-center pt-2"
         style={{
           height: cfg.h,
+          flexShrink: 0,
+          borderRadius: '16px 16px 0 0',
           background: place === 1
-            ? 'linear-gradient(180deg, rgba(251,191,36,0.18), rgba(251,191,36,0.02))'
-            : 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.01))',
-          boxShadow: 'inset 0 1px 0 var(--edge-light)',
+            ? 'linear-gradient(150deg, rgba(91,141,255,0.30), rgba(37,99,255,0.12))'
+            : 'linear-gradient(150deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20), inset 0 0 0 .5px rgba(255,255,255,0.07)',
         }}>
-        <span className="display-xl text-lg" style={{ color: cfg.label }}>{place}</span>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: place === 1 ? 20 : 17,
+          fontWeight: 500, color: cfg.label }}>{place}</span>
       </div>
     </div>
   )
@@ -489,12 +504,17 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
     <div ref={ref}
       className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl"
       style={{
-        background: me ? 'linear-gradient(135deg, rgba(139,92,246,0.16), rgba(91,141,239,0.06))' : 'var(--surface-1)',
-        boxShadow: me ? 'inset 0 0 0 1px rgba(167,139,250,0.35)' : 'inset 0 1px 0 var(--edge-soft)',
+        background: me
+          ? 'linear-gradient(150deg, rgba(91,141,255,0.30), rgba(37,99,255,0.14))'
+          : 'linear-gradient(150deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))',
+        boxShadow: me
+          ? 'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 0 0 .5px rgba(143,180,255,0.35)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.14), inset 0 0 0 .5px rgba(255,255,255,0.06)',
       }}>
 
-      <span className="w-7 text-center text-[13px] font-extrabold tabular-nums shrink-0"
-        style={{ color: me ? 'var(--violet-bright)' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
+      <span className="w-7 text-center tabular-nums shrink-0"
+        style={{ color: me ? 'var(--blue-2)' : 'var(--text-muted)',
+          fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 500 }}>
         {entry.rank}
       </span>
 
@@ -502,13 +522,15 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-semibold truncate" style={{ color: me ? '#DDD6FE' : 'var(--text-primary)' }}>
+          <span className="truncate" style={{ fontFamily: 'var(--font-display)', fontSize: 13.5,
+            fontWeight: me ? 600 : 500, color: 'var(--text-primary)' }}>
             {entry.firstName}
           </span>
           {me && (
-            <span className="shrink-0 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md"
-              style={{ color: '#C4B5FD', background: 'rgba(167,139,250,0.18)', fontFamily: 'var(--font-display)' }}>
-              YOU
+            <span className="shrink-0" style={{ fontSize: 8.5, fontWeight: 500, padding: '2px 7px',
+              borderRadius: 999, color: '#fff', background: 'rgba(37,99,255,0.55)',
+              fontFamily: 'var(--font-display)' }}>
+              DU
             </span>
           )}
           {/* Founder-Badge + Relic gem neben dem Namen */}
@@ -520,9 +542,10 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
         )}
       </div>
 
-      <span className="text-sm font-extrabold tabular-nums shrink-0"
-        style={{ color: me ? 'white' : 'var(--text-secondary)', fontFamily: 'var(--font-display)' }}>
-        {entry.seasonXp.toLocaleString()}
+      <span className="tabular-nums shrink-0"
+        style={{ color: me ? '#fff' : 'var(--text-secondary)', fontFamily: 'var(--font-display)',
+          fontSize: 13.5, fontWeight: 500 }}>
+        {entry.seasonXp.toLocaleString('de-DE')}
       </span>
     </div>
   )
