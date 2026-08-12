@@ -1,6 +1,6 @@
 // src/components/ui/Icon.tsx
 // Linien-Icon-Set fuer das Redesign 2.0.
-// Ein einziger Satz, damit alle Screens dieselbe Strichstaerke und
+// Ein einziger Satz, damit alle Screens dieselbe Strichstaerke und 
 // Rundung teilen — ersetzt die bisher gemischten Emojis und lucide-Icons.
 'use client'
 
