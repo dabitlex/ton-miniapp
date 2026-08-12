@@ -1,4 +1,4 @@
-// src/app/(game)/home/page.tsx — VEXALGO 2.0
+// src/app/(game)/home/page.tsx — VEXALGO 2.0 
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
