@@ -73,8 +73,8 @@ export default function ProfilePage() {
   const refEligible = !!refData?.referralEligible || profile.referralEligible
   const referralSub = refEligible
     ? refData?.nextMilestone
-      ? `${refData.validReferrals ?? 0} confirmed · next reward at ${refData.nextMilestone.threshold}`
-      : `${refData?.validReferrals ?? 0} confirmed · +500 XP per friend`
+      ? `${refData.validReferrals ?? 0} bestätigt · nächster Bonus bei ${refData.nextMilestone.threshold}`
+      : `${refData?.validReferrals ?? 0} bestätigt · +500 XP je Freund`
     : 'Locked · 3 steps to unlock'
 
   const lowEnergy = energy.current < 20
@@ -94,9 +94,8 @@ export default function ProfilePage() {
             <svg viewBox="0 0 112 112" className="absolute inset-0 -rotate-90">
               <defs>
                 <linearGradient id="pf-ring-g" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%"   stopColor="#8B5CF6" />
-                  <stop offset="55%"  stopColor="#5B8DEF" />
-                  <stop offset="100%" stopColor="#5EEAD4" />
+                  <stop offset="0%"   stopColor="#9CC0FF" />
+                  <stop offset="100%" stopColor="#2563FF" />
                 </linearGradient>
               </defs>
               <circle cx="56" cy="56" r={RING_R} fill="none"
@@ -106,11 +105,11 @@ export default function ProfilePage() {
                 strokeDasharray={RING_C} strokeDashoffset={dashOffset}
                 style={{
                   transition: 'stroke-dashoffset 1.1s var(--ease-out) 0.25s',
-                  filter: 'drop-shadow(0 0 6px rgba(139,92,246,0.55))',
+                  filter: 'drop-shadow(0 0 6px rgba(37,99,255,0.50))',
                 }} />
             </svg>
             <div className="absolute inset-[11px] rounded-full overflow-hidden"
-              style={{ background: '#1A1530', boxShadow: 'inset 0 0 0 2px var(--bg-void), 0 10px 30px rgba(124,58,237,0.35)' }}>
+              style={{ background: '#111A2E', boxShadow: 'inset 0 0 0 2px var(--bg-void), 0 10px 30px rgba(37,99,255,0.35)' }}>
               <TelegramAvatar
                 photoUrl={profile.telegramPhotoUrl}
                 firstName={profile.telegramFirstName}
@@ -121,27 +120,29 @@ export default function ProfilePage() {
 
           {/* Level chip */}
           <div className="-mt-[13px] relative z-[2] px-3 py-[5px] rounded-full"
-            style={{ background: 'var(--aurora)', boxShadow: '0 4px 14px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.25)' }}>
-            <span className="text-[11px] font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-              LEVEL {profile.level}
+            style={{ background: 'linear-gradient(135deg,#5B8DFF,#1D4ED8)',
+              boxShadow: '0 6px 16px rgba(37,99,255,0.45), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-display)' }}>
+              Level {profile.level}
             </span>
           </div>
 
-          <h1 className="display text-[21px] text-white leading-tight mt-3">
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
+            letterSpacing: '-0.02em', color: '#fff', marginTop: 12 }}>
             {profile.telegramFirstName} {profile.telegramLastName ?? ''}
           </h1>
           {profile.telegramUsername && (
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>@{profile.telegramUsername}</p>
           )}
           <p className="text-[11px] mt-[7px]" style={{ color: 'var(--text-muted)' }}>
-            <b className="font-bold" style={{ color: 'var(--violet-bright)' }}>{toNext.toLocaleString()} XP</b>
-            {' '}to Level {profile.level + 1} · {pct}%
+            <b style={{ fontWeight: 500, color: 'var(--blue-2)' }}>{toNext.toLocaleString('de-DE')} XP</b>
+            {' '}bis Level {profile.level + 1} · {pct}%
           </p>
 
           {/* Founding member badge */}
           {profile.isFounder && (
             <div className="mt-2.5 inline-flex items-center gap-1.5 px-[11px] py-[5px] rounded-full"
-              style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.40)' }}>
+              style={{ background: 'rgba(255,210,122,0.12)', border: '1px solid rgba(255,210,122,0.35)' }}>
               <svg width={12} height={12} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                 <defs>
                   <linearGradient id="pf-founder-g" x1="0" y1="0" x2="1" y2="1">
@@ -155,9 +156,9 @@ export default function ProfilePage() {
                 <path d="M12 6.2 L13.5 10 L17.5 10.2 L14.4 12.7 L15.4 16.6 L12 14.4 L8.6 16.6 L9.6 12.7 L6.5 10.2 L10.5 10 Z"
                       fill="#fff" opacity="0.95" />
               </svg>
-              <span className="text-[10px] font-extrabold tracking-wide"
-                style={{ color: '#FCD34D', fontFamily: 'var(--font-display)' }}>
-                FOUNDING MEMBER
+              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.04em',
+                color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>
+                Founding Member
               </span>
             </div>
           )}
@@ -169,33 +170,31 @@ export default function ProfilePage() {
         style={{
           animationDelay: '80ms',
           gridTemplateColumns: '1.25fr 1fr 1fr',
-          background: 'linear-gradient(160deg, rgba(139,92,246,0.13), rgba(91,141,239,0.07) 60%, rgba(255,255,255,0.03))',
-          boxShadow: 'inset 0 1px 0 var(--edge-light), var(--shadow-md)',
+          background: 'linear-gradient(150deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0.035) 100%)',
+          backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 0 0 .5px rgba(255,255,255,0.10), var(--shadow-md)',
         }}>
         {[
-          { value: profile.xpTotal.toLocaleString(), label: 'Total XP', hero: true },
-          { value: profile.seasonXp.toLocaleString(), label: 'Season XP', hero: false },
-          { value: `${profile.streakCurrent}d 🔥`, label: 'Streak', hero: false, tint: '#FB923C' },
+          { value: profile.xpTotal.toLocaleString('de-DE'), label: 'Total XP', hero: true },
+          { value: profile.seasonXp.toLocaleString('de-DE'), label: 'Season XP', hero: false },
+          { value: `${profile.streakCurrent}`, label: 'Streak', hero: false, tint: 'var(--gold)' },
         ].map(({ value, label, hero, tint }, i) => (
           <div key={label} className="relative px-1.5 pt-[15px] pb-[13px] text-center">
             {i > 0 && (
               <div className="absolute left-0 top-[18%] bottom-[18%] w-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
             )}
-            <div className="font-extrabold tabular-nums leading-[1.05]"
+            <div className="tabular-nums leading-[1.05]"
               style={{
-                fontFamily: 'var(--font-display)',
-                letterSpacing: '-0.02em',
+                fontFamily: 'var(--font-display)', fontWeight: 500,
+                letterSpacing: '-0.025em',
                 fontSize: hero
                   ? (String(value).length > 7 ? 19 : 23)
                   : (String(value).length > 7 ? 14 : 17),
-                ...(hero
-                  ? { background: 'var(--aurora-text)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
-                  : { color: tint ?? '#fff' }),
+                ...(hero ? { color: 'var(--blue-2)' } : { color: tint ?? '#fff' }),
               }}>
               {value}
             </div>
-            <div className="text-[9.5px] font-bold uppercase mt-1"
-              style={{ letterSpacing: '0.10em', color: tint ?? 'var(--text-faint)' }}>
+            <div style={{ fontSize: 10, marginTop: 4, color: 'var(--text-muted)' }}>
               {label}
             </div>
           </div>
@@ -279,7 +278,8 @@ export default function ProfilePage() {
                 <Trophy size={18} style={{ color: '#FBBF24' }} strokeWidth={1.8} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Achievements</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
+                  color: 'var(--text-primary)' }}>Achievements</p>
                 <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
                   View your unlocked achievements
                 </p>
@@ -324,27 +324,27 @@ export default function ProfilePage() {
               sub: walletSub,
               dot: walletConnected ? 'var(--emerald)' : null,
               dotGlow: 'rgba(52,211,153,0.6)',
-              icon: <Wallet size={18} style={{ color: '#5EEAD4' }} strokeWidth={1.8} />,
+              icon: <Wallet size={18} style={{ color: 'var(--text-primary)' }} strokeWidth={1.6} />,
               iconBg: 'rgba(94,234,212,0.10)',
               iconRing: 'rgba(94,234,212,0.20)',
             },
             {
               id: 'referral' as const,
-              title: 'Invite Friends',
+              title: 'Freunde einladen',
               sub: referralSub,
               dot: refEligible ? 'var(--gold)' : null,
               dotGlow: 'rgba(251,191,36,0.5)',
-              icon: <Users size={18} style={{ color: '#A78BFA' }} strokeWidth={1.8} />,
+              icon: <Users size={18} style={{ color: 'var(--text-primary)' }} strokeWidth={1.6} />,
               iconBg: 'rgba(139,92,246,0.12)',
               iconRing: 'rgba(139,92,246,0.22)',
             },
             {
               id: 'settings' as const,
-              title: 'Settings',
-              sub: 'Notifications & preferences',
+              title: 'Einstellungen',
+              sub: 'Benachrichtigungen & Einstellungen',
               dot: null,
               dotGlow: '',
-              icon: <Settings size={18} style={{ color: 'rgba(255,255,255,0.55)' }} strokeWidth={1.8} />,
+              icon: <Settings size={18} style={{ color: 'var(--text-primary)' }} strokeWidth={1.6} />,
               iconBg: 'var(--surface-2)',
               iconRing: 'transparent',
             },
@@ -360,7 +360,8 @@ export default function ProfilePage() {
                 {icon}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{title}</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
+                  color: 'var(--text-primary)' }}>{title}</p>
                 <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
                   {dot && (
                     <span className="inline-block w-1.5 h-1.5 rounded-full mr-[5px] align-[1px]"
