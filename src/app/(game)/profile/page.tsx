@@ -1,12 +1,16 @@
-// src/app/(game)/profile/page.tsx — Redesigned (Aurora OS · Identity Center 2.0)
-// Hero with XP ring · tiered stats · progressive disclosure via bottom sheets
+// src/app/(game)/profile/page.tsx — VEXALGO 2.0
+// Aufbau nach Design-Vorschau:
+//   Kopf (Avatar im XP-Ring links, Name + Chips rechts)
+//   Kennzahlen-Karte (Total XP · Season XP · Bester Streak) + XP-Sparkline
+//   Abschnitt "Fortschritt": Achievements · XP-Verlauf · Relics
+//   Abschnitt "Konto": Wallet · Freunde einladen · Einstellungen
+// Datenanbindung und Sheets sind unveraendert uebernommen.
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter }       from 'next/navigation'
 import { useQuery }        from '@tanstack/react-query'
 import { useUserStore }    from '@/stores/useUserStore'
 import { useAuthStore }    from '@/stores/useAuthStore'
-import { useEnergy }       from '@/features/hooks'
 import { xpForLevel }      from '@/lib/constants/game'
 import { TelegramAvatar }  from '@/components/layout/GameHeader'
 import { WalletConnect }   from '@/components/ton/WalletConnect'
@@ -15,36 +19,91 @@ import { NotificationSettings } from '@/components/game/NotificationSettings'
 import { BottomSheet }     from '@/components/ui/BottomSheet'
 import { XpHistorySheet }  from '@/components/game/XpHistorySheet'
 import { formatNumber }    from '@/lib/utils'
-import { Wallet, Users, Settings, ChevronRight, Flame, Zap, TrendingUp, Trophy, History } from 'lucide-react'
+import { Icon, IconTile, type IconName } from '@/components/ui/Icon'
 
 type SheetId = 'wallet' | 'referral' | 'settings' | 'activity' | null
 
-const RING_R = 52
-const RING_C = 2 * Math.PI * RING_R // ≈ 326.7
+const RING_R = 35
+const RING_C = 2 * Math.PI * RING_R
+const fd: React.CSSProperties = { fontFamily: 'var(--font-display)' }
+
+/** Zeile in den Abschnitts-Listen */
+function Row({
+  icon, title, sub, right, onClick, last = false,
+}: {
+  icon: IconName; title: string; sub?: string
+  right?: React.ReactNode; onClick: () => void; last?: boolean
+}) {
+  return (
+    <>
+      <button onClick={onClick} className="w-full flex items-center text-left press"
+        style={{ gap: 13, padding: '13px 0', background: 'none', border: 'none' }}>
+        <IconTile name={icon} size={36} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ ...fd, fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{title}</p>
+          {sub && (
+            <p className="truncate" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</p>
+          )}
+        </div>
+        {right}
+        <Icon name="chevronRight" size={15} strokeWidth={1.8}
+          style={{ color: 'var(--text-faint)', marginLeft: 8 }} />
+      </button>
+      {!last && <div className="hairline" />}
+    </>
+  )
+}
 
 export default function ProfilePage() {
   const profile = useUserStore(s => s.profile)
   const router  = useRouter()
   const token   = useAuthStore(s => s.accessToken)
-  const energy  = useEnergy()
   const [sheet, setSheet]   = useState<SheetId>(null)
   const [ringIn, setRingIn] = useState(false)
 
-  // Same query key/options as ReferralSection → deduped by React Query
+  // Gleicher Query-Key wie ReferralSection -> von React Query dedupliziert
   const { data: refData } = useQuery({
     queryKey: ['referrals'],
     enabled:  !!token,
     staleTime: 60_000,
     queryFn:  async () => {
-      const res  = await fetch('/api/v1/referrals', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res  = await fetch('/api/v1/referrals', { headers: { Authorization: `Bearer ${token}` } })
       const json = await res.json()
       return json.success ? json.data : null
     },
   })
 
-  // Animate XP ring in after mount
+  // Sparkline: die letzten XP-Eintraege nach Tagen buendeln.
+  // Nutzt den bestehenden Endpunkt — kein neuer Server-Code noetig.
+  const { data: trend } = useQuery<number[]>({
+    queryKey: ['xp-trend'],
+    enabled:  !!token,
+    staleTime: 300_000,
+    queryFn:  async () => {
+      const res  = await fetch('/api/v1/users/xp-history?limit=100', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json().catch(() => null)
+      const entries: { createdAt: string; xp: number }[] = json?.success ? (json.data?.entries ?? []) : []
+      if (!entries.length) return []
+
+      // 14 Tagesbuckets, aeltester zuerst
+      const days = 14
+      const today = new Date()
+      const key = (d: Date) => d.toISOString().slice(0, 10)
+      const buckets = new Map<string, number>()
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today); d.setUTCDate(d.getUTCDate() - i)
+        buckets.set(key(d), 0)
+      }
+      for (const e of entries) {
+        const k = (e.createdAt ?? '').slice(0, 10)
+        if (buckets.has(k)) buckets.set(k, (buckets.get(k) ?? 0) + (Number(e.xp) || 0))
+      }
+      return Array.from(buckets.values())
+    },
+  })
+
   useEffect(() => {
     const raf = requestAnimationFrame(() => setRingIn(true))
     return () => cancelAnimationFrame(raf)
@@ -53,339 +112,171 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="px-5 pt-5 space-y-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-20 shimmer" />
-        ))}
+        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 shimmer" />)}
       </div>
     )
   }
 
-  // XP progress (same logic as XPBar)
-  const needed = xpForLevel(Math.min(profile.level, 29))
-  const pct    = Math.min(100, Math.round((profile.xpCurrentLevel / needed) * 100))
-  const toNext = Math.max(0, needed - profile.xpCurrentLevel)
+  const needed     = xpForLevel(Math.min(profile.level, 29))
+  const pct        = Math.min(100, Math.round((profile.xpCurrentLevel / needed) * 100))
   const dashOffset = RING_C * (1 - (ringIn ? pct : 0) / 100)
 
-  // Row sublines
   const walletConnected = !!profile.wallet && profile.wallet.status === 'connected'
-  const walletSub = walletConnected ? 'Connected' : 'Not connected'
+  const walletAddr = walletConnected && profile.wallet?.address
+    ? `${profile.wallet.address.slice(0, 4)}…${profile.wallet.address.slice(-4)}`
+    : 'Nicht verbunden'
 
   const refEligible = !!refData?.referralEligible || profile.referralEligible
   const referralSub = refEligible
-    ? refData?.nextMilestone
-      ? `${refData.validReferrals ?? 0} bestätigt · nächster Bonus bei ${refData.nextMilestone.threshold}`
-      : `${refData?.validReferrals ?? 0} bestätigt · +500 XP je Freund`
-    : 'Locked · 3 steps to unlock'
+    ? `${refData?.invitedCount ?? 0} geworben · ${refData?.validReferrals ?? 0} bestätigt`
+    : 'Gesperrt · 3 Schritte zum Freischalten'
 
-  const lowEnergy = energy.current < 20
+  const hasTrend = !!trend && trend.some(v => v > 0)
+  const trendMax = hasTrend ? Math.max(...trend!, 1) : 1
+  const trendPct = hasTrend && trend!.length >= 4
+    ? (() => {
+        const half = Math.floor(trend!.length / 2)
+        const a = trend!.slice(0, half).reduce((x, y) => x + y, 0)
+        const b = trend!.slice(half).reduce((x, y) => x + y, 0)
+        return a > 0 ? Math.round(((b - a) / a) * 100) : null
+      })()
+    : null
 
   return (
-    <div className="overflow-y-auto pb-8 relative z-10">
+    <div className="overflow-y-auto relative z-10" style={{ padding: '26px 20px 24px' }}>
 
-      {/* ── Identity hero — avatar + XP ring fused ─────────────── */}
-      <div className="relative px-5 pt-[18px] pb-1 animate-rise">
-        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-[300px] h-[170px] pointer-events-none"
-          style={{ background: 'radial-gradient(60% 100% at 50% 0%, rgba(139,92,246,0.20), transparent 70%)' }} />
-
-        <div className="relative flex flex-col items-center text-center">
-
-          {/* XP ring */}
-          <div className="relative w-[112px] h-[112px]">
-            <svg viewBox="0 0 112 112" className="absolute inset-0 -rotate-90">
-              <defs>
-                <linearGradient id="pf-ring-g" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%"   stopColor="#9CC0FF" />
-                  <stop offset="100%" stopColor="#2563FF" />
-                </linearGradient>
-              </defs>
-              <circle cx="56" cy="56" r={RING_R} fill="none"
-                stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
-              <circle cx="56" cy="56" r={RING_R} fill="none"
-                stroke="url(#pf-ring-g)" strokeWidth="5" strokeLinecap="round"
-                strokeDasharray={RING_C} strokeDashoffset={dashOffset}
-                style={{
-                  transition: 'stroke-dashoffset 1.1s var(--ease-out) 0.25s',
-                  filter: 'drop-shadow(0 0 6px rgba(37,99,255,0.50))',
-                }} />
-            </svg>
-            <div className="absolute inset-[11px] rounded-full overflow-hidden"
-              style={{ background: '#111A2E', boxShadow: 'inset 0 0 0 2px var(--bg-void), 0 10px 30px rgba(37,99,255,0.35)' }}>
-              <TelegramAvatar
-                photoUrl={profile.telegramPhotoUrl}
-                firstName={profile.telegramFirstName}
-                size={90}
-              />
-            </div>
+      {/* Kopf: Avatar im XP-Ring + Name */}
+      <div className="flex items-center animate-rise" style={{ gap: 16, marginBottom: 20 }}>
+        <div style={{ position: 'relative', width: 78, height: 78, flexShrink: 0 }}>
+          <svg viewBox="0 0 78 78" style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
+            <defs>
+              <linearGradient id="pf-ring-g" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#9CC0FF" /><stop offset="100%" stopColor="#2563FF" />
+              </linearGradient>
+            </defs>
+            <circle cx="39" cy="39" r={RING_R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="4" />
+            <circle cx="39" cy="39" r={RING_R} fill="none" stroke="url(#pf-ring-g)" strokeWidth="4"
+              strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={dashOffset}
+              style={{ transition: 'stroke-dashoffset 1.1s var(--ease-out) 0.25s' }} />
+          </svg>
+          <div style={{ position: 'absolute', inset: 8, borderRadius: '50%', overflow: 'hidden' }}>
+            <TelegramAvatar photoUrl={profile.telegramPhotoUrl}
+              firstName={profile.telegramFirstName} size={62} />
           </div>
-
-          {/* Level chip */}
-          <div className="-mt-[13px] relative z-[2] px-3 py-[5px] rounded-full"
-            style={{ background: 'linear-gradient(135deg,#5B8DFF,#1D4ED8)',
-              boxShadow: '0 6px 16px rgba(37,99,255,0.45), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
-            <span style={{ fontSize: 11, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-display)' }}>
-              Level {profile.level}
-            </span>
+          <div style={{ position: 'absolute', right: -2, bottom: -2, borderRadius: 11,
+            padding: '2px 8px', fontSize: 11, fontFamily: 'var(--font-display)', fontWeight: 500,
+            background: 'linear-gradient(135deg,#7BA5FF,#1D4ED8)',
+            border: '3px solid var(--bg-void)' }}>
+            {profile.level}
           </div>
+        </div>
 
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
-            letterSpacing: '-0.02em', color: '#fff', marginTop: 12 }}>
-            {profile.telegramFirstName} {profile.telegramLastName ?? ''}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 className="truncate" style={{ ...fd, fontSize: 21, fontWeight: 600, letterSpacing: '-0.02em' }}>
+            {profile.telegramFirstName}
           </h1>
-          {profile.telegramUsername && (
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>@{profile.telegramUsername}</p>
-          )}
-          <p className="text-[11px] mt-[7px]" style={{ color: 'var(--text-muted)' }}>
-            <b style={{ fontWeight: 500, color: 'var(--blue-2)' }}>{toNext.toLocaleString('de-DE')} XP</b>
-            {' '}bis Level {profile.level + 1} · {pct}%
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+            {profile.telegramUsername ? `@${profile.telegramUsername}` : 'Kein Benutzername'}
           </p>
-
-          {/* Founding member badge */}
-          {profile.isFounder && (
-            <div className="mt-2.5 inline-flex items-center gap-1.5 px-[11px] py-[5px] rounded-full"
-              style={{ background: 'rgba(255,210,122,0.12)', border: '1px solid rgba(255,210,122,0.35)' }}>
-              <svg width={12} height={12} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-                <defs>
-                  <linearGradient id="pf-founder-g" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%"   stopColor="#FBBF24" />
-                    <stop offset="55%"  stopColor="#A78BFA" />
-                    <stop offset="100%" stopColor="#8B5CF6" />
-                  </linearGradient>
-                </defs>
-                <path d="M12 1 L21 6.5 L21 17.5 L12 23 L3 17.5 L3 6.5 Z"
-                      fill="url(#pf-founder-g)" stroke="#FCD34D" strokeWidth="1" />
-                <path d="M12 6.2 L13.5 10 L17.5 10.2 L14.4 12.7 L15.4 16.6 L12 14.4 L8.6 16.6 L9.6 12.7 L6.5 10.2 L10.5 10 Z"
-                      fill="#fff" opacity="0.95" />
-              </svg>
-              <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.04em',
-                color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>
+          <div className="flex items-center" style={{ gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
+            {profile.isFounder && (
+              <span className="chip" style={{ height: 25, fontSize: 10.5, color: 'var(--gold)' }}>
                 Founding Member
               </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Hero stat band — Total XP · Season XP · Streak ─────── */}
-      <div className="mx-5 mt-[18px] rounded-[22px] relative overflow-hidden grid items-stretch animate-rise"
-        style={{
-          animationDelay: '80ms',
-          gridTemplateColumns: '1.25fr 1fr 1fr',
-          background: 'linear-gradient(150deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0.035) 100%)',
-          backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 0 0 .5px rgba(255,255,255,0.10), var(--shadow-md)',
-        }}>
-        {[
-          { value: profile.xpTotal.toLocaleString('de-DE'), label: 'Total XP', hero: true },
-          { value: profile.seasonXp.toLocaleString('de-DE'), label: 'Season XP', hero: false },
-          { value: `${profile.streakCurrent}`, label: 'Streak', hero: false, tint: 'var(--gold)' },
-        ].map(({ value, label, hero, tint }, i) => (
-          <div key={label} className="relative px-1.5 pt-[15px] pb-[13px] text-center">
-            {i > 0 && (
-              <div className="absolute left-0 top-[18%] bottom-[18%] w-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
             )}
-            <div className="tabular-nums leading-[1.05]"
-              style={{
-                fontFamily: 'var(--font-display)', fontWeight: 500,
-                letterSpacing: '-0.025em',
-                fontSize: hero
-                  ? (String(value).length > 7 ? 19 : 23)
-                  : (String(value).length > 7 ? 14 : 17),
-                ...(hero ? { color: 'var(--blue-2)' } : { color: tint ?? '#fff' }),
-              }}>
-              {value}
-            </div>
-            <div style={{ fontSize: 10, marginTop: 4, color: 'var(--text-muted)' }}>
-              {label}
-            </div>
+            <span className="chip" style={{ height: 25, fontSize: 10.5, textTransform: 'capitalize' }}>
+              {profile.league}
+            </span>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* ── Secondary stat strip — Energy · Today XP · Best ────── */}
-      <div className="mx-5 mt-2.5 grid grid-cols-3 gap-2 animate-rise" style={{ animationDelay: '140ms' }}>
-        {[
-          {
-            icon: <Zap size={14} fill={lowEnergy ? '#FB7185' : '#5EEAD4'} style={{ color: lowEnergy ? '#FB7185' : '#5EEAD4' }} />,
-            value: <>{energy.current}<span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>/100</span></>,
-            tint: lowEnergy ? 'var(--rose)' : 'var(--cyan-accent)',
-            label: 'Energy',
-          },
-          {
-            icon: <TrendingUp size={14} style={{ color: '#34D399' }} />,
-            value: `+${profile.xpEarnedToday.toLocaleString()}`,
-            tint: 'var(--emerald)',
-            label: 'Today XP',
-          },
-          {
-            icon: <Trophy size={14} style={{ color: '#FBBF24' }} />,
-            value: `${profile.streakLongest}d`,
-            tint: 'var(--gold)',
-            label: 'Best Streak',
-          },
-        ].map(({ icon, value, tint, label }) => (
-          <div key={label} className="rounded-2xl min-h-[44px] px-2 py-[9px] flex items-center justify-center gap-[7px]"
-            style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
-            <span className="shrink-0">{icon}</span>
-            <div className="min-w-0">
-              <span className="block text-[13px] font-bold tabular-nums leading-tight"
-                style={{ fontFamily: 'var(--font-display)', color: tint }}>
-                {value}
-              </span>
-              <span className="block text-[9px] font-semibold mt-px" style={{ color: 'var(--text-faint)', letterSpacing: '0.04em' }}>
-                {label}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Clan ───────────────────────────────────────────────── */}
-      {profile.clan && (
-        <div className="mx-5 mt-[18px] rounded-[20px] px-[15px] py-[13px] flex items-center gap-3 animate-rise"
-          style={{
-            animationDelay: '200ms',
-            background: 'linear-gradient(120deg, var(--surface-accent), var(--surface-1))',
-            boxShadow: 'inset 0 1px 0 var(--edge-soft), inset 0 0 0 1px rgba(139,92,246,0.14)',
-          }}>
-          <div className="w-[38px] h-[38px] rounded-[13px] flex items-center justify-center text-lg shrink-0"
-            style={{ background: 'rgba(139,92,246,0.14)', boxShadow: 'inset 0 0 0 1px rgba(139,92,246,0.22)' }}>
-            🛡️
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold truncate" style={{ color: '#DDD6FE' }}>{(profile.clan as any).name}</p>
-            <p className="text-[11px] mt-px" style={{ color: 'var(--text-muted)' }}>
-              {profile.clan.role === 'leader' ? '👑 Leader' : profile.clan.role === 'officer' ? '⚔️ Officer' : '🎮 Member'}
+      {/* Kennzahlen + Sparkline */}
+      <div className="surface animate-rise" style={{ padding: 18, animationDelay: '60ms' }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: hasTrend ? 15 : 0 }}>
+          <div>
+            <p style={{ ...fd, fontSize: 21, fontWeight: 500, color: 'var(--blue-2)' }}>
+              {formatNumber(profile.xpTotal)}
             </p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Total XP</p>
           </div>
-          <span className="text-[12px] font-bold whitespace-nowrap"
-            style={{ color: 'var(--violet-bright)', fontFamily: 'var(--font-display)' }}>
-            ⭐ {formatNumber((profile.clan as any).seasonXp ?? 0)}
-          </span>
-        </div>
-      )}
-
-      {/* ── Achievements — nur sichtbar wenn Feature-Flag aktiv ──── */}
-      {profile?.achievementsEnabled && (
-        <div className="mx-5 mt-6 animate-rise" style={{ animationDelay: '240ms' }}>
-          <h3 className="eyebrow mb-2.5">Progress</h3>
-          <div className="rounded-[22px] overflow-hidden" style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
-            <button
-              onClick={() => router.push('/achievements')}
-              className="w-full flex items-center gap-[13px] px-4 py-[15px] min-h-[60px] text-left transition-colors active:bg-white/[0.025]"
-            >
-              <div className="w-[38px] h-[38px] rounded-[13px] shrink-0 flex items-center justify-center"
-                style={{ background: 'rgba(251,191,36,0.12)', boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.22)' }}>
-                <Trophy size={18} style={{ color: '#FBBF24' }} strokeWidth={1.8} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
-                  color: 'var(--text-primary)' }}>Achievements</p>
-                <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
-                  View your unlocked achievements
-                </p>
-              </div>
-              <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-faint)' }} />
-            </button>
+          <div style={{ width: 0.5, height: 34, background: 'rgba(255,255,255,0.12)' }} />
+          <div>
+            <p style={{ ...fd, fontSize: 21, fontWeight: 500 }}>{formatNumber(profile.seasonXp)}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Season XP</p>
+          </div>
+          <div style={{ width: 0.5, height: 34, background: 'rgba(255,255,255,0.12)' }} />
+          <div>
+            <p style={{ ...fd, fontSize: 21, fontWeight: 500 }}>{profile.streakLongest}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Best Streak</p>
           </div>
         </div>
-      )}
 
-      {/* ── Activity — XP history (live) ───────────────────────── */}
-      <div className="mx-5 mt-6 animate-rise" style={{ animationDelay: '250ms' }}>
-        <h3 className="eyebrow mb-2.5">Activity</h3>
-        <div className="rounded-[22px] overflow-hidden" style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
-          <button
-            onClick={() => setSheet('activity')}
-            className="w-full flex items-center gap-[13px] px-4 py-[15px] min-h-[60px] text-left transition-colors active:bg-white/[0.025]"
-          >
-            <div className="w-[38px] h-[38px] rounded-[13px] shrink-0 flex items-center justify-center"
-              style={{ background: 'rgba(139,92,246,0.12)', boxShadow: 'inset 0 0 0 1px rgba(139,92,246,0.22)' }}>
-              <History size={18} style={{ color: '#A78BFA' }} strokeWidth={1.8} />
+        {hasTrend && (
+          <>
+            <div className="hairline" style={{ marginBottom: 14 }} />
+            <div className="flex items-center justify-between">
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>XP der letzten 14 Tage</p>
+              {trendPct !== null && (
+                <span style={{ fontSize: 10.5, color: trendPct >= 0 ? 'var(--emerald)' : 'var(--rose)' }}>
+                  {trendPct >= 0 ? '▲' : '▼'} {Math.abs(trendPct)}%
+                </span>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>XP History</p>
-              <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
-                See when and where your XP came from
-              </p>
+            <div className="flex items-end" style={{ gap: 2.5, height: 28, marginTop: 11 }}>
+              {trend!.map((v, i) => (
+                <span key={i} style={{
+                  width: 5, borderRadius: 2,
+                  height: `${Math.max(8, (v / trendMax) * 100)}%`,
+                  background: 'linear-gradient(180deg,#7BA5FF,rgba(37,99,255,0.25))',
+                }} />
+              ))}
             </div>
-            <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-faint)' }} />
-          </button>
-        </div>
+          </>
+        )}
       </div>
 
-      {/* ── Account — progressive disclosure rows ──────────────── */}
-      <div className="mx-5 mt-6 animate-rise" style={{ animationDelay: '260ms' }}>
-        <h3 className="eyebrow mb-2.5">Account</h3>
-        <div className="rounded-[22px] overflow-hidden" style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
-          {[
-            {
-              id: 'wallet' as const,
-              title: 'TON Wallet',
-              sub: walletSub,
-              dot: walletConnected ? 'var(--emerald)' : null,
-              dotGlow: 'rgba(52,211,153,0.6)',
-              icon: <Wallet size={18} style={{ color: 'var(--text-primary)' }} strokeWidth={1.6} />,
-              iconBg: 'rgba(94,234,212,0.10)',
-              iconRing: 'rgba(94,234,212,0.20)',
-            },
-            {
-              id: 'referral' as const,
-              title: 'Freunde einladen',
-              sub: referralSub,
-              dot: refEligible ? 'var(--gold)' : null,
-              dotGlow: 'rgba(251,191,36,0.5)',
-              icon: <Users size={18} style={{ color: 'var(--text-primary)' }} strokeWidth={1.6} />,
-              iconBg: 'rgba(139,92,246,0.12)',
-              iconRing: 'rgba(139,92,246,0.22)',
-            },
-            {
-              id: 'settings' as const,
-              title: 'Einstellungen',
-              sub: 'Benachrichtigungen & Einstellungen',
-              dot: null,
-              dotGlow: '',
-              icon: <Settings size={18} style={{ color: 'var(--text-primary)' }} strokeWidth={1.6} />,
-              iconBg: 'var(--surface-2)',
-              iconRing: 'transparent',
-            },
-          ].map(({ id, title, sub, dot, dotGlow, icon, iconBg, iconRing }, i) => (
-            <button
-              key={id}
-              onClick={() => setSheet(id)}
-              className="w-full flex items-center gap-[13px] px-4 py-[15px] min-h-[60px] text-left transition-colors active:bg-white/[0.025]"
-              style={i > 0 ? { borderTop: '1px solid var(--border)' } : undefined}
-            >
-              <div className="w-[38px] h-[38px] rounded-[13px] shrink-0 flex items-center justify-center"
-                style={{ background: iconBg, boxShadow: `inset 0 0 0 1px ${iconRing}` }}>
-                {icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
-                  color: 'var(--text-primary)' }}>{title}</p>
-                <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
-                  {dot && (
-                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-[5px] align-[1px]"
-                      style={{ background: dot, boxShadow: `0 0 6px ${dotGlow}` }} />
-                  )}
-                  {sub}
-                </p>
-              </div>
-              <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-faint)' }} />
-            </button>
-          ))}
-        </div>
+      {/* Fortschritt */}
+      <p className="eyebrow" style={{ margin: '22px 2px 11px' }}>Fortschritt</p>
+      <div className="surface-2" style={{ padding: '3px 16px', borderRadius: 22 }}>
+        {profile.achievementsEnabled && (
+          <Row icon="trophy" title="Achievements" sub="Freigeschaltete Erfolge ansehen"
+            onClick={() => router.push('/achievements')} />
+        )}
+        <Row icon="clock" title="XP-Verlauf" sub="Woher deine XP kamen"
+          onClick={() => setSheet('activity')} />
+        <Row icon="gem" title="Relics & Boosts"
+          sub={profile.ecosystemBoost ? `+${profile.ecosystemBoost}% XP aktiv` : 'XP-Boost für die Season'}
+          onClick={() => router.push('/ecosystem')} last />
       </div>
 
-      {/* ── Sheets — existing components, untouched logic ──────── */}
+      {/* Konto */}
+      <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>Konto</p>
+      <div className="surface-2" style={{ padding: '3px 16px', borderRadius: 22 }}>
+        <Row icon="wallet" title="TON Wallet" sub={walletAddr}
+          onClick={() => setSheet('wallet')}
+          right={walletConnected
+            ? <span className="chip" style={{ height: 22, fontSize: 10, padding: '0 9px', color: 'var(--emerald)' }}>
+                Verbunden
+              </span>
+            : undefined} />
+        <Row icon="users" title="Freunde einladen" sub={referralSub}
+          onClick={() => setSheet('referral')}
+          right={<span style={{ fontSize: 11, color: 'var(--blue-2)' }}>+500 XP</span>} />
+        <Row icon="gear" title="Einstellungen" sub="Benachrichtigungen & Vorlieben"
+          onClick={() => setSheet('settings')} last />
+      </div>
+
+      {/* Sheets — unveraenderte Komponenten */}
       <BottomSheet open={sheet === 'wallet'} onClose={() => setSheet(null)} title="TON Wallet">
         <WalletConnect />
       </BottomSheet>
 
-      <BottomSheet open={sheet === 'referral'} onClose={() => setSheet(null)} title="Invite Friends">
+      <BottomSheet open={sheet === 'referral'} onClose={() => setSheet(null)} title="Freunde einladen">
         <ReferralSection />
       </BottomSheet>
 
-      <BottomSheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Settings">
+      <BottomSheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Einstellungen">
         <NotificationSettings />
       </BottomSheet>
 
