@@ -1,71 +1,87 @@
-// src/components/layout/MobileNav.tsx — Redesigned (Aurora OS · floating bar) 
+// src/components/layout/MobileNav.tsx — VEXALGO 2.0
+// Aktives Ziel: groessere, gefuellte Kachel, die aus der Leiste herausragt.
+// Inaktive Ziele: duenne Linien-Icons ohne Beschriftung.
 'use client'
 import Link            from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Swords, Trophy, User, Shield } from 'lucide-react'
+import { Icon, type IconName } from '@/components/ui/Icon'
 
-const NAV = [
-  { href: '/home',        icon: Home,     label: 'Home'   },
-  { href: '/quests',      icon: Swords,   label: 'Quests' },
-  { href: '/leaderboard', icon: Trophy,   label: 'Ranks'  },
-  { href: '/clans',       icon: Shield,   label: 'Clans'  },
-  { href: '/profile',     icon: User,     label: 'You'    },
-] as const
+const NAV: { href: string; icon: IconName; label: string }[] = [
+  { href: '/home',        icon: 'home',   label: 'Home'   },
+  { href: '/quests',      icon: 'quest',  label: 'Quests' },
+  { href: '/leaderboard', icon: 'rank',   label: 'Ranks'  },
+  { href: '/clans',       icon: 'clan',   label: 'Clans'  },
+  { href: '/profile',     icon: 'user',   label: 'Profil' },
+]
 
 export function MobileNav() {
   const path = usePathname()
 
   return (
-    <nav className="shrink-0 relative z-20 px-3 pt-2"
+    <nav
+      className="shrink-0 relative z-20"
       style={{
-        paddingBottom: 'calc(0.5rem + var(--tg-safe-bottom, 0px))',
-        background: 'linear-gradient(0deg, rgba(8,8,14,0.96) 30%, rgba(8,8,14,0.6) 100%)',
-        backdropFilter: 'blur(26px)',
-        WebkitBackdropFilter: 'blur(26px)',
-      }}>
-
-      <div className="flex items-center justify-between rounded-[20px] px-2 py-2"
-        style={{
-          background: 'var(--surface-2)',
-          boxShadow: 'inset 0 1px 0 var(--edge-light), 0 12px 32px rgba(0,0,0,0.5)',
-        }}>
-        {NAV.map(({ href, icon: Icon, label }) => {
-          const active = path.startsWith(href)
-          return (
-            <Link key={href} href={href}
-              className="relative flex flex-col items-center justify-center gap-1 flex-1 h-[46px] rounded-2xl press">
-
-              {/* Active pill background */}
-              {active && (
-                <span className="absolute inset-x-1 inset-y-0 rounded-2xl nav-pill"
-                  style={{
-                    background: 'linear-gradient(160deg, rgba(139,92,246,0.22), rgba(91,141,239,0.10))',
-                    boxShadow: 'inset 0 1px 0 rgba(167,139,250,0.3)',
-                  }} />
-              )}
-
-              <span className="relative z-10">
-                <Icon
-                  size={19}
-                  strokeWidth={active ? 2.4 : 1.9}
-                  style={{
-                    color: active ? '#C4B5FD' : 'rgba(255,255,255,0.34)',
-                    filter: active ? 'drop-shadow(0 0 7px rgba(167,139,250,0.65))' : 'none',
-                    transition: 'all 0.25s var(--spring)',
-                  }}
-                />
-              </span>
-              <span className="relative z-10 text-[9px] font-bold tracking-wide"
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'flex-start',
+        height: 84,
+        paddingTop: 12,
+        paddingBottom: 'var(--tg-safe-bottom, 0px)',
+        background: 'linear-gradient(180deg, rgba(10,15,26,0.72), rgba(8,13,24,0.96))',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.10)',
+      }}
+    >
+      {NAV.map(({ href, icon, label }) => {
+        const active = path.startsWith(href)
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-label={label}
+            aria-current={active ? 'page' : undefined}
+            className="press"
+            style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: active ? 56 : 46,
+              height: active ? 56 : 46,
+              marginTop: active ? -12 : 0,
+              borderRadius: active ? 18 : 14,
+              color: active ? '#fff' : 'rgba(255,255,255,0.38)',
+              background: active
+                ? 'linear-gradient(140deg,#7BA5FF 0%,#2563FF 48%,#1035A8 100%)'
+                : 'transparent',
+              boxShadow: active
+                ? '0 12px 28px rgba(37,99,255,0.55), 0 0 0 5px rgba(37,99,255,0.10), inset 0 1.5px 0 rgba(255,255,255,0.45)'
+                : 'none',
+              transition: 'width .22s var(--spring), height .22s var(--spring), margin-top .22s var(--spring)',
+            }}
+          >
+            <Icon
+              name={icon}
+              size={active ? 27 : 22}
+              strokeWidth={active ? 1.7 : 1.6}
+              style={active ? { fill: 'rgba(255,255,255,0.28)' } : undefined}
+            />
+            {active && (
+              <span
+                aria-hidden
                 style={{
-                  color: active ? 'rgba(196,181,253,0.95)' : 'rgba(255,255,255,0.26)',
-                  fontFamily: 'var(--font-display)',
-                }}>
-                {label}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
+                  position: 'absolute', left: '50%', bottom: -13,
+                  transform: 'translateX(-50%)',
+                  width: 5, height: 5, borderRadius: '50%',
+                  background: '#7BA5FF',
+                  boxShadow: '0 0 10px rgba(123,165,255,0.9)',
+                }}
+              />
+            )}
+          </Link>
+        )
+      })}
     </nav>
   )
 }
