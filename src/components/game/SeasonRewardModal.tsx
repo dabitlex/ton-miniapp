@@ -129,7 +129,7 @@ export function SeasonRewardModal() {
         <div style={{ position: 'relative', width: 96, height: 96, margin: '0 auto 18px' }}>
           <div style={{
             position: 'absolute', inset: 0, borderRadius: '50%',
-            background: 'conic-gradient(from 0deg, #8B5CF6, #5B8DEF, #5EEAD4, #8B5CF6)',
+            background: 'conic-gradient(from 0deg, #7BA5FF, #2563FF, #9CC0FF, #7BA5FF)',
             padding: 3, animation: 'vxspin 4s linear infinite',
           }} />
           <div style={{
