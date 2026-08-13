@@ -95,17 +95,17 @@ export default function ClanChatPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center px-8 text-center gap-4">
         <div className="w-16 h-16 rounded-2xl surface-2 flex items-center justify-center">
-          <Shield size={26} style={{ color: '#C4B5FD' }} />
+          <Shield size={26} style={{ color: 'var(--blue-2)' }} />
         </div>
         <div>
-          <p className="font-display font-bold text-lg">No clan yet</p>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            Join a clan to chat with your members.
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 500 }}>Noch kein Clan</p>
+          <p className="mt-1.5" style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+            Tritt einem Clan bei, um mit deinen Mitgliedern zu schreiben.
           </p>
         </div>
         <button onClick={() => router.push('/clans')}
-          className="press chip" style={{ color: '#C4B5FD' }}>
-          Browse clans
+          className="press chip" style={{ color: 'var(--blue-2)', height: 36, padding: '0 18px' }}>
+          Clan finden
         </button>
       </div>
     )
@@ -116,19 +116,21 @@ export default function ClanChatPage() {
 
       {/* ── Clan-Kontextleiste ───────────────────────────────────────────── */}
       <div className="shrink-0 flex items-center gap-2.5 px-3 py-2.5"
-        style={{ background: 'linear-gradient(180deg,rgba(10,10,18,0.6),transparent)' }}>
-        <button onClick={() => router.push('/clans?tab=mine')} className="press p-1" aria-label="Back">
+        style={{ background: 'linear-gradient(180deg,rgba(8,13,24,0.72),transparent)' }}>
+        <button onClick={() => router.push('/clans?tab=mine')} className="press p-1" aria-label="Zurück">
           <ChevronLeft size={22} style={{ color: 'var(--text-secondary)' }} />
         </button>
-        <div className="w-9 h-9 rounded-[11px] flex items-center justify-center font-display font-extrabold"
-          style={{ background: 'var(--aurora)', color: '#0A0A12', fontSize: 15, boxShadow: 'var(--shadow-violet)' }}>
+        <div className="w-9 h-9 flex items-center justify-center font-display"
+          style={{ background: 'linear-gradient(140deg,#7BA5FF,#1D4ED8)', color: '#fff', fontSize: 13,
+            fontWeight: 500, borderRadius: 12, boxShadow: '0 8px 20px rgba(37,99,255,.4)' }}>
           {initials(clanName)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-[15px] leading-tight truncate">{clanName}</div>
+          <div className="truncate" style={{ fontFamily: 'var(--font-display)', fontSize: 15,
+            fontWeight: 600, letterSpacing: '-0.01em' }}>{clanName}</div>
           <div className="flex items-center gap-1.5 text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             <Users size={11} />
-            {memberCount != null ? `${memberCount} members` : 'Clan channel'}
+            {memberCount != null ? `${memberCount} Mitglieder` : 'Clan-Kanal'}
           </div>
         </div>
       </div>
@@ -142,7 +144,7 @@ export default function ClanChatPage() {
         ) : messages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-sm text-center" style={{ color: 'var(--text-muted)' }}>
-              No messages yet.<br />Say hello to your clan 👋
+              Noch keine Nachrichten.<br />Schreib deinem Clan als Erster.
             </p>
           </div>
         ) : (
@@ -156,13 +158,14 @@ export default function ClanChatPage() {
                   m.author_avatar
                     ? <img src={m.author_avatar} alt="" className="w-[26px] h-[26px] rounded-full shrink-0 object-cover" />
                     : <div className="w-[26px] h-[26px] rounded-full shrink-0 flex items-center justify-center text-[11px] font-bold font-display"
-                        style={{ background: avatarGradient(m.user_id), color: '#0A0A12' }}>
+                        style={{ background: avatarGradient(m.user_id), color: '#fff', fontWeight: 500 }}>
                         {initials(m.author_name)}
                       </div>
                 )}
                 <div className={mine ? 'text-right' : ''}>
                   {!mine && (
-                    <div className="font-display font-bold text-[10.5px] mb-0.5 ml-0.5" style={{ color: '#C4B5FD' }}>
+                    <div className="mb-1 ml-0.5" style={{ fontFamily: 'var(--font-display)',
+                      fontSize: 11.5, fontWeight: 500, color: 'var(--text-primary)' }}>
                       {m.author_name}
                     </div>
                   )}
@@ -171,13 +174,13 @@ export default function ClanChatPage() {
                     className="inline-block px-3 py-2 text-[13.5px] leading-snug text-left"
                     style={{
                       ...(mine ? {
-                        background: 'linear-gradient(155deg,rgba(139,92,246,0.34),rgba(91,141,239,0.18))',
-                        borderRadius: '15px', borderTopRightRadius: '5px',
-                        boxShadow: 'inset 0 1px 0 rgba(167,139,250,0.3), 0 6px 18px rgba(124,58,237,0.22)',
+                        background: 'linear-gradient(150deg,rgba(91,141,255,0.30),rgba(37,99,255,0.16))',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.26), inset 0 0 0 .5px rgba(143,180,255,.20)',
+                        borderRadius: '15px', borderBottomRightRadius: '5px',
                       } : {
-                        background: 'var(--surface-2)',
-                        borderRadius: '15px', borderTopLeftRadius: '5px',
-                        boxShadow: 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)',
+                        background: 'linear-gradient(150deg,rgba(255,255,255,0.10),rgba(255,255,255,0.03))',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)',
+                        borderRadius: '15px', borderBottomLeftRadius: '5px',
                       }),
                       ...(canModerate ? { cursor: 'pointer' } : {}),
                       ...(selected ? { outline: '1.5px solid var(--rose)', outlineOffset: '1px' } : {}),
@@ -205,16 +208,18 @@ export default function ClanChatPage() {
 
       {/* ── Eingabe ──────────────────────────────────────────────────────── */}
       <div className="shrink-0 flex items-center gap-2.5 px-3 pt-2 pb-3"
-        style={{ background: 'linear-gradient(0deg,rgba(8,8,14,0.96) 40%,transparent)' }}>
-        <div className="flex-1 flex items-center rounded-full px-3.5 py-2.5"
-          style={{ background: 'var(--surface-2)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
+        style={{ background: 'linear-gradient(0deg,rgba(8,13,24,0.96) 40%,transparent)' }}>
+        <div className="flex-1 flex items-center px-4 py-3"
+          style={{ borderRadius: 16,
+            background: 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
           <input
             value={text}
             onChange={e => setText(e.target.value.slice(0, BODY_MAX))}
             onKeyDown={e => { if (e.key === 'Enter') handleSend() }}
             maxLength={BODY_MAX}
-            placeholder="Message your clan…"
-            aria-label="Message your clan"
+            placeholder="Nachricht schreiben…"
+            aria-label="Nachricht an deinen Clan"
             className="flex-1 bg-transparent outline-none text-[13.5px] placeholder:text-white/30"
             style={{ color: 'var(--text-primary)' }}
           />
@@ -228,13 +233,16 @@ export default function ClanChatPage() {
         <button
           onClick={handleSend}
           disabled={!text.trim() || isSending}
-          aria-label="Send message"
-          className="press w-10 h-10 rounded-full flex items-center justify-center shrink-0 disabled:opacity-35"
+          aria-label="Nachricht senden"
+          className="press w-11 h-11 flex items-center justify-center shrink-0 disabled:opacity-35"
           style={{
-            background: 'var(--aurora)', color: '#0A0A12',
-            boxShadow: text.trim() ? '0 8px 22px rgba(139,92,246,0.45)' : 'none',
+            borderRadius: 15, color: '#fff',
+            background: 'linear-gradient(140deg,#7BA5FF,#1D4ED8)',
+            boxShadow: text.trim()
+              ? '0 8px 20px rgba(37,99,255,0.45), inset 0 1px 0 rgba(255,255,255,.35)'
+              : 'inset 0 1px 0 rgba(255,255,255,.2)',
           }}>
-          <ArrowUp size={18} strokeWidth={2.6} />
+          <ArrowUp size={18} strokeWidth={2} />
         </button>
       </div>
     </div>
