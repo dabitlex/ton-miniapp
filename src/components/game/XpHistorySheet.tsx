@@ -24,19 +24,20 @@ interface XpEntry {
 type Cat = 'all' | 'quests' | 'clan' | 'bonuses'
 
 const SRC: Record<string, { label: string; cat: Cat; color: string; bg: string; Icon: LucideIcon }> = {
-  quest_daily:    { label: 'Daily Quest',     cat: 'quests',  color: '#A78BFA', bg: 'rgba(139,92,246,.14)', Icon: Target },
-  quest_weekly:   { label: 'Weekly Quest',    cat: 'quests',  color: '#A78BFA', bg: 'rgba(139,92,246,.14)', Icon: CalendarCheck },
-  quest_special:  { label: 'Mystery Box',     cat: 'quests',  color: '#FBBF24', bg: 'rgba(251,191,36,.14)', Icon: Gift },
-  clan_mission:   { label: 'Clan Mission',    cat: 'clan',    color: '#5B8DEF', bg: 'rgba(91,141,239,.14)', Icon: Shield },
-  clan_war_win:   { label: 'Clan War Win',    cat: 'clan',    color: '#5B8DEF', bg: 'rgba(91,141,239,.14)', Icon: Swords },
-  streak_bonus:   { label: 'Streak Bonus',    cat: 'bonuses', color: '#FB923C', bg: 'rgba(251,146,60,.14)', Icon: Flame },
-  referral_bonus: { label: 'Referral Reward', cat: 'bonuses', color: '#34D399', bg: 'rgba(52,211,153,.14)', Icon: UserPlus },
-  achievement:    { label: 'Achievement',     cat: 'bonuses', color: '#FBBF24', bg: 'rgba(251,191,36,.14)', Icon: Medal },
-  ad_reward:      { label: 'Ad Reward',       cat: 'bonuses', color: '#5EEAD4', bg: 'rgba(94,234,212,.14)', Icon: Play },
-  season_bonus:   { label: 'Season Reward',   cat: 'bonuses', color: '#C4B5FD', bg: 'rgba(196,181,253,.14)', Icon: Crown },
-  pvp_win:        { label: 'PvP Win',         cat: 'bonuses', color: '#FB7185', bg: 'rgba(251,113,133,.14)', Icon: Swords },
-  admin_grant:    { label: 'Bonus',           cat: 'bonuses', color: '#C4B5FD', bg: 'rgba(196,181,253,.14)', Icon: Sparkles },
-  correction:     { label: 'Adjustment',      cat: 'bonuses', color: 'rgba(255,255,255,.6)', bg: 'rgba(255,255,255,.08)', Icon: RefreshCw },
+  quest_daily:    { label: 'Daily Quest',    cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: Target },
+  quest_weekly:   { label: 'Weekly Quest',   cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: CalendarCheck },
+  quest_special:  { label: 'Mystery Box',    cat: 'quests',  color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
+  clan_mission:   { label: 'Clan Mission',   cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Shield },
+  clan_war_win:   { label: 'Clan War',       cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Swords },
+  streak_bonus:   { label: 'Streak Bonus',   cat: 'bonuses', color: '#FFB27A', bg: 'rgba(251,146,60,.16)', Icon: Flame },
+  referral_bonus: { label: 'Referral Bonus', cat: 'bonuses', color: 'var(--emerald)', bg: 'rgba(52,211,153,.16)', Icon: UserPlus },
+  achievement:    { label: 'Achievement',    cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Medal },
+  ad_reward:      { label: 'Ad Reward',      cat: 'bonuses', color: '#7FE3E0', bg: 'rgba(94,234,212,.16)', Icon: Play },
+  season_bonus:   { label: 'Season-Bonus',   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Crown },
+  vault_win:      { label: 'Weekly Vault',   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
+  pvp_win:        { label: 'PvP-Sieg',       cat: 'bonuses', color: 'var(--rose)', bg: 'rgba(251,113,133,.16)', Icon: Swords },
+  admin_grant:    { label: 'Bonus',          cat: 'bonuses', color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Sparkles },
+  correction:     { label: 'Korrektur',      cat: 'bonuses', color: 'rgba(255,255,255,.6)', bg: 'rgba(255,255,255,.08)', Icon: RefreshCw },
 }
 const FALLBACK = { label: 'XP', cat: 'bonuses' as Cat, color: '#ffffff', bg: 'rgba(255,255,255,.08)', Icon: Sparkles }
 const meta = (s: string) => SRC[s] ?? FALLBACK
@@ -45,8 +46,8 @@ const meta = (s: string) => SRC[s] ?? FALLBACK
 const DETAILABLE = new Set(['quest_daily', 'quest_weekly', 'achievement'])
 
 const CHIPS: { id: Cat; label: string }[] = [
-  { id: 'all', label: 'All' }, { id: 'quests', label: 'Quests' },
-  { id: 'clan', label: 'Clan' }, { id: 'bonuses', label: 'Bonuses' },
+  { id: 'all', label: 'Alle' }, { id: 'quests', label: 'Quests' },
+  { id: 'clan', label: 'Clan' }, { id: 'bonuses', label: 'Boni' },
 ]
 
 function rel(iso: string): string {
@@ -192,19 +193,29 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
   const dm = detail.entry ? meta(detail.entry.source) : null
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Activity">
+    <BottomSheet open={open} onClose={onClose} title="XP-Verlauf">
       <style>{`@keyframes xpPop{0%{opacity:0;transform:translateY(-10px) scale(.97)}100%{opacity:1;transform:none}}@keyframes xpPopIn{0%{opacity:0;transform:scale(.9) translateY(10px)}100%{opacity:1;transform:none}}`}</style>
 
       {/* Filter chips */}
-      <div className="flex gap-2 mb-3 overflow-x-auto [scrollbar-width:none]" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex gap-2 mb-3 overflow-x-auto [scrollbar-width:none]"
+        style={{ WebkitOverflowScrolling: 'touch', paddingRight: 26,
+          maskImage: 'linear-gradient(90deg,#000 0,#000 88%,transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(90deg,#000 0,#000 88%,transparent 100%)' }}>
         {CHIPS.map(c => {
           const on = filter === c.id
           return (
             <button key={c.id} onClick={() => setFilter(c.id)}
-              className="press shrink-0 rounded-full text-[11.5px] font-bold px-3.5 py-[7px]"
-              style={on
-                ? { color: '#1c0f3d', background: 'linear-gradient(150deg,#B6A3FB,#7C3AED)', boxShadow: '0 4px 12px rgba(124,58,237,.4)', fontFamily: 'var(--font-display)' }
-                : { color: 'var(--text-muted)', background: 'var(--surface-1)', boxShadow: 'inset 0 0 0 1px var(--edge-soft)', fontFamily: 'var(--font-display)' }}>
+              className="press shrink-0"
+              style={{
+                borderRadius: 999, fontSize: 11.5, padding: '8px 14px',
+                fontFamily: 'var(--font-display)', fontWeight: on ? 500 : 400,
+                ...(on
+                  ? { color: '#fff', background: 'linear-gradient(135deg,#5B8DFF,#1D4ED8)',
+                      boxShadow: '0 6px 16px rgba(37,99,255,.35)' }
+                  : { color: 'var(--text-secondary)',
+                      background: 'linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.04))',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,.20), inset 0 0 0 .5px rgba(255,255,255,.07)' }),
+              }}>
               {c.label}
             </button>
           )
@@ -219,15 +230,17 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
 
       {!loading && visible.length === 0 && (
         <div className="text-center py-10">
-          <p className="text-sm font-bold" style={{ color: 'var(--text-secondary)' }}>No XP activity yet</p>
-          <p className="text-[12px] mt-1" style={{ color: 'var(--text-muted)' }}>Complete quests to start earning XP.</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
+            color: 'var(--text-secondary)' }}>Noch keine XP</p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 5 }}>
+            Schließe Quests ab, um XP zu sammeln.</p>
         </div>
       )}
 
       {!loading && groups.map(g => (
         <div key={g.label}>
           <div className="sticky top-0 z-[1] py-2 px-1.5 eyebrow"
-            style={{ color: 'var(--text-faint)', background: 'linear-gradient(180deg, #0E0D17 70%, transparent)' }}>
+            style={{ color: 'var(--text-muted)', background: 'linear-gradient(180deg, #0B1220 70%, transparent)' }}>
             {g.label}
           </div>
           <div className="space-y-1.5">
@@ -239,28 +252,36 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
                   className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
                   style={{
                     cursor: tappable ? 'pointer' : 'default',
-                    background: isFresh ? 'linear-gradient(155deg,rgba(139,92,246,.2),rgba(91,141,239,.05))' : 'rgba(255,255,255,.035)',
-                    boxShadow: isFresh ? 'inset 0 1px 0 rgba(167,139,250,.4), 0 0 0 1px rgba(139,92,246,.45), 0 6px 18px rgba(124,58,237,.35)' : 'none',
+                    background: isFresh
+                      ? 'linear-gradient(150deg,rgba(91,141,255,.30),rgba(37,99,255,.14))'
+                      : 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
+                    boxShadow: isFresh
+                      ? 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 0 0 .5px rgba(143,180,255,.40), 0 8px 20px rgba(37,99,255,.30)'
+                      : 'inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 .5px rgba(255,255,255,.06)',
                     transition: 'background 1.4s ease, box-shadow 1.4s ease',
                     animation: isFresh ? 'xpPop .45s cubic-bezier(.2,.9,.2,1)' : undefined,
                   }}>
-                  <div className="w-10 h-10 rounded-[13px] shrink-0 flex items-center justify-center"
-                    style={{ background: m.bg, color: m.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.18)' }}>
-                    <Icon size={19} strokeWidth={1.9} />
+                  <div className="w-10 h-10 shrink-0 flex items-center justify-center"
+                    style={{ borderRadius: 13, background: m.bg, color: m.color,
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 .5px rgba(255,255,255,.07)' }}>
+                    <Icon size={18} strokeWidth={1.6} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-bold leading-tight" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{m.label}</p>
+                    <p className="leading-tight" style={{ fontSize: 13.5, fontWeight: 500,
+                      color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{m.label}</p>
                     <p className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                       {rel(e.createdAt)}
                       {e.doubled && (
                         <span className="text-[9px] font-extrabold px-1.5 py-px rounded-full"
-                          style={{ color: '#6EE7B7', background: 'rgba(52,211,153,.16)', fontFamily: 'var(--font-display)' }}>
+                          style={{ color: 'var(--emerald)', background: 'rgba(52,211,153,.16)',
+                            fontFamily: 'var(--font-display)', fontWeight: 500 }}>
                           ×2
                         </span>
                       )}
                       {e.leveledUp && e.level != null && (
                         <span className="text-[9px] font-extrabold px-1.5 py-px rounded-full"
-                          style={{ color: '#C4B5FD', background: 'rgba(139,92,246,.2)', fontFamily: 'var(--font-display)' }}>
+                          style={{ color: 'var(--blue-2)', background: 'rgba(37,99,255,.20)',
+                            fontFamily: 'var(--font-display)', fontWeight: 500 }}>
                           → Level {e.level}
                         </span>
                       )}
@@ -268,9 +289,9 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
                   </div>
                   {tappable && <ChevronRight size={15} className="shrink-0" style={{ color: 'var(--text-faint)' }} />}
                   <div className="text-right shrink-0">
-                    <div className="text-[15px] font-extrabold tabular-nums"
-                      style={{ color: e.xp < 0 ? '#FB7185' : '#34D399', fontFamily: 'var(--font-display)' }}>
-                      {e.xp < 0 ? '' : '+'}{e.xp.toLocaleString('en-US')} XP
+                    <div className="tabular-nums" style={{ fontSize: 14.5, fontWeight: 500,
+                      color: e.xp < 0 ? 'var(--rose)' : 'var(--emerald)', fontFamily: 'var(--font-display)' }}>
+                      {e.xp < 0 ? '' : '+'}{e.xp.toLocaleString('de-DE')}
                     </div>
                   </div>
                 </div>
@@ -283,8 +304,10 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
       {!loading && hasMore && filter === 'all' && (
         <button onClick={loadMore} disabled={loadingMore}
           className="press w-full mt-3 rounded-2xl py-3 text-[12px] font-bold flex items-center justify-center gap-2"
-          style={{ color: 'var(--violet-bright)', background: 'rgba(139,92,246,.1)', fontFamily: 'var(--font-display)' }}>
-          {loadingMore ? <><Loader2 size={14} className="animate-spin" /> Loading…</> : 'Load more'}
+          style={{ color: 'var(--blue-2)', fontFamily: 'var(--font-display)', fontWeight: 500,
+            background: 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
+          {loadingMore ? <><Loader2 size={14} className="animate-spin" /> Lädt…</> : 'Mehr laden'}
         </button>
       )}
 
@@ -294,7 +317,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
           <div className="absolute inset-0" onClick={closeDetail}
             style={{ background: 'rgba(3,2,8,.7)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)' }} />
           <div className="relative w-full max-w-[320px] rounded-3xl p-6 text-center"
-            style={{ background: 'linear-gradient(180deg,rgba(28,22,48,.97),rgba(14,11,26,.97))',
+            style={{ background: 'linear-gradient(180deg,rgba(17,26,46,.97),rgba(11,18,32,.97))',
               boxShadow: '0 30px 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1)',
               animation: 'xpPopIn .3s cubic-bezier(.2,1.2,.4,1)' }}>
             <button onClick={closeDetail} aria-label="Close"
