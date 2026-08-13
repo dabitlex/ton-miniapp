@@ -75,7 +75,7 @@ export default function BattlefieldPage() {
       </div>
       <p className="text-center mt-1 mb-3" style={{ fontSize: 9, letterSpacing: '.16em',
         color: 'var(--text-muted)' }}>
-        XP PRO KRIEGER · GESAMT {formatNumber(war.myClan.score)} VS {formatNumber(war.rival.score)}
+        XP PRO Mitglied · GESAMT {formatNumber(war.myClan.score)} VS {formatNumber(war.rival.score)}
       </p>
 
       <BeamClash frontline={war.frontline} height={26} clashSize={48} />
