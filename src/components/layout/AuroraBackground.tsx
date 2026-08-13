@@ -1,4 +1,4 @@
-// src/components/layout/AuroraBackground.tsx — VEXALGO 2.0
+// src/components/layout/AuroraBackground.tsx — VEXALGO 2.0 
 // Der Name bleibt aus Kompatibilitaetsgruenden erhalten; der Inhalt ist neu:
 // statt Aurora-Nebel, Hex-Raster, Sternen und Partikeln nur noch die
 // blaue Signature-Diagonale mit Abdunkelung nach unten.
