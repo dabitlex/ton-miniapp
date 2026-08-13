@@ -190,11 +190,61 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
     else groups.push({ label: lbl, items: [e] })
   }
 
+  // Tagessumme und 14-Tage-Verlauf — beides aus den bereits geladenen
+  // Eintraegen berechnet, kein zusaetzlicher Server-Aufruf.
+  const todayKey  = new Date().toISOString().slice(0, 10)
+  const todayXp   = entries
+    .filter(e => e.createdAt.slice(0, 10) === todayKey)
+    .reduce((sum, e) => sum + (e.xp > 0 ? e.xp : 0), 0)
+
+  const trend = (() => {
+    const days = 14
+    const now = new Date()
+    const buckets = new Map<string, number>()
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now)
+      d.setUTCDate(d.getUTCDate() - i)
+      buckets.set(d.toISOString().slice(0, 10), 0)
+    }
+    for (const e of entries) {
+      const k = e.createdAt.slice(0, 10)
+      if (buckets.has(k) && e.xp > 0) buckets.set(k, (buckets.get(k) ?? 0) + e.xp)
+    }
+    return Array.from(buckets.values())
+  })()
+  const trendMax  = Math.max(...trend, 1)
+  const hasTrend  = trend.some(v => v > 0)
+
   const dm = detail.entry ? meta(detail.entry.source) : null
 
   return (
     <BottomSheet open={open} onClose={onClose} title="XP-Verlauf">
       <style>{`@keyframes xpPop{0%{opacity:0;transform:translateY(-10px) scale(.97)}100%{opacity:1;transform:none}}@keyframes xpPopIn{0%{opacity:0;transform:scale(.9) translateY(10px)}100%{opacity:1;transform:none}}`}</style>
+
+      {/* Zusammenfassung: heute verdient + 14-Tage-Verlauf */}
+      {!loading && (todayXp > 0 || hasTrend) && (
+        <div className="surface-2" style={{ padding: 16, borderRadius: 20, marginBottom: 14 }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Heute verdient</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, marginTop: 3 }}>
+                {todayXp.toLocaleString('de-DE')} XP
+              </p>
+            </div>
+            {hasTrend && (
+              <div className="flex items-end" style={{ gap: 2.5, height: 28 }}>
+                {trend.map((v, i) => (
+                  <span key={i} style={{
+                    width: 5, borderRadius: 2,
+                    height: `${Math.max(8, (v / trendMax) * 100)}%`,
+                    background: 'linear-gradient(180deg,#7BA5FF,rgba(37,99,255,0.25))',
+                  }} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Filter chips */}
       <div className="flex gap-2 mb-3 overflow-x-auto [scrollbar-width:none]"
