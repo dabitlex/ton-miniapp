@@ -215,8 +215,10 @@ export default function ClansPage() {
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="shrink-0 px-5 pt-4 pb-3 animate-rise">
-        <h1 className="display-xl text-[24px] text-white leading-none">Clans</h1>
-        {!hasClan && <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Team up · earn together</p>}
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
+          letterSpacing: '-0.02em', color: '#fff' }}>Clan</h1>
+        {!hasClan && <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+          Gemeinsam kämpfen, gemeinsam sammeln</p>}
       </div>
 
       {loadingMembership ? (
@@ -227,18 +229,23 @@ export default function ClansPage() {
         <>
           {clanView !== 'missions' ? (
             <div className="shrink-0 px-5 pb-3 animate-rise" style={{ animationDelay: '50ms' }}>
-              <div className="flex p-1 rounded-2xl gap-1" style={{ background: 'var(--surface-press)' }}>
+              <div className="flex" style={{ gap: 6, padding: 5, borderRadius: 18,
+                background: 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
                 {(['overview', 'roster', 'wars'] as const).map((v) => {
                   const active = clanView === v
-                  const label  = v === 'overview' ? 'Overview' : v === 'roster' ? 'Roster' : 'Wars'
+                  const label  = v === 'overview' ? 'Übersicht' : v === 'roster' ? 'Mitglieder' : 'Kriege'
                   return (
                     <button key={v} onClick={() => setClanView(v)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl press relative"
+                      className="flex-1 flex items-center justify-center press relative"
                       style={{
-                        background: active ? 'var(--surface-2)' : 'transparent',
-                        boxShadow: active ? 'inset 0 1px 0 var(--edge-light), var(--shadow-sm)' : 'none',
+                        padding: '10px 0', borderRadius: 13, border: 'none',
+                        background: active ? 'linear-gradient(135deg,#5B8DFF,#1D4ED8)' : 'transparent',
+                        boxShadow: active ? '0 6px 16px rgba(37,99,255,.4)' : 'none',
                       }}>
-                      <span className="text-[12px] font-bold" style={{ color: active ? 'white' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>{label}</span>
+                      <span style={{ fontSize: 12.5, fontWeight: active ? 500 : 400,
+                        color: active ? '#fff' : 'var(--text-secondary)',
+                        fontFamily: 'var(--font-display)' }}>{label}</span>
                     </button>
                   )
                 })}
@@ -269,24 +276,29 @@ export default function ClansPage() {
                   )}
                   <div className="relative flex items-start gap-4">
                     <div className="flex items-center justify-center w-16 h-16 rounded-3xl shrink-0 overflow-hidden display-xl text-xl text-white"
-                      style={{ background: 'var(--aurora)', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}>
+                      style={{ background: 'linear-gradient(140deg,#7BA5FF,#1D4ED8)',
+                        boxShadow: '0 8px 24px rgba(37,99,255,0.45)', borderRadius: 17,
+                        fontFamily: 'var(--font-display)', fontWeight: 500 }}>
                       {myMembership.clan.avatarUrl
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img src={myMembership.clan.avatarUrl} alt="" className="w-full h-full object-cover" />
                         : clanInitials(myMembership.clan.name)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="display text-[18px] text-white truncate">{myMembership.clan.name}</p>
+                      <p className="truncate" style={{ fontFamily: 'var(--font-display)', fontSize: 16,
+                        fontWeight: 600, color: '#fff', letterSpacing: '-0.01em' }}>{myMembership.clan.name}</p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full"
-                          style={{ color: 'var(--violet-bright)', background: 'rgba(139,92,246,0.18)', fontFamily: 'var(--font-display)' }}>
-                          {myRole === 'leader' ? 'LEADER' : myRole === 'officer' ? 'OFFICER' : 'MEMBER'}
+                        <span style={{ fontSize: 10, fontWeight: 500, padding: '3px 9px', borderRadius: 999,
+                          color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
+                          background: 'linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.04))',
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,.20), inset 0 0 0 .5px rgba(255,255,255,.07)' }}>
+                          {myRole === 'leader' ? 'Leader' : myRole === 'officer' ? 'Officer' : 'Mitglied'}
                         </span>
                         {myRank != null && (
                           <button onClick={() => router.push('/leaderboard?board=clans')}
                             className="press flex items-center gap-1 text-[11px] font-bold"
-                            style={{ color: '#34D399', fontFamily: 'var(--font-display)' }}>
-                            <Trophy size={11} /> Global #{myRank}
+                            style={{ color: 'var(--blue-2)', fontFamily: 'var(--font-display)', fontWeight: 500 }}>
+                            <Trophy size={11} /> Rang #{myRank}
                           </button>
                         )}
                       </div>
@@ -297,13 +309,14 @@ export default function ClansPage() {
                   </div>
                   <div className="relative grid grid-cols-3 gap-2 mt-4">
                     {[
-                      { label: 'Season XP', value: formatNumber(myMembership.clan.seasonXp), tint: '#A78BFA' },
-                      { label: 'Members',   value: `${myMembership.clan.memberCount}/20`,     tint: '#5B8DEF' },
-                      { label: 'Wins',      value: `${myMembership.clan.wins}`,               tint: '#FBBF24' },
+                      { label: 'Season XP', value: formatNumber(myMembership.clan.seasonXp), tint: 'var(--blue-2)' },
+                      { label: 'Mitglieder', value: `${myMembership.clan.memberCount}/20`,    tint: 'var(--text-primary)' },
+                      { label: 'Siege',      value: `${myMembership.clan.wins}`,              tint: 'var(--text-primary)' },
                     ].map(s => (
-                      <div key={s.label} className="rounded-2xl px-2 py-2.5 text-center" style={{ background: 'var(--surface-press)' }}>
-                        <p className="display text-[15px] tabular-nums" style={{ color: s.tint }}>{s.value}</p>
-                        <p className="text-[9px] font-semibold mt-0.5" style={{ color: 'var(--text-faint)' }}>{s.label}</p>
+                      <div key={s.label} className="surface-quiet px-2 py-2.5 text-center">
+                        <p className="tabular-nums" style={{ color: s.tint, fontFamily: 'var(--font-display)',
+                          fontSize: 16, fontWeight: 500 }}>{s.value}</p>
+                        <p style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 3 }}>{s.label}</p>
                       </div>
                     ))}
                   </div>
@@ -312,24 +325,29 @@ export default function ClansPage() {
                 <ClanChatCard />
 
                 <button onClick={() => setClanView('missions')} className="surface w-full flex items-center gap-3 px-4 py-3.5 press">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0" style={{ background: 'rgba(139,92,246,0.14)' }}>
-                    <Swords size={17} style={{ color: 'var(--violet-bright)' }} />
+                  <div className="flex items-center justify-center w-11 h-11 shrink-0"
+                    style={{ borderRadius: 14,
+                      background: 'linear-gradient(150deg,rgba(255,255,255,.20),rgba(255,255,255,.05))',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,.30), inset 0 0 0 .5px rgba(255,255,255,.10)' }}>
+                    <Swords size={18} style={{ color: 'var(--text-primary)' }} />
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-bold text-white">Clan Missions</p>
-                    <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>3 daily · 15⚡ · earns Clan XP</p>
+                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 14.5, fontWeight: 500, color: '#fff' }}>
+                      Clan-Missionen</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+                      3 täglich · 15 Energie · bringt Clan-XP</p>
                   </div>
                   <ChevronRight size={16} style={{ color: 'var(--text-faint)' }} />
                 </button>
 
-                {(isLeader || canManage) && <h3 className="eyebrow pt-1">Management · {isLeader ? 'Leader' : 'Officer'}</h3>}
+                {(isLeader || canManage) && <h3 className="eyebrow pt-1">Verwaltung · {isLeader ? 'Leader' : 'Officer'}</h3>}
                 {isLeader  && <ClanPolicyToggle  clanId={myMembership.clan.id} />}
                 {canManage && <ClanJoinRequests  clanId={myMembership.clan.id} />}
                 {isLeader  && <ClanEditSheet clanId={myMembership.clan.id} open={editOpen} onClose={() => setEditOpen(false)} />}
 
                 <Button variant="destructive" fullWidth loading={leaving}
-                  onClick={() => { if (window.confirm('Leave this clan?')) leaveClan(myMembership.clan.id) }}>
-                  <LogOut size={14} /> Leave Clan
+                  onClick={() => { if (window.confirm('Clan wirklich verlassen?')) leaveClan(myMembership.clan.id) }}>
+                  <LogOut size={14} /> Clan verlassen
                 </Button>
               </>
             )}
@@ -425,9 +443,10 @@ export default function ClansPage() {
                   {canCreate ? <Plus size={20} /> : '🔒'}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white">Create your own clan</p>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 14.5, fontWeight: 500, color: '#fff' }}>
+                    Eigenen Clan gründen</p>
                   <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                    {canCreate ? 'Lead your own team' : `Unlocks at level ${GAME_CONSTANTS.CLAN_UNLOCK_LEVEL}`}
+                    {canCreate ? 'Führe dein eigenes Team' : `Ab Level ${GAME_CONSTANTS.CLAN_UNLOCK_LEVEL}`}
                   </p>
                 </div>
                 {canCreate && <ChevronRight size={18} style={{ color: 'var(--text-faint)' }} />}
@@ -435,7 +454,7 @@ export default function ClansPage() {
 
               <div className="relative">
                 <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clans…"
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Clan suchen…"
                   className="w-full rounded-2xl pl-10 pr-3 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
                   style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }} />
               </div>
@@ -540,14 +559,14 @@ function CreateClanForm({ canCreate, hasClan, userLevel, token, onCreated }: {
       </div>
       <div className="space-y-1.5">
         <label className="eyebrow">Clan Name *</label>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Crypto Warriors" maxLength={32}
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="z. B. Crypto Warriors" maxLength={32}
           className="w-full rounded-2xl px-3.5 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
           style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }} />
         <p className="text-[10px] text-right" style={{ color: 'var(--text-faint)' }}>{name.length}/32</p>
       </div>
       <div className="space-y-1.5">
         <label className="eyebrow">Description</label>
-        <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="What does your clan stand for?" maxLength={200} rows={3}
+        <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Wofür steht dein Clan?" maxLength={200} rows={3}
           className="w-full rounded-2xl px-3.5 py-3 text-sm text-white placeholder-white/25 focus:outline-none resize-none"
           style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }} />
       </div>
