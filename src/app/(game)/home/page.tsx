@@ -1,4 +1,4 @@
-// src/app/(game)/home/page.tsx — VEXALGO 2.0 
+// src/app/(game)/home/page.tsx — VEXALGO 2.0
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -235,7 +235,7 @@ export default function HomePage() {
               <div key={i} style={{ minWidth: '100%', padding: 15, display: 'flex',
                 flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
                 {b.logo && (
-                  <img src="/icon-mark.png" alt="" aria-hidden
+                  <img src="/icon-mark-v2.png" alt="" aria-hidden
                     style={{ position: 'absolute', right: -16, top: '50%', transform: 'translateY(-50%)',
                       width: 104, height: 'auto', opacity: .30, pointerEvents: 'none' }} />
                 )}
