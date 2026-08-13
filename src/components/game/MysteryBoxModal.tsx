@@ -12,11 +12,11 @@ type Phase = 'idle' | 'shaking' | 'lidopen' | 'opening' | 'reward'
 
 interface TierStyle { label: string; c1: string; c2: string; glow: string; icon: 'star'|'coin'|'crown'|'gem'; conf: boolean }
 const TIER_STYLE: Record<Tier, TierStyle> = {
-  common:   { label: 'Common',   c1: '#C4B5FD', c2: '#8B5CF6', glow: '#8B5CF6', icon: 'star',  conf: false },
-  uncommon: { label: 'Uncommon', c1: '#7DD3FC', c2: '#3B82F6', glow: '#5B8DEF', icon: 'star',  conf: false },
-  rare:     { label: 'Rare',     c1: '#5EEAD4', c2: '#14B8A6', glow: '#5EEAD4', icon: 'coin',  conf: false },
-  epic:     { label: 'Epic',     c1: '#FCD34D', c2: '#F59E0B', glow: '#F59E0B', icon: 'crown', conf: true  },
-  jackpot:  { label: 'JACKPOT',  c1: '#FDE68A', c2: '#F59E0B', glow: '#FBBF24', icon: 'gem',   conf: true  },
+  common:   { label: 'Common',   c1: '#9CC0FF', c2: '#2563FF', glow: '#2563FF', icon: 'star',  conf: false },
+  uncommon: { label: 'Uncommon', c1: '#7BA5FF', c2: '#1D4ED8', glow: '#2563FF', icon: 'star',  conf: false },
+  rare:     { label: 'Rare',     c1: '#8FF0C0', c2: '#15803D', glow: '#22C55E', icon: 'coin',  conf: false },
+  epic:     { label: 'Epic',     c1: '#FCD34D', c2: '#B45309', glow: '#F59E0B', icon: 'crown', conf: true  },
+  jackpot:  { label: 'Jackpot',  c1: '#FDE68A', c2: '#B45309', glow: '#FBBF24', icon: 'gem',   conf: true  },
 }
 
 export function MysteryBoxModal() {
@@ -93,7 +93,7 @@ export function MysteryBoxModal() {
   function fireConfetti() {
     const popup = popupRef.current
     if (!popup) return
-    const colors = ['#FBBF24','#A78BFA','#5EEAD4','#34D399','#5B8DEF']
+    const colors = ['#FFD27A','#7BA5FF','#8FF0C0','#2563FF','#9CC0FF']
     for (let i = 0; i < 44; i++) {
       const c = document.createElement('div')
       c.style.cssText = `position:absolute;width:8px;height:8px;opacity:0;pointer-events:none;left:50%;top:42%;background:${colors[i%colors.length]};border-radius:${Math.random()>0.5?'50%':'2px'}`
@@ -129,7 +129,7 @@ export function MysteryBoxModal() {
         </div>
         {phase !== 'reward' && (
           <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24, lineHeight:1.5 }}>
-            You crushed all your daily missions.<br/>Tap the chest to claim your reward.
+            Du hast heute alle Daily Quests geschafft.<br/>Tippe auf die Truhe für deine Belohnung.
           </div>
         )}
 
@@ -164,14 +164,16 @@ export function MysteryBoxModal() {
                   <RewardIcon icon={st.icon} c1={st.c1} c2={st.c2} />
                 </div>
               </div>
-              <div style={{ fontFamily:'var(--font-display)', fontSize:42, fontWeight:800, lineHeight:1, marginBottom:4, color:st.c1 }}>
-                +{result.xp.toLocaleString()} XP
-              </div>
-              <div style={{ fontFamily:'var(--font-display)', fontSize:13, fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:st.c1 }}>
+              <div style={{ fontFamily:'var(--font-display)', fontSize:9.5, fontWeight:500,
+                letterSpacing:'0.16em', textTransform:'uppercase', color:st.c1, marginBottom:8 }}>
                 {st.label}
               </div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:10 }}>
-                Added to your total &amp; season XP
+              <div style={{ fontFamily:'var(--font-display)', fontSize:42, fontWeight:500, lineHeight:1,
+                letterSpacing:'-0.03em', marginBottom:6, color:st.c1 }}>
+                +{result.xp.toLocaleString('de-DE')} XP
+              </div>
+              <div style={{ fontSize:11, color:'var(--text-muted)' }}>
+                bereits gutgeschrieben
               </div>
             </div>
           )}
@@ -179,10 +181,11 @@ export function MysteryBoxModal() {
 
         {phase === 'reward' && (
           <button onClick={() => { const a = pendingAch.current; pendingAch.current = []; close(); if (a.length) setTimeout(() => enqueueAchievements(a), 250) }} className="press"
-            style={{ marginTop:22, width:'100%', padding:15, border:'none', borderRadius:16,
-              fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, cursor:'pointer', color:'#fff',
-              background:'linear-gradient(135deg,#8B5CF6,#5B8DEF)', boxShadow:'0 10px 28px rgba(139,92,246,0.4)' }}>
-            Awesome!
+            style={{ marginTop:22, width:'100%', height:48, border:'none', borderRadius:16,
+              fontFamily:'var(--font-display)', fontSize:14, fontWeight:500, cursor:'pointer', color:'#fff',
+              background:'linear-gradient(135deg,#5B8DFF,#2563FF 55%,#1D4ED8)',
+              boxShadow:'0 10px 26px rgba(37,99,255,0.40), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
+            Einsammeln
           </button>
         )}
       </div>
@@ -191,7 +194,7 @@ export function MysteryBoxModal() {
       <style>{`
         .mbx-float{animation:mbxFloat 3s ease-in-out infinite}
         @keyframes mbxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-        .mbx-chest svg{filter:drop-shadow(0 14px 30px rgba(139,92,246,0.5));overflow:visible}
+        .mbx-chest svg{filter:drop-shadow(0 14px 30px rgba(37,99,255,0.5));overflow:visible}
         .mbx-shaking{animation:mbxShake 0.5s ease-in-out}
         @keyframes mbxShake{0%,100%{transform:rotate(0) scale(1)}15%{transform:rotate(-7deg) scale(1.04)}30%{transform:rotate(6deg) scale(1.04)}45%{transform:rotate(-6deg) scale(1.06)}60%{transform:rotate(5deg) scale(1.06)}75%{transform:rotate(-4deg) scale(1.07)}90%{transform:rotate(3deg) scale(1.07)}}
         .mbx-opening{animation:mbxPop 0.5s ease-out forwards}
