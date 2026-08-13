@@ -12,7 +12,7 @@ export function EnergyStrip() {
   const fill = isLow
     ? 'linear-gradient(90deg, #F43F5E, #FB7185)'
     : isFull
-    ? 'linear-gradient(90deg, #10B981, #5EEAD4)'
+    ? 'linear-gradient(90deg, #22C55E, #7FE3A8)'
     : 'var(--aurora)'
 
   const accent = isLow ? '#FB7185' : isFull ? '#34D399' : 'var(--violet-bright)'
