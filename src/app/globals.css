@@ -266,7 +266,7 @@ body::after {
   position: absolute;
   inset: -1.5px;
   border-radius: inherit;
-  background: conic-gradient(from 140deg, #8B5CF6, #5B8DEF, #5EEAD4, #8B5CF6);
+  background: conic-gradient(from 140deg, #7BA5FF, #2563FF, #9CC0FF, #7BA5FF);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -463,13 +463,3 @@ body::after {
 }
 
 /* ── Animierter Aurora-Hintergrund (driftende Blobs) ─────────── */
-.aurora-blobs { position: absolute; inset: -40%; filter: blur(54px); opacity: 0.8; }
-.aurora-blob  { position: absolute; display: block; border-radius: 50%; mix-blend-mode: screen; will-change: transform; }
-.aurora-blob.ab1 { width: 62vw; height: 62vw; background: radial-gradient(circle, #8B5CF6, transparent 65%); top: 2%;  left: -10%;  animation: aurora-drift-1 18s ease-in-out infinite; }
-.aurora-blob.ab2 { width: 56vw; height: 56vw; background: radial-gradient(circle, #5B8DEF, transparent 65%); top: -6%; right: -12%; animation: aurora-drift-2 22s ease-in-out infinite; }
-.aurora-blob.ab3 { width: 52vw; height: 52vw; background: radial-gradient(circle, #5EEAD4, transparent 65%); top: 34%; left: 16%;  animation: aurora-drift-3 26s ease-in-out infinite; }
-.aurora-blob.ab4 { width: 46vw; height: 46vw; background: radial-gradient(circle, #A78BFA, transparent 65%); bottom: -6%; right: -4%; animation: aurora-drift-1 20s ease-in-out infinite reverse; }
-@keyframes aurora-drift-1 { 0%,100% { transform: translate(0,0)    scale(1);    } 50% { transform: translate(7%,5%)   scale(1.15); } }
-@keyframes aurora-drift-2 { 0%,100% { transform: translate(0,0)    scale(1);    } 50% { transform: translate(-8%,6%)  scale(1.2);  } }
-@keyframes aurora-drift-3 { 0%,100% { transform: translate(0,0)    scale(1);    } 50% { transform: translate(5%,-6%)  scale(1.1);  } }
-@media (prefers-reduced-motion: reduce) { .aurora-blob { animation: none !important; } }
