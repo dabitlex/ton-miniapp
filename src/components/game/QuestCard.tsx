@@ -38,6 +38,16 @@ function iconFor(code: string, watchMode: boolean): IconName {
 
 const fd: React.CSSProperties = { fontFamily: 'var(--font-display)' }
 
+/** Energiekosten einer Quest — Blitz plus Zahl, dezent neben dem Fortschritt */
+function EnergyCost({ value }: { value: number }) {
+  return (
+    <span className="flex items-center" style={{ gap: 3, flexShrink: 0 }}>
+      <Icon name="bolt" size={11} strokeWidth={1.8} style={{ color: 'var(--blue-3)' }} />
+      <span style={{ ...fd, fontSize: 11, color: 'var(--text-secondary)' }}>{value}</span>
+    </span>
+  )
+}
+
 export function QuestCard({
   quest, onComplete, completing, activeBoostPct = 0, index = 0,
   watchMode = false, onWatch, watching = false, watchDisabled = false,
@@ -54,6 +64,7 @@ export function QuestCard({
   const target      = progress?.target ?? 1
   const canClaim    = !isDone && isMet
 
+  const energyCost = watchMode ? 0 : (quest.template.energyCost ?? 0)
   const dot = DIFF_DOT[quest.template.difficulty] ?? DIFF_DOT.easy
   const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0
 
@@ -113,6 +124,7 @@ export function QuestCard({
               ))}
             </div>
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{current}/{target}</p>
+            {energyCost > 0 && <EnergyCost value={energyCost} />}
           </div>
         ) : isCountable ? (
           <div className="flex items-center" style={{ gap: 8, marginTop: 8 }}>
@@ -125,11 +137,15 @@ export function QuestCard({
             <p style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
               {current}/{target}
             </p>
+            {energyCost > 0 && <EnergyCost value={energyCost} />}
           </div>
         ) : (
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-            {quest.template.description}
-          </p>
+          <div className="flex items-center" style={{ gap: 8, marginTop: 4 }}>
+            <p className="truncate" style={{ fontSize: 11, color: 'var(--text-muted)', flex: 1 }}>
+              {quest.template.description}
+            </p>
+            {energyCost > 0 && <EnergyCost value={energyCost} />}
+          </div>
         )}
       </div>
 
