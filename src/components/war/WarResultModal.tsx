@@ -128,7 +128,7 @@ export function WarResultModal() {
         <div className="flex justify-between" style={{ ...fd, fontSize: 12, padding: '4px 26px 0' }}>
           <span style={{ color: '#C4B5FD' }}>{formatNumber(war.myClan.perCapita)}</span>
           <span style={{ fontSize: 8.5, color: 'var(--text-faint)', alignSelf: 'center',
-            letterSpacing: '.14em' }}>XP / KRIEGER</span>
+            letterSpacing: '.14em' }}>XP / Mitglied</span>
           <span style={{ color: '#FDA4AF' }}>{formatNumber(war.rival.perCapita)}</span>
         </div>
 
@@ -137,7 +137,7 @@ export function WarResultModal() {
           ...(win ? { background: 'linear-gradient(180deg,rgba(251,191,36,.13),rgba(255,255,255,.02))' } : {}) }}>
           <Rivets gold={win} />
           <p className="eyebrow" style={{ color: win ? '#FDE68A' : 'var(--violet-bright)' }}>
-            {win ? '💰 Kriegsbeute' : draw ? '🤝 Beide Seiten belohnt' : '🛡 Trost der Tapferen'}
+            {win ? '💰 Kriegsbeute' : draw ? '🤝 Beide Seiten belohnt' : 'Trost der Tapferen'}
           </p>
           <p style={{ ...fd, fontSize: 36, margin: '4px 0 2px',
             ...(win
@@ -152,7 +152,7 @@ export function WarResultModal() {
               : 'Ohne Beitrag keine Beute — nächste Woche zählt jede XP!'}
           </p>
           <div className="flex gap-2 justify-center flex-wrap" style={{ marginTop: 12 }}>
-            {win && <span className="war-gem gold">🛡 Clan +1 Sieg</span>}
+            {win && <span className="war-gem gold">Clan +1 Sieg</span>}
             {!win && !draw && <span className="war-gem">Kein XP-Verlust</span>}
             {war.myRankInClan != null && war.myContribution > 0 && (
               <span className="war-gem">
@@ -164,7 +164,7 @@ export function WarResultModal() {
 
         <div style={{ marginTop: 16, paddingBottom: 24 }}>
           <GameButton variant={win ? 'gold' : 'violet'} onClick={close} disabled={acking}>
-            {win ? '🏆 BEUTE EINSAMMELN' : draw ? '🤝 WEITER' : '🛡 WEITER KÄMPFEN'}
+            {win ? 'BEUTE EINSAMMELN' : draw ? '🤝 WEITER' : 'WEITER KÄMPFEN'}
           </GameButton>
         </div>
       </div>
