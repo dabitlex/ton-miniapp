@@ -3,7 +3,6 @@
 import { useEffect, useState }   from 'react'
 import { useRouter }             from 'next/navigation'
 import { AuthProvider }          from '@/components/providers/AuthProvider'
-import { AuroraBackground }      from '@/components/layout/AuroraBackground'
 import { useAuthStore }          from '@/stores/useAuthStore'
 
 function SplashContent() {
@@ -34,9 +33,9 @@ function SplashContent() {
     return (
       <div className="h-dvh flex flex-col items-center justify-center gap-4 px-6 text-center"
         style={{ background: 'var(--bg-void)' }}>
-        <span className="text-4xl">⚠️</span>
         <div>
-          <p className="text-sm font-bold text-white mb-1">Open this app inside Telegram</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
+            color: '#fff', marginBottom: 6 }}>Bitte in Telegram öffnen</p>
           <p className="text-xs max-w-xs break-words" style={{ color: 'rgba(255,255,255,0.35)' }}>
             {authError}
           </p>
@@ -45,7 +44,7 @@ function SplashContent() {
     )
   }
 
-  const statusText = isInitializing ? 'INITIALIZING...' : 'CONNECTING...'
+  const statusText = isInitializing ? 'INITIALIZING' : 'CONNECTING'
 
   return (
     <div className="h-dvh relative overflow-hidden flex flex-col items-center justify-center"
@@ -53,9 +52,6 @@ function SplashContent() {
 
       {/* Indeterminierter Ladebalken-Keyframe (selbst-enthalten) */}
       <style>{`@keyframes splashLoad{0%{left:-42%}100%{left:100%}}`}</style>
-
-      {/* Gleicher lebendiger Aurora-Hintergrund wie die App */}
-      <AuroraBackground />
 
       {/* Logo — pur (kein Ring, kein Halo) */}
       <div className="relative z-10 flex flex-col items-center"
@@ -66,27 +62,23 @@ function SplashContent() {
         }}>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icon-mark.png" alt="VEXALGO" width={150} height={150}
-          className="mb-5 float"
+        <img src="/icon-mark-v2.png" alt="VEXALGO" width={150} height={120}
+          className="mb-7"
           style={{
-            objectFit: 'contain',
-            // drop-shadow folgt der Logo-Form (kein rechteckiger Schatten wie bei box-shadow)
-            filter: 'drop-shadow(0 0 48px rgba(139,92,246,0.45)) drop-shadow(0 0 90px rgba(91,141,239,0.18))',
+            width: 150, height: 'auto', objectFit: 'contain',
+            filter: 'drop-shadow(0 16px 46px rgba(37,99,255,0.45))',
           }} />
 
         <h1 style={{
-          fontFamily: 'var(--font-display)', fontSize: 38, fontWeight: 800,
-          letterSpacing: '0.06em', color: 'white', marginBottom: 7,
+          fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 600,
+          letterSpacing: '0.26em', textIndent: '0.26em', color: '#fff', marginBottom: 14,
         }}>
-          VEX<span style={{
-            background: 'linear-gradient(120deg, #C4B5FD, #93C5FD 55%, #99F6E4)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>ALGO</span>
+          VEX<span style={{ fontWeight: 300, color: 'var(--text-secondary)' }}>ALGO</span>
         </h1>
 
         <p style={{
-          fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
-          letterSpacing: '0.32em', color: 'var(--text-faint)',
+          fontFamily: 'var(--font-display)', fontSize: 8.5, fontWeight: 500,
+          letterSpacing: '0.42em', textIndent: '0.42em', color: 'var(--text-muted)',
         }}>
           EARN · LEVEL · DOMINATE
         </p>
@@ -101,19 +93,18 @@ function SplashContent() {
           transition: 'opacity 0.4s ease 0.4s',
         }}>
         <div className="relative w-full overflow-hidden"
-          style={{ height: 5, borderRadius: 4, background: 'rgba(255,255,255,0.07)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.4)' }}>
+          style={{ height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
           <span className="absolute top-0"
             style={{
-              height: '100%', width: '42%', borderRadius: 4, left: 0,
-              background: 'linear-gradient(90deg, #8B5CF6, #5EEAD4)',
-              boxShadow: '0 0 12px rgba(94,234,212,0.6)',
-              animation: isInitializing ? 'splashLoad 1.5s ease-in-out infinite' : 'none',
+              height: '100%', width: '42%', borderRadius: 2, left: 0,
+              background: 'linear-gradient(90deg, transparent, #7BA5FF 45%, #2563FF 80%, transparent)',
+              animation: isInitializing ? 'splashLoad 1.6s cubic-bezier(.4,0,.2,1) infinite' : 'none',
               opacity:   isInitializing ? 1 : 0.5,
             }} />
         </div>
         <p className="text-center" style={{
-          marginTop: 11, fontFamily: 'var(--font-display)', fontSize: 9,
-          letterSpacing: '0.25em', color: 'rgba(255,255,255,0.22)',
+          marginTop: 16, fontFamily: 'var(--font-display)', fontSize: 8, fontWeight: 500,
+          letterSpacing: '0.28em', color: 'var(--text-muted)',
         }}>
           {statusText}
         </p>
