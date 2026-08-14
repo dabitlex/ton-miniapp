@@ -7,8 +7,10 @@
 
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useT }         from '@/lib/i18n'
 
 export function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const t = useT()
   const token = useAuthStore(s => s.accessToken)
   const [state, setState] = useState<'checking' | 'open' | 'maintenance'>('checking')
   const [message, setMessage] = useState<string | null>(null)
@@ -88,14 +90,14 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
             fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
             letterSpacing: '-0.02em', color: '#fff',
           }}>
-            Kurze Wartung
+            {t('maint.title')}
           </h1>
 
           <p style={{
             fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)',
             marginTop: 12, maxWidth: 270,
           }}>
-            {message || 'VEXALGO wird gerade aktualisiert. In wenigen Minuten geht es weiter.'}
+            {message || t('maint.body')}
           </p>
 
           <span className="chip" style={{ marginTop: 22, height: 30 }}>
@@ -103,7 +105,7 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
               width: 6, height: 6, borderRadius: '50%', background: 'var(--blue-2)',
               animation: 'maintBreathe 2s ease-in-out infinite',
             }} />
-            Deine XP und Streaks sind sicher
+            {t('maint.safe')}
           </span>
         </div>
 
@@ -122,7 +124,7 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
             marginTop: 16, fontFamily: 'var(--font-display)', fontSize: 8, fontWeight: 500,
             letterSpacing: '0.28em', color: 'var(--text-muted)',
           }}>
-            WIRD AKTUALISIERT
+            {t('maint.updating')}
           </p>
         </div>
       </div>
