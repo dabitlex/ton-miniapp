@@ -7,9 +7,10 @@ import { useLeaderboardStore } from '@/stores/useLeaderboardStore'
 import { useEnergy, useStreak } from '@/features/hooks'
 import { useClanWar }          from '@/features/war/hooks'
 import { useVault }            from '@/features/vault/hooks'
-import { formatNumber }        from '@/lib/utils'
+
 import { xpForLevel, GAME_CONSTANTS } from '@/lib/constants/game'
 import { Icon, IconTile }      from '@/components/ui/Icon'
+import { useI18n }             from '@/lib/i18n'
 
 const fd: React.CSSProperties = { fontFamily: 'var(--font-display)' }
 
@@ -23,6 +24,9 @@ export default function HomePage() {
   const { streakCurrent, streakLongest, canClaim, isClaiming, claimStreak } = useStreak()
   const { war }  = useClanWar()
   const { vault } = useVault()
+  const { t, lang } = useI18n()
+
+  const nf = (n: number) => new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(n)
 
   const needed   = profile ? xpForLevel(Math.min(profile.level, 29)) : 1
   const levelPct = profile ? Math.min(100, (profile.xpCurrentLevel / needed) * 100) : 0
@@ -47,21 +51,26 @@ export default function HomePage() {
 
   /* ── Banner zusammenstellen ── */
   const banners: Banner[] = [
-    { tag: 'UPDATE', tone: 'var(--emerald)', title: 'VEXALGO 2.0\nist da',
-      body: 'Komplett neues Design', cta: 'Was ist neu', href: '/quests', logo: true },
+    { tag: t('home.banner.update'), tone: 'var(--emerald)',
+      title: lang === 'de' ? 'VEXALGO 2.0\nist da' : 'VEXALGO 2.0\nis here',
+      body: lang === 'de' ? 'Komplett neues Design' : 'A completely new design',
+      cta: t('home.banner.whatsNew'), href: '/quests', logo: true },
   ]
   if (vault?.state === 'open') {
-    banners.push({ tag: 'NEU', tone: 'var(--emerald)', title: 'Weekly Vault',
-      body: 'Lose sammeln · Ziehung Sonntag', cta: 'Mehr erfahren', href: '/vault' })
+    banners.push({ tag: t('home.banner.new'), tone: 'var(--emerald)', title: t('vault.title'),
+      body: lang === 'de' ? 'Lose sammeln · Ziehung Sonntag' : 'Collect tickets · draw on Sunday',
+      cta: t('home.banner.learnMore'), href: '/vault' })
   }
   if (war?.state === 'live') {
-    banners.push({ tag: 'KRIEG', tone: 'var(--rose)', title: 'Clan War läuft',
-      body: `Dein Cap heute: ${formatNumber(war.myContribution.today)}/${formatNumber(war.myContribution.dailyCap)}`,
-      cta: 'Zum Schlachtfeld', href: '/clans/war' })
+    banners.push({ tag: t('home.banner.war'), tone: 'var(--rose)', title: t('war.title'),
+      body: `${t('war.myContribution')}: ${nf(war.myContribution.today)}/${nf(war.myContribution.dailyCap)}`,
+      cta: t('home.banner.toBattle'), href: '/clans/war' })
   }
   if (seasonDaysLeft !== null) {
-    banners.push({ tag: 'SEASON', tone: 'var(--gold)', title: `Season ${profile?.season?.number ?? 2} · ${seasonDaysLeft} Tage`,
-      body: 'Top 10 erhalten Bonus-XP', cta: 'Rangliste ansehen', href: '/leaderboard' })
+    banners.push({ tag: t('home.banner.season'), tone: 'var(--gold)',
+      title: `Season ${profile?.season?.number ?? 2} · ${seasonDaysLeft}${lang === 'de' ? ' Tage' : 'd'}`,
+      body: lang === 'de' ? 'Top 10 erhalten Bonus-XP' : 'Top 10 earn bonus XP',
+      cta: t('home.banner.toRanks'), href: '/leaderboard' })
   }
 
   const [bIdx, setBIdx] = useState(0)
@@ -95,7 +104,7 @@ export default function HomePage() {
       {/* ── Kopfzeile ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
         <div style={{ minWidth: 0 }}>
-          <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Willkommen zurück</p>
+          <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{t('home.welcome')}</p>
           <h1 style={{ ...fd, fontSize: 21, fontWeight: 600, letterSpacing: '-0.02em', marginTop: 2 }}>
             {profile.telegramFirstName}
           </h1>
@@ -116,19 +125,19 @@ export default function HomePage() {
       <div className="surface animate-rise" style={{ padding: 18 }}>
         <div className="flex items-start justify-between">
           <div style={{ minWidth: 0 }}>
-            <p className="eyebrow">Season XP</p>
+            <p className="eyebrow">{t('home.seasonXp')}</p>
             <p style={{ ...fd, fontSize: 30, fontWeight: 500, letterSpacing: '-0.035em', margin: '5px 0 0', lineHeight: 1 }}>
-              {formatNumber(profile.seasonXp)}
+              {nf(profile.seasonXp)}
             </p>
             <div className="flex items-center" style={{ gap: 9, marginTop: 10, flexWrap: 'wrap' }}>
               {profile.xpEarnedToday > 0 && (
                 <span style={{ fontSize: 10.5, color: 'var(--emerald)' }}>
-                  ▲ {formatNumber(profile.xpEarnedToday)}
+                  ▲ {nf(profile.xpEarnedToday)}
                 </span>
               )}
               {userRank && (<>
                 <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,.22)' }} />
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Rang #{userRank}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('home.rank', { rank: userRank })}</span>
               </>)}
               <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,.22)' }} />
               <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>
@@ -157,7 +166,7 @@ export default function HomePage() {
         </div>
 
         <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 9 }}>
-          Noch {formatNumber(xpToNext)} XP bis Level {Math.min(profile.level + 1, 30)}
+          {t('home.toNextLevel', { xp: nf(xpToNext), level: Math.min(profile.level + 1, 30) })}
         </p>
 
         <div className="hairline" style={{ margin: '13px 0 11px' }} />
@@ -172,7 +181,7 @@ export default function HomePage() {
           </p>
           {!energy.isFull && minsToNext != null && (
             <p style={{ fontSize: 9.5, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              +{energy.regenMultiplier} · {minsToNext}m
+              {t('home.energyNext', { amount: energy.regenMultiplier, minutes: minsToNext ?? 0 })}
             </p>
           )}
         </div>
@@ -207,7 +216,7 @@ export default function HomePage() {
               animation: 'pulse-glow 2.4s ease-in-out infinite' }} />
           )}
           <div className="flex items-center justify-between" style={{ position: 'relative' }}>
-            <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Streak</p>
+            <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{t('home.streak')}</p>
             <Icon name="flame" size={16} style={{ color: canClaim ? 'var(--blue-3)' : 'var(--gold)' }} />
           </div>
           <p style={{ ...fd, fontSize: 26, fontWeight: 500, marginTop: 3, position: 'relative' }}>{streakCurrent}</p>
@@ -231,13 +240,13 @@ export default function HomePage() {
             <div className="flex items-center justify-between"
               style={{ marginTop: 'auto', paddingTop: 11, position: 'relative' }}>
               <p style={{ fontSize: 10, color: 'var(--blue-2)', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                {isClaiming ? 'Wird geholt…' : `Tag ${streakCurrent + 1} abholen`}
+                {isClaiming ? t('home.streakClaiming') : t('home.streakClaim', { day: streakCurrent + 1 })}
               </p>
               <Icon name="chevronRight" size={13} strokeWidth={2} style={{ color: 'var(--blue-2)' }} />
             </div>
           ) : (
             <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 'auto', paddingTop: 11, position: 'relative' }}>
-              ✓ Heute abgeholt{streakLongest > 0 ? ` · Best ${streakLongest}` : ''}
+              {t('home.streakDone')}{streakLongest > 0 ? ` · ${streakLongest}` : ''}
             </p>
           )}
         </button>
@@ -298,16 +307,16 @@ export default function HomePage() {
           <Link href="/vault" className="surface-accent"
             style={{ padding: 15, borderRadius: 21, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="flex items-center justify-between">
-              <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,.62)', whiteSpace: 'nowrap' }}>Weekly Vault</p>
+              <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,.62)', whiteSpace: 'nowrap' }}>{t('vault.title')}</p>
               <Icon name="lock" size={16} style={{ color: 'rgba(255,255,255,.8)' }} />
             </div>
-            <p style={{ ...fd, fontSize: 23, fontWeight: 500, marginTop: 3 }}>{formatNumber(vault.jackpot)}</p>
+            <p style={{ ...fd, fontSize: 23, fontWeight: 500, marginTop: 3 }}>{nf(vault.jackpot)}</p>
             <div className="flex items-center" style={{ gap: 6, marginTop: 11 }}>
               <Icon name="ticket" size={13} style={{ color: 'rgba(255,255,255,.7)' }} />
-              <p style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{vault.myTickets} Lose</p>
+              <p style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{vault.myTickets} {t('vault.myTickets')}</p>
             </div>
             <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 'auto', paddingTop: 10, whiteSpace: 'nowrap' }}>
-              Ziehung {new Date(vault.drawAt).toLocaleDateString('de-DE', { weekday: 'short' })} 21:00
+              {t('vault.drawIn', { time: new Date(vault.drawAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { weekday: 'short' }) + ' 21:00' })}
             </p>
           </Link>
         )}
@@ -318,7 +327,7 @@ export default function HomePage() {
             style={{ padding: 15, borderRadius: 21, position: 'relative', minWidth: 0,
               display: 'flex', flexDirection: 'column' }}>
             <div className="flex items-center justify-between">
-              <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Clan War</p>
+              <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{t('war.title')}</p>
               <Icon name="swords" size={16} style={{ color: 'var(--rose)' }} />
             </div>
             <div className="flex items-start justify-between" style={{ marginTop: 9, gap: 6, minWidth: 0 }}>
@@ -330,7 +339,7 @@ export default function HomePage() {
                 </div>
                 <p style={{ ...fd, fontSize: 17, fontWeight: 500, color: 'var(--blue-2)', marginTop: 5,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {formatNumber(war.myClan.perCapita)}
+                  {nf(war.myClan.perCapita)}
                 </p>
               </div>
               <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
@@ -341,7 +350,7 @@ export default function HomePage() {
                 </div>
                 <p style={{ ...fd, fontSize: 17, fontWeight: 500, color: 'var(--rose)', marginTop: 5,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {formatNumber(war.rival.perCapita)}
+                  {nf(war.rival.perCapita)}
                 </p>
               </div>
             </div>
@@ -361,12 +370,12 @@ export default function HomePage() {
           <Link href="/clans" className="surface-2"
             style={{ padding: 15, borderRadius: 21, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="flex items-center justify-between">
-              <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Clan</p>
+              <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{t('clan.title')}</p>
               <Icon name="clan" size={16} style={{ color: 'var(--blue-2)' }} />
             </div>
-            <p style={{ ...fd, fontSize: 15, fontWeight: 500, marginTop: 6 }}>Clan beitreten</p>
+            <p style={{ ...fd, fontSize: 15, fontWeight: 500, marginTop: 6 }}>{t('home.clanJoin')}</p>
             <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 'auto', paddingTop: 10 }}>
-              Clan Wars, Missionen und XP im Team
+              {t('home.clanJoinSub')}
             </p>
           </Link>
         )}
