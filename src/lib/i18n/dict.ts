@@ -1,4 +1,4 @@
-// src/lib/i18n/dict.ts
+// src/lib/i18n/dict.ts 
 // Alle Oberflaechentexte. Neue Texte IMMER hier eintragen, nie direkt
 // in Komponenten schreiben — sonst bleibt die Stelle einsprachig.
 //
