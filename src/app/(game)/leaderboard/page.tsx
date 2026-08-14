@@ -8,6 +8,7 @@ import { useUserStore }     from '@/stores/useUserStore'
 import { useAuthStore }     from '@/stores/useAuthStore'
 import { TelegramAvatar }   from '@/components/layout/GameHeader'
 import type { LeaderboardEntry, LeagueTier } from '@/types/game'
+import { useI18n }         from '@/lib/i18n'
 
 // Schalter für den Rewards-Button oben rechts. Steht auf false, solange die
 // Season-2-Belohnungsstaffel noch nicht final ist — Sheet-Code bleibt erhalten.
@@ -97,6 +98,7 @@ function RelicGem({ tier, size = 14 }: { tier: string; size?: number }) {
 }
 
 export default function LeaderboardPage() {
+  const { t, lang } = useI18n()
   useUserStore(s => s.profile)
   // Season-2-Feature: Liga-Filter (null = Global). Chips unter dem
   // Players|Clans-Umschalter; Wechsel resettet den Store (useLeaderboard).
@@ -206,8 +208,8 @@ export default function LeaderboardPage() {
       <div className="shrink-0 px-5 pt-4 pb-2 animate-rise flex items-start justify-between">
         <div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
-            letterSpacing: '-0.02em', color: '#fff' }}>Rangliste</h1>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Season-Wertung</p>
+            letterSpacing: '-0.02em', color: '#fff' }}>{t('ranks.title')}</h1>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{t('ranks.subtitle')}</p>
         </div>
         {/* Rewards-Button vorübergehend ausgeblendet (Aug 2026): Die Staffel in
             REWARD_TIERS stammt aus Season 1 und stimmt für Season 2 nicht mehr.
@@ -256,7 +258,7 @@ export default function LeaderboardPage() {
             WebkitMaskImage: 'linear-gradient(90deg,#000 0,#000 86%,transparent 100%)' }}>
             {([null, 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'legendary'] as (LeagueTier | null)[]).map((lg) => {
               const active = league === lg
-              const label  = lg === null ? 'Global'
+              const label  = lg === null ? t('ranks.global')
                 : lg === 'bronze' ? 'Bronze' : lg === 'silver' ? 'Silber'
                 : lg === 'gold' ? 'Gold' : lg === 'platinum' ? 'Platin'
                 : lg === 'diamond' ? 'Diamant' : 'Legendary'
@@ -450,6 +452,7 @@ function RewardsSheet({ open, onClose, userRank }: { open: boolean; onClose: () 
 
 // ── Podium pillar ─────────────────────────────────────────────
 function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 | 3 }) {
+  const { lang } = useI18n()
   const cfg = {
     1: { ring: 'linear-gradient(140deg,#7BA5FF,#1D4ED8)', glow: 'rgba(37,99,255,0.50)',    size: 62, h: 82, label: 'var(--blue-2)' },
     2: { ring: 'linear-gradient(140deg,rgba(255,255,255,.28),rgba(255,255,255,.10))', glow: 'rgba(255,255,255,0.14)', size: 50, h: 56, label: 'var(--text-secondary)' },
@@ -476,7 +479,7 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
       </div>
       <p className="tabular-nums" style={{ color: cfg.label, fontFamily: 'var(--font-display)',
         fontSize: place === 1 ? 14 : 12.5, fontWeight: 500, marginTop: 2 }}>
-        {entry.seasonXp.toLocaleString('de-DE')}
+        {entry.seasonXp.toLocaleString(lang === 'de' ? 'de-DE' : 'en-US')}
       </p>
       <div className="w-full rounded-t-2xl mt-2 flex items-start justify-center pt-2"
         style={{
@@ -497,6 +500,7 @@ function PodiumPillar({ entry, place }: { entry: LeaderboardEntry; place: 1 | 2 
 
 // ── Entry row ─────────────────────────────────────────────────
 const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entry }, ref) => {
+  const { t, lang } = useI18n()
   const me        = entry.isCurrentUser
   const relicTier = entry.relicTier as string | null
 
@@ -530,7 +534,7 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
             <span className="shrink-0" style={{ fontSize: 8.5, fontWeight: 500, padding: '2px 7px',
               borderRadius: 999, color: '#fff', background: 'rgba(37,99,255,0.55)',
               fontFamily: 'var(--font-display)' }}>
-              DU
+              {t('ranks.you')}
             </span>
           )}
           {/* Founder-Badge + Relic gem neben dem Namen */}
@@ -545,7 +549,7 @@ const EntryRow = forwardRef<HTMLDivElement, { entry: LeaderboardEntry }>(({ entr
       <span className="tabular-nums shrink-0"
         style={{ color: me ? '#fff' : 'var(--text-secondary)', fontFamily: 'var(--font-display)',
           fontSize: 13.5, fontWeight: 500 }}>
-        {entry.seasonXp.toLocaleString('de-DE')}
+        {entry.seasonXp.toLocaleString(lang === 'de' ? 'de-DE' : 'en-US')}
       </span>
     </div>
   )
