@@ -73,7 +73,7 @@ export function SeasonKickoffModal() {
           background: 'radial-gradient(130% 100% at 50% -20%,rgba(139,92,246,.35) 0%,rgba(91,141,239,.14) 45%,transparent 75%)' }}>
           <p className="eyebrow" style={{ color: 'var(--violet-bright)' }}>{meta.tagline}</p>
           <h2 style={{ ...fd, fontSize: 34, margin: '10px 0 4px', letterSpacing: '-0.03em',
-            background: 'linear-gradient(120deg,#C4B5FD,#93C5FD 55%,#99F6E4)',
+            background: 'linear-gradient(120deg,#FFFFFF,#BFD4FF 60%,#8FB4FF)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             SEASON {seasonNumber}
           </h2>
@@ -102,7 +102,7 @@ export function SeasonKickoffModal() {
                   {f.isNew && (
                     <span style={{ display: 'inline-block', fontFamily: 'var(--font-display)',
                       fontSize: 9, fontWeight: 800, letterSpacing: '.14em', color: '#0b0b12',
-                      background: 'linear-gradient(120deg,#A78BFA,#67E8F9)', borderRadius: 6,
+                      background: 'linear-gradient(120deg,#7BA5FF,#2563FF)', borderRadius: 6,
                       padding: '3px 7px', verticalAlign: '1px', marginLeft: 8 }}>NEU</span>
                   )}
                 </p>
