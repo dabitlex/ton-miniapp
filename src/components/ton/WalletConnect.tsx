@@ -7,6 +7,7 @@ import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import { Button }         from '@/components/ui/Button'
 import { CheckCircle, Wallet, LogOut, Copy } from 'lucide-react'
+import { IconTile }       from '@/components/ui/Icon'
 import type { UserProfile } from '@/types/game'
 
 // Raw (0:hex) → UQ... (non-bounceable, Tonkeeper-Standard)
@@ -125,26 +126,26 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
 
     return (
       <div className="space-y-3">
-        <div className="surface p-4" style={{ background: "rgba(52,211,153,0.08)", boxShadow: "inset 0 0 0 1px rgba(52,211,153,0.25)" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle size={14} className="text-emerald-400 shrink-0" />
-            <span className="text-xs font-semibold text-emerald-300">{appName} connected</span>
-            {isMainnet
-              ? <span className="ml-auto text-[10px] text-emerald-400/70">Mainnet ✓</span>
-              : <span className="ml-auto text-[10px] text-amber-400">⚠ Testnet</span>
-            }
-          </div>
+        {/* Zentrierte Karte nach Design-Vorschau */}
+        <div className="surface" style={{ padding: 22, textAlign: 'center' }}>
+          <IconTile name="wallet" size={60} active style={{ margin: '0 auto 15px' }} />
 
-          <div className="flex items-center gap-3">
-            {wallet.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={wallet.imageUrl} alt={appName}
-                className="w-9 h-9 rounded-xl shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-mono font-bold text-white">{short}</p>
-              <p className="text-[10px] text-white/30 font-mono truncate">{uqAddr}</p>
-            </div>
+          <span className="chip" style={{ height: 26, fontSize: 11, color: 'var(--emerald)' }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--emerald)' }} />
+            Verbunden
+          </span>
+
+          <p style={{
+            fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 500,
+            marginTop: 14, wordBreak: 'break-all', lineHeight: 1.5,
+          }}>
+            {short}
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+            {appName}{!isMainnet && ' · Testnet'}
+          </p>
+
+          <div className="flex" style={{ gap: 9, marginTop: 18 }}>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(uqAddr).then(() => {
@@ -152,21 +153,36 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
                   setTimeout(() => setCopied(false), 2000)
                 })
               }}
-              className="shrink-0 p-1.5 rounded-lg bg-white/[0.06]
-                         text-white/40 hover:text-white/70 transition-colors">
-              {copied
-                ? <CheckCircle size={13} className="text-emerald-400" />
-                : <Copy size={13} />
-              }
+              className="btn-secondary press" style={{ flex: 1, height: 42 }}>
+              {copied ? 'Kopiert' : 'Kopieren'}
+            </button>
+            <button onClick={disconnect} className="btn-secondary press"
+              style={{ flex: 1, height: 42, color: 'var(--rose)' }}>
+              Trennen
             </button>
           </div>
         </div>
 
-        <button onClick={disconnect}
-          className="w-full flex items-center justify-center gap-2
-                     text-xs text-white/25 hover:text-white/50 py-1 transition-colors">
-          <LogOut size={11} /> Disconnect Wallet
-        </button>
+        {/* Wozu die Wallet gebraucht wird */}
+        <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>Wozu die Wallet</p>
+        <div className="surface-2" style={{ padding: '3px 16px', borderRadius: 22 }}>
+          {([
+            ['gem',    'Relics kaufen',          'XP-Boost für die Season'],
+            ['users',  'Referrals freischalten', 'Bedingung für validierte Freunde'],
+            ['trophy', 'Token-Launch',           'Auszahlung deiner XP später'],
+          ] as const).map(([icon, title, sub], i, arr) => (
+            <div key={title}>
+              <div className="flex items-center" style={{ gap: 13, padding: '13px 0' }}>
+                <IconTile name={icon} size={36} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 13.5, fontWeight: 500 }}>{title}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</p>
+                </div>
+              </div>
+              {i < arr.length - 1 && <div className="hairline" />}
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
