@@ -1,4 +1,4 @@
-// src/components/providers/I18nGate.tsx
+// src/components/providers/I18nGate.tsx 
 // Verbindet den Sprach-Provider mit dem geladenen Profil: sobald das
 // Profil da ist, gewinnt die dort gespeicherte Wahl ueber den lokalen
 // Startwert. Muss INNERHALB des QueryProviders haengen, weil es den
