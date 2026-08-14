@@ -63,6 +63,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { todayUTC }       from '@/lib/utils'
+import { authedFetch } from '@/lib/authedFetch'
 
 export function useStreak() {
   const token               = useAuthStore(s => s.accessToken)
@@ -78,10 +79,9 @@ export function useStreak() {
 
   const { mutate: claimStreak, isPending } = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/v1/streaks/claim', {
+      const res = await authedFetch('/api/v1/streaks/claim', {
         method:  'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
+              })
       const json = await res.json()
       if (!json.success) throw new Error(json.error)
       return json.data as {
