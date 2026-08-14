@@ -51,8 +51,27 @@ export function initTelegramFullscreen(): void {
       }
       // Verhindert versehentliches Schließen durch Wischen im Fullscreen
       tg.disableVerticalSwipes?.()
+
+      // Hochformat festhalten: Die App ist durchgehend fuer Portrait
+      // gebaut; ein versehentliches Drehen wuerde Layouts zerreissen.
+      // lockOrientation() gibt es ab Bot API 8.0 — aeltere Clients
+      // ignorieren den Aufruf einfach.
+      if (typeof tg.lockOrientation === 'function' &&
+          (typeof tg.isVersionAtLeast !== 'function' || tg.isVersionAtLeast('8.0'))) {
+        tg.lockOrientation()
+      }
     } catch { /* ältere Clients ignorieren */ }
   }
+
+  // Rueckfalloption fuer Clients ohne lockOrientation (z.B. aeltere
+  // Telegram-Versionen oder Browser-Vorschau). Funktioniert nur, wenn der
+  // Browser es zulaesst; schlaegt es fehl, bleibt alles wie bisher.
+  try {
+    const so = (screen as any)?.orientation
+    if (so && typeof so.lock === 'function') {
+      so.lock('portrait').catch(() => { /* vom Browser abgelehnt */ })
+    }
+  } catch { /* ignore */ }
 
   applyInsets()
 
