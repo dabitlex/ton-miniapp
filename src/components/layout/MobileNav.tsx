@@ -5,17 +5,19 @@
 import Link            from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icon, type IconName } from '@/components/ui/Icon'
+import { useT, type DictKey } from '@/lib/i18n'
 
-const NAV: { href: string; icon: IconName; label: string }[] = [
-  { href: '/home',        icon: 'home',   label: 'Home'   },
-  { href: '/quests',      icon: 'quest',  label: 'Quests' },
-  { href: '/leaderboard', icon: 'rank',   label: 'Ranks'  },
-  { href: '/clans',       icon: 'clan',   label: 'Clans'  },
-  { href: '/profile',     icon: 'user',   label: 'Profil' },
+const NAV: { href: string; icon: IconName; label: DictKey }[] = [
+  { href: '/home',        icon: 'home',   label: 'nav.home'    },
+  { href: '/quests',      icon: 'quest',  label: 'nav.quests'  },
+  { href: '/leaderboard', icon: 'rank',   label: 'nav.ranks'   },
+  { href: '/clans',       icon: 'clan',   label: 'nav.clans'   },
+  { href: '/profile',     icon: 'user',   label: 'nav.profile' },
 ]
 
 export function MobileNav() {
   const path = usePathname()
+  const t = useT()
 
   return (
     <nav
@@ -39,7 +41,7 @@ export function MobileNav() {
           <Link
             key={href}
             href={href}
-            aria-label={label}
+            aria-label={t(label)}
             aria-current={active ? 'page' : undefined}
             className="press"
             style={{
