@@ -1,12 +1,12 @@
 // src/app/(game)/vault/page.tsx — VEXALGO 2.0 · Weekly Vault
-// Wöchentliche Verlosung ohne Einsatz. Lose entstehen durch Aktivität 
+// Wöchentliche Verlosung ohne Einsatz. Lose entstehen durch Aktivität
 // (DB-Trigger), der Jackpot wächst mit jedem ausgegebenen Los.
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useVault }  from '@/features/vault/hooks'
-import { formatNumber } from '@/lib/utils'
-import { VAULT_SOURCE_LABEL } from '@/lib/constants/vault'
+
+import { useI18n, type DictKey } from '@/lib/i18n'
 import { Icon, IconTile, type IconName } from '@/components/ui/Icon'
 import type { VaultSource } from '@/lib/constants/vault'
 
@@ -20,12 +20,13 @@ const SOURCE_ICON: Record<VaultSource['key'], IconName> = {
   weekly_quest:  'trophy',
 }
 
-const SOURCE_LABEL_DE: Record<VaultSource['key'], string> = {
-  daily_quests:  'Alle Daily Quests',
-  streak:        'Streak abgeholt',
-  ads:           '5 Ads schauen',
-  clan_missions: 'Clan-Missionen',
-  weekly_quest:  'Weekly Quest',
+/** Los-Quellen -> Uebersetzungsschluessel */
+const SOURCE_KEY: Record<VaultSource['key'], DictKey> = {
+  daily_quests:  'vault.src.dailyQuests',
+  streak:        'vault.src.streak',
+  ads:           'vault.src.ads',
+  clan_missions: 'vault.src.clanMissions',
+  weekly_quest:  'vault.src.weeklyQuest',
 }
 
 /** Restzeit bis zur Ziehung, aktualisiert sich jede Minute */
@@ -44,9 +45,14 @@ function useCountdown(target?: string) {
   return d > 0 ? `${d}T ${h}Std` : h > 0 ? `${h}Std ${m}Min` : `${m}Min`
 }
 
+const nfFor = (lang: string) => (n: number) =>
+  new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(n)
+
 export default function VaultPage() {
   const router = useRouter()
   const { vault, isLoading } = useVault()
+  const { t, lang } = useI18n()
+  const formatNumber = nfFor(lang)
   const drawIn = useCountdown(vault && vault.state === 'open' ? vault.drawAt : undefined)
 
   const Header = (
@@ -58,7 +64,7 @@ export default function VaultPage() {
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,.25)' }}>
         <Icon name="chevronLeft" size={17} strokeWidth={1.8} />
       </button>
-      <h1 style={{ ...fd, fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em' }}>Weekly Vault</h1>
+      <h1 style={{ ...fd, fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em' }}>{t('vault.title')}</h1>
     </div>
   )
 
@@ -116,15 +122,15 @@ export default function VaultPage() {
 
         {/* ── Jackpot ─────────────────────────────────────────── */}
         <div className="surface-accent animate-rise" style={{ padding: '24px 20px', textAlign: 'center' }}>
-          <p className="eyebrow">Jackpot</p>
+          <p className="eyebrow">{t('vault.jackpot')}</p>
           <p style={{ ...fd, fontSize: 40, fontWeight: 500, letterSpacing: '-0.035em',
             margin: '8px 0 2px', lineHeight: 1 }}>
             {formatNumber(vault.jackpot)}
           </p>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>XP · wächst mit jedem Los</p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('vault.jackpotSub')}</p>
           <div className="flex items-center justify-center" style={{ gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
             <span className="chip" style={{ height: 28 }}>Ziehung in {drawIn}</span>
-            <span className="chip" style={{ height: 28 }}>13 Gewinner</span>
+            <span className="chip" style={{ height: 28 }}>{t('vault.winners', { count: 13 })}</span>
           </div>
         </div>
 
@@ -150,7 +156,7 @@ export default function VaultPage() {
         </div>
 
         {/* ── Los-Quellen ─────────────────────────────────────── */}
-        <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>Lose holen — heute</p>
+        <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>{t('vault.sourcesToday')}</p>
         <div className="surface-2" style={{ padding: '3px 16px', borderRadius: 22 }}>
           {vault.sources.map((s, i) => {
             const done = s.earned
@@ -162,7 +168,7 @@ export default function VaultPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ ...fd, fontSize: 13.5, fontWeight: 500,
                       color: done ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-                      {SOURCE_LABEL_DE[s.key] ?? VAULT_SOURCE_LABEL[s.key]}
+                      {t(SOURCE_KEY[s.key])}
                     </p>
                     {!done && s.target > 0 && (
                       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -182,7 +188,7 @@ export default function VaultPage() {
         </div>
 
         {/* ── Gewinne ─────────────────────────────────────────── */}
-        <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>Gewinne</p>
+        <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>{t('vault.prizes')}</p>
         <div style={{ display: 'flex', gap: 9 }}>
           {vault.prizes.map((p, i) => (
             <div key={p.rank} className="surface-2"
