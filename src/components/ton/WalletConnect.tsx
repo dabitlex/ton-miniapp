@@ -9,6 +9,7 @@ import { Button }         from '@/components/ui/Button'
 import { CheckCircle, Wallet, LogOut, Copy } from 'lucide-react'
 import { IconTile }       from '@/components/ui/Icon'
 import type { UserProfile } from '@/types/game'
+import { authedFetch } from '@/lib/authedFetch'
 
 // Raw (0:hex) → UQ... (non-bounceable, Tonkeeper-Standard)
 function rawToUQ(rawAddress: string): string {
@@ -70,9 +71,9 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
 
     const save = async () => {
       try {
-        const res = await fetch('/api/v1/users/wallet', {
+        const res = await authedFetch('/api/v1/users/wallet', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             address:         rawAddress,
             addressFriendly: uqAddress,
@@ -85,9 +86,8 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
 
         const newAchievements = json.data?.newAchievements
 
-        const profileRes  = await fetch('/api/v1/users/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const profileRes  = await authedFetch('/api/v1/users/me', {
+                  })
         const profileJson = await profileRes.json()
         if (profileJson.success) setProfile(profileJson.data as UserProfile)
 
@@ -105,12 +105,11 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
   async function disconnect() {
     try {
       await tonConnectUI.disconnect()
-      await fetch('/api/v1/users/wallet', {
+      await authedFetch('/api/v1/users/wallet', {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      })
+              })
       savedRef.current = null
-      const res  = await fetch('/api/v1/users/me', { headers: { Authorization: `Bearer ${token}` } })
+      const res  = await authedFetch('/api/v1/users/me', { headers: { } })
       const json = await res.json()
       if (json.success) setProfile(json.data as UserProfile)
       toast('info', 'Wallet disconnected')
