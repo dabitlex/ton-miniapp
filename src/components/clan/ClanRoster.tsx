@@ -120,7 +120,7 @@ export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isMana
           const rank    = i + 1
           const online  = isOnline(m.lastActiveAt)
           const pct     = Math.round(((m.contributedXp || 0) / maxXp) * 100)
-          const rankCol = rank === 1 ? '#FBBF24' : rank === 2 ? '#C4B5FD' : rank === 3 ? '#FB923C' : 'var(--text-muted)'
+          const rankCol = rank === 1 ? 'var(--gold)' : rank === 2 ? 'var(--text-secondary)' : rank === 3 ? '#FFB27A' : 'var(--text-muted)'
           return (
             <div key={m.userId} className="flex items-center gap-2.5 px-2 py-2 rounded-2xl"
               style={mine ? {
@@ -134,7 +134,7 @@ export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isMana
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={m.telegramPhotoUrl} alt="" className="w-[34px] h-[34px] rounded-full object-cover" />
                   : <div className="w-[34px] h-[34px] rounded-full flex items-center justify-center font-display font-bold text-[13px]"
-                      style={{ background: 'linear-gradient(150deg,#A78BFA,#7C3AED)', color: '#0A0A12' }}>{initials(m)}</div>}
+                      style={{ background: 'linear-gradient(140deg,#7BA5FF,#1D4ED8)', color: '#fff', fontWeight: 500 }}>{initials(m)}</div>}
                 <span className="absolute bottom-0 right-0 w-[9px] h-[9px] rounded-full"
                   style={{ background: online ? '#34D399' : 'rgba(255,255,255,0.22)', border: '2px solid var(--bg-void)' }} />
               </div>
@@ -146,15 +146,15 @@ export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isMana
                   {m.role === 'officer' && <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0"
                     style={{ color: '#93C5FD', background: 'rgba(91,141,239,0.18)', fontFamily: 'var(--font-display)' }}>OFFICER</span>}
                   {mine && <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0"
-                    style={{ color: '#C4B5FD', background: 'rgba(139,92,246,0.28)', fontFamily: 'var(--font-display)' }}>YOU</span>}
+                    style={{ color: '#fff', background: 'rgba(37,99,255,0.55)', fontFamily: 'var(--font-display)', fontWeight: 500 }}>DU</span>}
                 </div>
                 <div className="h-[4px] rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#8B5CF6,#5EEAD4)' }} />
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#7BA5FF,#2563FF)' }} />
                 </div>
               </div>
 
               <div className="text-right shrink-0">
-                <div className="font-display font-extrabold text-[12px]" style={{ color: '#C4B5FD' }}>{(m.contributedXp || 0).toLocaleString()}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 500, color: 'var(--blue-2)' }}>{(m.contributedXp || 0).toLocaleString('de-DE')}</div>
                 <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>season</div>
               </div>
 
@@ -172,19 +172,19 @@ export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isMana
         {target && mode === 'actions' && (
           <div className="space-y-2">
             {canViewInfo && (
-              <ActionBtn icon={<Info size={16} />} label="View info" color="var(--text-primary)"
+              <ActionBtn icon={<Info size={16} />} label="Infos ansehen" color="var(--text-primary)"
                 onClick={() => loadInfo(target)} />
             )}
             {targetActions.includes('promote') && (
-              <ActionBtn icon={<ChevronUp size={16} />} label="Promote to officer" color="#34D399"
+              <ActionBtn icon={<ChevronUp size={16} />} label="Zum Officer befördern" color="var(--emerald)"
                 disabled={isManaging} onClick={() => { onManage('promote', target.userId); closeSheet() }} />
             )}
             {targetActions.includes('demote') && (
-              <ActionBtn icon={<ChevronDown size={16} />} label="Demote to member" color="#93C5FD"
+              <ActionBtn icon={<ChevronDown size={16} />} label="Zum Mitglied zurückstufen" color="var(--blue-3)"
                 disabled={isManaging} onClick={() => { onManage('demote', target.userId); closeSheet() }} />
             )}
             {targetActions.includes('kick') && (
-              <ActionBtn icon={<UserMinus size={16} />} label="Remove from clan" color="#FB7185"
+              <ActionBtn icon={<UserMinus size={16} />} label="Aus dem Clan entfernen" color="var(--rose)"
                 disabled={isManaging} onClick={() => { onManage('kick', target.userId); closeSheet() }} />
             )}
           </div>
@@ -195,12 +195,12 @@ export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isMana
             <button onClick={() => setMode('actions')}
               className="press flex items-center gap-1 mb-3 text-[12px] font-bold"
               style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
-              <ChevronLeft size={15} /> Back
+              <ChevronLeft size={15} /> Zurück
             </button>
             {infoLoading ? (
               <div className="flex justify-center py-6">
                 <div className="w-5 h-5 rounded-full border-2 animate-spin"
-                  style={{ borderColor: 'rgba(139,92,246,0.3)', borderTopColor: '#A78BFA' }} />
+                  style={{ borderColor: 'rgba(255,255,255,0.12)', borderTopColor: 'var(--blue-2)' }} />
               </div>
             ) : (
               <div className="space-y-2">
