@@ -124,6 +124,8 @@ export const GET = withAuth(async (ctx) => {
     isNewUser:            false,
     onboardingCompleted:  u.onboarding_completed,
     referralCode:         u.referral_code,
+    // Sprachwahl: null bedeutet "Geraetesprache verwenden"
+    languagePreference:   u.language_preference ?? null,
     referralEligible:     u.referral_eligible,
     // Energie (live berechnet)
     energy: {
@@ -179,10 +181,19 @@ export const PATCH = withAuth(async (ctx) => {
   try { body = await ctx.req.json() }
   catch { return err('Ungültiger Body', 'BAD_REQUEST') }
 
-  const allowed = ['telegram_photo_url', 'telegram_username', 'onboarding_completed']
+  const allowed = ['telegram_photo_url', 'telegram_username', 'onboarding_completed',
+                   'language_preference']
   const updates: Record<string, any> = {}
   for (const key of allowed) {
     if (key in body) updates[key] = body[key]
+  }
+
+  // Sprache: nur 'de' oder 'en' zulassen, null setzt auf Geraetesprache zurueck
+  if ('language_preference' in updates) {
+    const v = updates.language_preference
+    if (v !== null && v !== 'de' && v !== 'en') {
+      return err('Ungültige Sprache', 'INVALID_LANGUAGE')
+    }
   }
 
   if (Object.keys(updates).length === 0) {
