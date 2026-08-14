@@ -6,6 +6,7 @@ import { useAuthStore }   from '@/stores/useAuthStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import { showAd, getBlockId } from '@/lib/adsgram'
+import { authedFetch } from '@/lib/authedFetch'
 
 interface AdStatus {
   watchedToday:   number
@@ -16,9 +17,15 @@ interface AdStatus {
   xpPerAd:        number
 }
 
-async function apiFetch<T>(url: string, token: string): Promise<T> {
-  const res  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-  const json = await res.json()
+async function apiFetch<T>(url: string, _token: string, options?: RequestInit): Promise<T> {
+  // Siehe Kommentar in features/quests/hooks.ts: eigener fetch ohne
+  // 401-Refresh liess Ad-Belohnungen nach Token-Ablauf dauerhaft scheitern.
+  const res  = await authedFetch(url, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  })
+  const json = await res.json().catch(() => null)
+  if (!json) throw new Error('Server nicht erreichbar')
   if (!json.success) throw new Error(json.error ?? 'Request failed')
   return json.data as T
 }
