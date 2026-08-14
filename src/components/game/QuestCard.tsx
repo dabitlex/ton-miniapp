@@ -151,8 +151,10 @@ export function QuestCard({
 
       {/* Belohnung / Aktion */}
       {isDone && !watchMode ? (
+        /* Kein Betrag: bei verdoppelten Quests waere er sonst irrefuehrend
+           (xpGranted enthaelt den Bonus nicht immer). */
         <p style={{ ...fd, fontSize: 12.5, color: 'var(--emerald)', whiteSpace: 'nowrap' }}>
-          +{quest.xpGranted ?? boostedXp}
+          Fertig
         </p>
       ) : (
         <button
