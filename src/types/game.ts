@@ -44,6 +44,7 @@ export interface UserProfile {
   currentSeasonId: string | null
   seasonXp: number
   referralCode: string
+  languagePreference?: 'de' | 'en' | null
   referralEligible: boolean
   onboardingCompleted: boolean
   lastActiveAt: string
