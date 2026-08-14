@@ -1,4 +1,4 @@
-// src/components/layout/MaintenanceGate.tsx
+// src/components/layout/MaintenanceGate.tsx 
 // VEXALGO — Maintenance Gate
 // Prüft beim App-Start den Wartungsstatus. Bei aktiver Wartung (und kein
 // Admin) wird ein schlichter Wartungs-Screen gezeigt statt der App.
