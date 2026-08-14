@@ -1,4 +1,4 @@
-// src/lib/i18n/dict.ts 
+// src/lib/i18n/dict.ts
 // Alle Oberflaechentexte. Neue Texte IMMER hier eintragen, nie direkt
 // in Komponenten schreiben — sonst bleibt die Stelle einsprachig.
 //
@@ -57,6 +57,8 @@ const de = {
   'home.banner.war':        'KRIEG',
   'home.banner.season':     'SEASON',
   'home.banner.whatsNew':   'Was ist neu',
+  'home.banner.group':      'GRUPPE',
+  'home.banner.joinGroup':  'Gruppe beitreten',
   'home.banner.learnMore':  'Mehr erfahren',
   'home.banner.toBattle':   'Zum Schlachtfeld',
   'home.banner.toRanks':    'Rangliste ansehen',
@@ -249,6 +251,8 @@ const en: Record<DictKey, string> = {
   'home.banner.war':        'WAR',
   'home.banner.season':     'SEASON',
   'home.banner.whatsNew':   'What’s new',
+  'home.banner.group':      'GROUP',
+  'home.banner.joinGroup':  'Join the group',
   'home.banner.learnMore':  'Learn more',
   'home.banner.toBattle':   'To the battlefield',
   'home.banner.toRanks':    'View leaderboard',
