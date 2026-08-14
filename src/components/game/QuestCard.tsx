@@ -2,6 +2,7 @@
 // Die Props sind unveraendert — nur die Darstellung wurde neu gebaut.
 'use client'
 import { Icon, IconTile, type IconName } from '@/components/ui/Icon'
+import { useT } from '@/lib/i18n'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
 
 interface QuestCardProps {
@@ -52,6 +53,7 @@ export function QuestCard({
   quest, onComplete, completing, activeBoostPct = 0, index = 0,
   watchMode = false, onWatch, watching = false, watchDisabled = false,
 }: QuestCardProps) {
+  const t = useT()
   const boostedXp = activeBoostPct > 0
     ? Math.floor(quest.template.xpReward * (1 + activeBoostPct / 100))
     : quest.template.xpReward
@@ -110,7 +112,7 @@ export function QuestCard({
 
         {isDone && !watchMode ? (
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-            Abgeschlossen
+            {t('quests.completed')}
           </p>
         ) : watchMode ? (
           <div className="flex items-center" style={{ gap: 7, marginTop: 6 }}>
@@ -154,7 +156,7 @@ export function QuestCard({
         /* Kein Betrag: bei verdoppelten Quests waere er sonst irrefuehrend
            (xpGranted enthaelt den Bonus nicht immer). */
         <p style={{ ...fd, fontSize: 12.5, color: 'var(--emerald)', whiteSpace: 'nowrap' }}>
-          Fertig
+          {t('common.done')}
         </p>
       ) : (
         <button
@@ -170,7 +172,7 @@ export function QuestCard({
           {completing || watching
             ? '…'
             : watchMode
-              ? (watchDisabled ? 'Fertig' : `+${boostedXp} XP`)
+              ? (watchDisabled ? t('common.done') : `+${boostedXp} XP`)
               : `+${boostedXp}${canClaim ? ' XP' : ''}`}
         </button>
       )}
