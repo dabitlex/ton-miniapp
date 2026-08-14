@@ -293,60 +293,64 @@ export function ReferralSection() {
   return (
     <>
       <div className="space-y-3">
-        <div className="surface-accent p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="display text-sm text-white">Invite Friends</h3>
-            <span className="text-xs font-bold" style={{ color: 'var(--violet-bright)' }}>+500 XP / friend</span>
-          </div>
-
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            Share your personal link. You earn 500 XP once your friend
-            reaches 2,000 XP and connects a TON wallet.
+        {/* Belohnung */}
+        <div className="surface-accent" style={{ padding: 20, textAlign: 'center' }}>
+          <p className="eyebrow">Pro validiertem Freund</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 500,
+            letterSpacing: '-0.03em', margin: '8px 0 2px' }}>+500 XP</p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            für dich · dein Freund startet mit Bonus
           </p>
+        </div>
 
-          {/* Link preview */}
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
-            style={{ background: 'var(--surface-press)', boxShadow: 'inset 0 1px 0 var(--edge-soft)' }}>
-            <span className="text-xs font-mono truncate flex-1" style={{ color: 'var(--text-muted)' }}>
-              {data?.referralLink}
-            </span>
-            <button onClick={copyLink} className="shrink-0 p-1 transition-colors" style={{ color: 'var(--text-faint)' }}>
-              {copied
-                ? <CheckCircle size={14} style={{ color: 'var(--emerald)' }} />
-                : <Copy size={14} />
-              }
+        {/* Einladungslink */}
+        <div className="surface-2" style={{ padding: 16 }}>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Dein Einladungslink</p>
+          <div className="flex items-center" style={{ gap: 9, marginTop: 10 }}>
+            <div style={{ flex: 1, minWidth: 0, padding: '11px 13px', borderRadius: 13,
+              background: 'rgba(0,0,0,.28)', boxShadow: 'inset 0 0 0 .5px rgba(255,255,255,.09)' }}>
+              <p className="truncate" style={{ fontFamily: 'var(--font-display)', fontSize: 12 }}>
+                {data?.referralLink}
+              </p>
+            </div>
+            <button onClick={copyLink} className="btn-primary press"
+              style={{ width: 'auto', height: 42, padding: '0 16px', fontSize: 12.5, borderRadius: 12 }}>
+              {copied ? 'Kopiert' : 'Kopieren'}
             </button>
           </div>
 
-          {/* Share Button — opens Custom Share Modal */}
-          <button
-            onClick={openShareModal}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white text-sm font-bold press"
-            style={{
-              background: 'var(--aurora)',
-              boxShadow: '0 6px 18px rgba(124,58,237,0.34), inset 0 1px 0 rgba(255,255,255,0.2)',
-            }}>
-            <Share2 size={15} /> Share Link
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginTop: 11 }}>
+            <button onClick={openShareModal} className="btn-primary press" style={{ height: 42, fontSize: 12.5 }}>
+              Auf Telegram teilen
+            </button>
+            <button onClick={openShareModal} className="btn-secondary press" style={{ height: 42, fontSize: 12.5 }}>
+              Andere Apps
+            </button>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="surface p-3 text-center">
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <Users size={12} className="text-violet-400" />
-              <p className="text-lg font-black text-white">{data?.totalReferrals ?? 0}</p>
+        {/* Statistik */}
+        <div className="surface-2" style={{ padding: 16 }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500 }}>
+                {data?.totalReferrals ?? 0}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Geworben</p>
             </div>
-            <p className="text-[10px] text-white/35">Invited</p>
-          </div>
-          <div className="surface p-3 text-center">
-            <div className="flex items-center justify-center gap-1.5 mb-1">
-              <Gift size={12} className="text-emerald-400" />
-              <p className="text-lg font-black text-white">{data?.validReferrals ?? 0}</p>
+            <div style={{ width: .5, height: 32, background: 'rgba(255,255,255,.12)' }} />
+            <div>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500,
+                color: 'var(--blue-2)' }}>{data?.validReferrals ?? 0}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Validiert</p>
             </div>
-            <p className="text-[10px] text-white/35">
-              Confirmed · +{(data?.validReferrals ?? 0) * 500} XP
-            </p>
+            <div style={{ width: .5, height: 32, background: 'rgba(255,255,255,.12)' }} />
+            <div>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500 }}>
+                {((data?.validReferrals ?? 0) * 500).toLocaleString('de-DE')}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>XP erhalten</p>
+            </div>
           </div>
         </div>
 
