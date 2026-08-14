@@ -1,4 +1,4 @@
-// src/components/layout/MobileNav.tsx — VEXALGO 2.0
+// src/components/layout/MobileNav.tsx — VEXALGO 2.0 
 // Aktives Ziel: groessere, gefuellte Kachel, die aus der Leiste herausragt.
 // Inaktive Ziele: duenne Linien-Icons ohne Beschriftung.
 'use client'
