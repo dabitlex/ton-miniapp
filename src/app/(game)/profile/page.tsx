@@ -16,10 +16,12 @@ import { TelegramAvatar }  from '@/components/layout/GameHeader'
 import { WalletConnect }   from '@/components/ton/WalletConnect'
 import { ReferralSection } from '@/components/game/ReferralSection'
 import { NotificationSettings } from '@/components/game/NotificationSettings'
+import { LanguageSettings }     from '@/components/game/LanguageSettings'
 import { BottomSheet }     from '@/components/ui/BottomSheet'
 import { XpHistorySheet }  from '@/components/game/XpHistorySheet'
-import { formatNumber }    from '@/lib/utils'
+
 import { Icon, IconTile, type IconName } from '@/components/ui/Icon'
+import { useI18n }     from '@/lib/i18n'
 
 type SheetId = 'wallet' | 'referral' | 'settings' | 'activity' | null
 
@@ -60,6 +62,7 @@ export default function ProfilePage() {
   const token   = useAuthStore(s => s.accessToken)
   const [sheet, setSheet]   = useState<SheetId>(null)
   const [ringIn, setRingIn] = useState(false)
+  const { t, lang }         = useI18n()
 
   // Gleicher Query-Key wie ReferralSection -> von React Query dedupliziert
   const { data: refData } = useQuery({
@@ -117,6 +120,8 @@ export default function ProfilePage() {
     )
   }
 
+  const nf = (n: number) => new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(n)
+
   const needed     = xpForLevel(Math.min(profile.level, 29))
   const pct        = Math.min(100, Math.round((profile.xpCurrentLevel / needed) * 100))
   const dashOffset = RING_C * (1 - (ringIn ? pct : 0) / 100)
@@ -124,12 +129,12 @@ export default function ProfilePage() {
   const walletConnected = !!profile.wallet && profile.wallet.status === 'connected'
   const walletAddr = walletConnected && profile.wallet?.address
     ? `${profile.wallet.address.slice(0, 4)}…${profile.wallet.address.slice(-4)}`
-    : 'Nicht verbunden'
+    : t('profile.walletNone')
 
   const refEligible = !!refData?.referralEligible || profile.referralEligible
   const referralSub = refEligible
-    ? `${refData?.invitedCount ?? 0} geworben · ${refData?.validReferrals ?? 0} bestätigt`
-    : 'Gesperrt · 3 Schritte zum Freischalten'
+    ? t('profile.inviteStats', { invited: refData?.invitedCount ?? 0, valid: refData?.validReferrals ?? 0 })
+    : (lang === 'de' ? 'Gesperrt · 3 Schritte zum Freischalten' : 'Locked · 3 steps to unlock')
 
   const hasTrend = !!trend && trend.some(v => v > 0)
   const trendMax = hasTrend ? Math.max(...trend!, 1) : 1
@@ -176,7 +181,7 @@ export default function ProfilePage() {
             {profile.telegramFirstName}
           </h1>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
-            {profile.telegramUsername ? `@${profile.telegramUsername}` : 'Kein Benutzername'}
+            {profile.telegramUsername ? `@${profile.telegramUsername}` : t('profile.noUsername')}
           </p>
           <div className="flex items-center" style={{ gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
             {profile.isFounder && (
@@ -196,19 +201,19 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between" style={{ marginBottom: hasTrend ? 15 : 0 }}>
           <div>
             <p style={{ ...fd, fontSize: 21, fontWeight: 500, color: 'var(--blue-2)' }}>
-              {formatNumber(profile.xpTotal)}
+              {nf(profile.xpTotal)}
             </p>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Total XP</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t('profile.totalXp')}</p>
           </div>
           <div style={{ width: 0.5, height: 34, background: 'rgba(255,255,255,0.12)' }} />
           <div>
-            <p style={{ ...fd, fontSize: 21, fontWeight: 500 }}>{formatNumber(profile.seasonXp)}</p>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Season XP</p>
+            <p style={{ ...fd, fontSize: 21, fontWeight: 500 }}>{nf(profile.seasonXp)}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t('home.seasonXp')}</p>
           </div>
           <div style={{ width: 0.5, height: 34, background: 'rgba(255,255,255,0.12)' }} />
           <div>
             <p style={{ ...fd, fontSize: 21, fontWeight: 500 }}>{profile.streakLongest}</p>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Best Streak</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t('profile.bestStreak')}</p>
           </div>
         </div>
 
@@ -216,7 +221,7 @@ export default function ProfilePage() {
           <>
             <div className="hairline" style={{ marginBottom: 14 }} />
             <div className="flex items-center justify-between">
-              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>XP der letzten 14 Tage</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('profile.xpTrend')}</p>
               {trendPct !== null && (
                 <span style={{ fontSize: 10.5, color: trendPct >= 0 ? 'var(--emerald)' : 'var(--rose)' }}>
                   {trendPct >= 0 ? '▲' : '▼'} {Math.abs(trendPct)}%
@@ -237,47 +242,52 @@ export default function ProfilePage() {
       </div>
 
       {/* Fortschritt */}
-      <p className="eyebrow" style={{ margin: '22px 2px 11px' }}>Fortschritt</p>
+      <p className="eyebrow" style={{ margin: '22px 2px 11px' }}>{t('profile.progress')}</p>
       <div className="surface-2" style={{ padding: '3px 16px', borderRadius: 22 }}>
         {profile.achievementsEnabled && (
-          <Row icon="trophy" title="Achievements" sub="Freigeschaltete Erfolge ansehen"
+          <Row icon="trophy" title={t('profile.achievements')} sub={t('profile.achievementsSub')}
             onClick={() => router.push('/achievements')} />
         )}
-        <Row icon="clock" title="XP-Verlauf" sub="Woher deine XP kamen"
+        <Row icon="clock" title={t('profile.xpHistory')} sub={t('profile.xpHistorySub')}
           onClick={() => setSheet('activity')} />
-        <Row icon="gem" title="Relics & Boosts"
-          sub={profile.ecosystemBoost ? `+${profile.ecosystemBoost}% XP aktiv` : 'XP-Boost für die Season'}
+        <Row icon="gem" title={t('profile.relics')}
+          sub={profile.ecosystemBoost
+            ? t('profile.relicsActive', { percent: profile.ecosystemBoost })
+            : t('profile.relicsSub')}
           onClick={() => router.push('/ecosystem')} last />
       </div>
 
       {/* Konto */}
-      <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>Konto</p>
+      <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>{t('profile.account')}</p>
       <div className="surface-2" style={{ padding: '3px 16px', borderRadius: 22 }}>
-        <Row icon="wallet" title="TON Wallet" sub={walletAddr}
+        <Row icon="wallet" title={t('profile.wallet')} sub={walletAddr}
           onClick={() => setSheet('wallet')}
           right={walletConnected
             ? <span className="chip" style={{ height: 22, fontSize: 10, padding: '0 9px', color: 'var(--emerald)' }}>
-                Verbunden
+                {t('common.connected')}
               </span>
             : undefined} />
-        <Row icon="users" title="Freunde einladen" sub={referralSub}
+        <Row icon="users" title={t('profile.invite')} sub={referralSub}
           onClick={() => setSheet('referral')}
           right={<span style={{ fontSize: 11, color: 'var(--blue-2)' }}>+500 XP</span>} />
-        <Row icon="gear" title="Einstellungen" sub="Benachrichtigungen & Vorlieben"
+        <Row icon="gear" title={t('profile.settings')} sub={t('profile.settingsSub')}
           onClick={() => setSheet('settings')} last />
       </div>
 
       {/* Sheets — unveraenderte Komponenten */}
-      <BottomSheet open={sheet === 'wallet'} onClose={() => setSheet(null)} title="TON Wallet">
+      <BottomSheet open={sheet === 'wallet'} onClose={() => setSheet(null)} title={t('profile.wallet')}>
         <WalletConnect />
       </BottomSheet>
 
-      <BottomSheet open={sheet === 'referral'} onClose={() => setSheet(null)} title="Freunde einladen">
+      <BottomSheet open={sheet === 'referral'} onClose={() => setSheet(null)} title={t('profile.invite')}>
         <ReferralSection />
       </BottomSheet>
 
-      <BottomSheet open={sheet === 'settings'} onClose={() => setSheet(null)} title="Einstellungen">
-        <NotificationSettings />
+      <BottomSheet open={sheet === 'settings'} onClose={() => setSheet(null)} title={t('profile.settings')}>
+        <div className="space-y-3">
+          <NotificationSettings />
+          <LanguageSettings />
+        </div>
       </BottomSheet>
 
       <XpHistorySheet open={sheet === 'activity'} onClose={() => setSheet(null)} />
