@@ -1,6 +1,6 @@
 // src/app/(game)/home/page.tsx — VEXALGO 2.0
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useUserStore }        from '@/stores/useUserStore'
 import { useLeaderboardStore } from '@/stores/useLeaderboardStore'
@@ -65,11 +65,27 @@ export default function HomePage() {
   }
 
   const [bIdx, setBIdx] = useState(0)
+  // Nach einer Wischgeste pausiert der automatische Wechsel kurz,
+  // damit der Nutzer in Ruhe lesen kann.
+  const [bPaused, setBPaused] = useState(false)
+  const touchX = useRef<number | null>(null)
+
   useEffect(() => {
-    if (banners.length < 2) return
+    if (banners.length < 2 || bPaused) return
     const t = setInterval(() => setBIdx(i => (i + 1) % banners.length), 4500)
     return () => clearInterval(t)
-  }, [banners.length])
+  }, [banners.length, bPaused])
+
+  useEffect(() => {
+    if (!bPaused) return
+    const t = setTimeout(() => setBPaused(false), 12000)
+    return () => clearTimeout(t)
+  }, [bPaused, bIdx])
+
+  const goBanner = (dir: 1 | -1) => {
+    setBPaused(true)
+    setBIdx(i => (i + dir + banners.length) % banners.length)
+  }
 
   if (!profile) return null
 
@@ -156,7 +172,7 @@ export default function HomePage() {
           </p>
           {!energy.isFull && minsToNext != null && (
             <p style={{ fontSize: 9.5, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              +1 · {minsToNext}m
+              +{energy.regenMultiplier} · {minsToNext}m
             </p>
           )}
         </div>
@@ -164,7 +180,7 @@ export default function HomePage() {
 
       {/* ── Schnellzugriff ────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}>
-        <Link href="/quests"><IconTile name="quest" size={56} active /></Link>
+        <Link href="/quests"><IconTile name="quest" size={56} /></Link>
         {vault?.enabled
           ? <Link href="/vault"><IconTile name="lock" size={56} /></Link>
           : <Link href="/achievements"><IconTile name="trophy" size={56} /></Link>}
@@ -228,7 +244,18 @@ export default function HomePage() {
 
         {/* Info-Karussell */}
         <Link href={banners[bIdx]?.href ?? '/quests'} className="surface-2"
-          style={{ padding: 0, borderRadius: 21, position: 'relative', overflow: 'hidden', minWidth: 0, display: 'block' }}>
+          style={{ padding: 0, borderRadius: 21, position: 'relative', overflow: 'hidden',
+            minWidth: 0, display: 'block', touchAction: 'pan-y' }}
+          onTouchStart={e => { touchX.current = e.touches[0]?.clientX ?? null }}
+          onTouchEnd={e => {
+            const start = touchX.current
+            touchX.current = null
+            if (start == null) return
+            const dx = (e.changedTouches[0]?.clientX ?? start) - start
+            if (Math.abs(dx) < 34) return
+            e.preventDefault()          // Wischen soll nicht als Tippen gelten
+            goBanner(dx < 0 ? 1 : -1)
+          }}>
           <div style={{ display: 'flex', transition: 'transform .55s cubic-bezier(.4,0,.2,1)',
             transform: `translateX(-${bIdx * 100}%)`, height: '100%' }}>
             {banners.map((b, i) => (
@@ -252,10 +279,15 @@ export default function HomePage() {
             ))}
           </div>
           {banners.length > 1 && (
-            <div style={{ position: 'absolute', bottom: 11, right: 14, display: 'flex', gap: 4 }}>
+            <div style={{ position: 'absolute', bottom: 6, right: 8, display: 'flex', gap: 2 }}>
               {banners.map((_, i) => (
-                <span key={i} style={{ width: 5, height: 5, borderRadius: '50%',
-                  background: i === bIdx ? 'linear-gradient(135deg,#7BA5FF,#2563FF)' : 'rgba(255,255,255,.14)' }} />
+                <button key={i} aria-label={`Banner ${i + 1}`}
+                  onClick={e => { e.preventDefault(); setBPaused(true); setBIdx(i) }}
+                  style={{ border: 'none', background: 'none', padding: 6, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', display: 'block',
+                    background: i === bIdx ? 'linear-gradient(135deg,#7BA5FF,#2563FF)' : 'rgba(255,255,255,.14)' }} />
+                </button>
               ))}
             </div>
           )}
