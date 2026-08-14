@@ -8,6 +8,7 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '@/lib/i18n'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUserStore } from '@/stores/useUserStore'
 import { BottomSheet } from '@/components/ui/BottomSheet'
@@ -23,31 +24,33 @@ interface XpEntry {
 }
 type Cat = 'all' | 'quests' | 'clan' | 'bonuses'
 
-const SRC: Record<string, { label: string; cat: Cat; color: string; bg: string; Icon: LucideIcon }> = {
-  quest_daily:    { label: 'Daily Quest',    cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: Target },
-  quest_weekly:   { label: 'Weekly Quest',   cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: CalendarCheck },
-  quest_special:  { label: 'Mystery Box',    cat: 'quests',  color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
-  clan_mission:   { label: 'Clan Mission',   cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Shield },
-  clan_war_win:   { label: 'Clan War',       cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Swords },
-  streak_bonus:   { label: 'Streak Bonus',   cat: 'bonuses', color: '#FFB27A', bg: 'rgba(251,146,60,.16)', Icon: Flame },
-  referral_bonus: { label: 'Referral Bonus', cat: 'bonuses', color: 'var(--emerald)', bg: 'rgba(52,211,153,.16)', Icon: UserPlus },
-  achievement:    { label: 'Achievement',    cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Medal },
-  ad_reward:      { label: 'Ad Reward',      cat: 'bonuses', color: '#7FE3E0', bg: 'rgba(94,234,212,.16)', Icon: Play },
-  season_bonus:   { label: 'Season-Bonus',   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Crown },
-  vault_win:      { label: 'Weekly Vault',   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
-  pvp_win:        { label: 'PvP-Sieg',       cat: 'bonuses', color: 'var(--rose)', bg: 'rgba(251,113,133,.16)', Icon: Swords },
-  admin_grant:    { label: 'Bonus',          cat: 'bonuses', color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Sparkles },
-  correction:     { label: 'Korrektur',      cat: 'bonuses', color: 'rgba(255,255,255,.6)', bg: 'rgba(255,255,255,.08)', Icon: RefreshCw },
+const SRC: Record<string, { label: Record<'de'|'en', string>; cat: Cat; color: string; bg: string; Icon: LucideIcon }> = {
+  quest_daily:    { label: { de: 'Daily Quest', en: 'Daily quest' },    cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: Target },
+  quest_weekly:   { label: { de: 'Weekly Quest', en: 'Weekly quest' },   cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: CalendarCheck },
+  quest_special:  { label: { de: 'Mystery Box', en: 'Mystery box' },    cat: 'quests',  color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
+  clan_mission:   { label: { de: 'Clan Mission', en: 'Clan mission' },   cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Shield },
+  clan_war_win:   { label: { de: 'Clan War', en: 'Clan war' },       cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Swords },
+  streak_bonus:   { label: { de: 'Streak Bonus', en: 'Streak bonus' },   cat: 'bonuses', color: '#FFB27A', bg: 'rgba(251,146,60,.16)', Icon: Flame },
+  referral_bonus: { label: { de: 'Referral Bonus', en: 'Referral bonus' }, cat: 'bonuses', color: 'var(--emerald)', bg: 'rgba(52,211,153,.16)', Icon: UserPlus },
+  achievement:    { label: { de: 'Achievement', en: 'Achievement' },    cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Medal },
+  ad_reward:      { label: { de: 'Ad Reward', en: 'Ad reward' },      cat: 'bonuses', color: '#7FE3E0', bg: 'rgba(94,234,212,.16)', Icon: Play },
+  season_bonus:   { label: { de: 'Season-Bonus', en: 'Season bonus' },   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Crown },
+  vault_win:      { label: { de: 'Weekly Vault', en: 'Weekly Vault' },   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
+  pvp_win:        { label: { de: 'PvP-Sieg', en: 'PvP win' },       cat: 'bonuses', color: 'var(--rose)', bg: 'rgba(251,113,133,.16)', Icon: Swords },
+  admin_grant:    { label: { de: 'Bonus', en: 'Bonus' },          cat: 'bonuses', color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Sparkles },
+  correction:     { label: { de: 'Korrektur', en: 'Correction' },      cat: 'bonuses', color: 'rgba(255,255,255,.6)', bg: 'rgba(255,255,255,.08)', Icon: RefreshCw },
 }
-const FALLBACK = { label: 'XP', cat: 'bonuses' as Cat, color: '#ffffff', bg: 'rgba(255,255,255,.08)', Icon: Sparkles }
+const FALLBACK = { label: { de: 'XP', en: 'XP' }, cat: 'bonuses' as Cat, color: '#ffffff', bg: 'rgba(255,255,255,.08)', Icon: Sparkles }
 const meta = (s: string) => SRC[s] ?? FALLBACK
 
 // Welche Quellen ein Detail-Popup haben (auflösbar via source_ref_id)
 const DETAILABLE = new Set(['quest_daily', 'quest_weekly', 'achievement'])
 
-const CHIPS: { id: Cat; label: string }[] = [
-  { id: 'all', label: 'Alle' }, { id: 'quests', label: 'Quests' },
-  { id: 'clan', label: 'Clan' }, { id: 'bonuses', label: 'Boni' },
+const CHIPS: { id: Cat; label: Record<'de'|'en', string> }[] = [
+  { id: 'all', label: { de: 'Alle', en: 'All' } },
+  { id: 'quests', label: { de: 'Quests', en: 'Quests' } },
+  { id: 'clan', label: { de: 'Clan', en: 'Clan' } },
+  { id: 'bonuses', label: { de: 'Boni', en: 'Bonuses' } },
 ]
 
 function rel(iso: string): string {
@@ -82,6 +85,7 @@ interface DetailState {
 }
 
 export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { lang } = useI18n()
   const token  = useAuthStore(s => s.accessToken)
   const userId = useUserStore(s => s.profile?.id)
 
@@ -266,7 +270,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
                       background: 'linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.04))',
                       boxShadow: 'inset 0 1px 0 rgba(255,255,255,.20), inset 0 0 0 .5px rgba(255,255,255,.07)' }),
               }}>
-              {c.label}
+              {c.label[lang]}
             </button>
           )
         })}
@@ -288,10 +292,10 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
       )}
 
       {!loading && groups.map(g => (
-        <div key={g.label}>
+        <div key={g.label[lang]}>
           <div className="sticky top-0 z-[1] py-2 px-1.5 eyebrow"
             style={{ color: 'var(--text-muted)', background: 'linear-gradient(180deg, #0B1220 70%, transparent)' }}>
-            {g.label}
+            {g.label[lang]}
           </div>
           <div className="space-y-1.5">
             {g.items.map(e => {
@@ -318,7 +322,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="leading-tight" style={{ fontSize: 13.5, fontWeight: 500,
-                      color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{m.label}</p>
+                      color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{m.label[lang]}</p>
                     <p className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                       {rel(e.createdAt)}
                       {e.doubled && (
@@ -379,7 +383,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
               <dm.Icon size={28} strokeWidth={1.9} />
             </div>
             <div className="flex items-center justify-center gap-2">
-              <div className="eyebrow" style={{ color: 'var(--text-faint)' }}>{dm.label}</div>
+              <div className="eyebrow" style={{ color: 'var(--text-faint)' }}>{dm.label[lang]}</div>
               {detail.entry.doubled && (
                 <span className="text-[9px] font-extrabold px-1.5 py-px rounded-full"
                   style={{ color: '#6EE7B7', background: 'rgba(52,211,153,.16)', fontFamily: 'var(--font-display)' }}>×2</span>
@@ -393,7 +397,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
             ) : (
               <>
                 <h3 className="display text-[19px] mt-1.5" style={{ color: 'var(--text-primary)' }}>
-                  {detail.title ?? dm.label}
+                  {detail.title ?? dm.label[lang]}
                 </h3>
                 <p className="text-[12.5px] mt-2.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                   {detail.description
