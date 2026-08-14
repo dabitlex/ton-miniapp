@@ -8,6 +8,7 @@ import { useEnergy }    from '@/features/hooks'
 import { QuestCard }    from '@/components/game/QuestCard'
 import { OnboardingQuests } from '@/components/game/OnboardingQuests'
 import { Icon }         from '@/components/ui/Icon'
+import { useI18n }      from '@/lib/i18n'
 import { GAME_CONSTANTS } from '@/lib/constants/game'
 import type { DailyQuest } from '@/types/game'
 
@@ -21,6 +22,7 @@ export default function QuestsPage() {
   const ads         = useAds()
   const profile     = useUserStore(s => s.profile)
   const activeBoost = profile?.ecosystemBoost ?? 0
+  const { t, lang }  = useI18n()
 
   // Synthetische "Watch Ads"-Tageskarte (kein DB-Quest; gespeist aus /ads/status).
   const watchAdsDone = ads.watchedToday >= ads.dailyLimit
@@ -30,8 +32,8 @@ export default function QuestsPage() {
     expiresAt: '', xpGranted: null, energySpent: null,
     template: {
       id: 'watch-ads-daily', internalCode: 'daily_watch_ads',
-      title: 'Werbung ansehen',
-      description: 'Sieh dir eine kurze Werbung an und sammle XP.',
+      title: t('quests.watchAds'),
+      description: t('quests.watchAdsDesc'),
       difficulty: 'medium', questType: 'daily', energyCost: 0,
       xpReward: ads.xpPerAd, tokenReward: 0, iconKey: '📺', sortOrder: -1,
     },
@@ -61,7 +63,7 @@ export default function QuestsPage() {
     const diff = next.getTime() - now.getTime()
     const h = Math.floor(diff / 3600000)
     const m = Math.floor((diff % 3600000) / 60000)
-    return `${h} Std ${m} Min`
+    return lang === 'de' ? `${h} Std ${m} Min` : `${h}h ${m}m`
   })()
 
   return (
@@ -71,9 +73,9 @@ export default function QuestsPage() {
       <div className="shrink-0 animate-rise" style={{ padding: '24px 20px 0' }}>
         <div className="flex items-start justify-between" style={{ marginBottom: 18 }}>
           <div style={{ minWidth: 0 }}>
-            <h1 style={{ ...fd, fontSize: 21, fontWeight: 600, letterSpacing: '-0.02em' }}>Quests</h1>
+            <h1 style={{ ...fd, fontSize: 21, fontWeight: 600, letterSpacing: '-0.02em' }}>{t('quests.title')}</h1>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-              {tab === 'daily' ? `Zurücksetzen in ${resetIn}` : 'Wöchentlich · endet Sonntag'}
+              {tab === 'daily' ? t('quests.resetIn', { time: resetIn }) : t('quests.weeklyEnds')}
             </p>
           </div>
 
@@ -99,7 +101,7 @@ export default function QuestsPage() {
         <div style={{ display: 'flex', gap: 6, padding: 5, borderRadius: 18,
           background: 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
-          {([['daily', 'Täglich', doneD, totalD], ['weekly', 'Wöchentlich', doneW, totalW]] as const)
+          {([['daily', t('quests.daily'), doneD, totalD], ['weekly', t('quests.weekly'), doneW, totalW]] as const)
             .map(([key, label, d, t]) => (
               <button key={key} onClick={() => setTab(key as Tab)}
                 style={{ flex: 1, textAlign: 'center', padding: '10px 0', borderRadius: 13,
@@ -156,11 +158,9 @@ export default function QuestsPage() {
           ) : quests.length === 0 ? (
             <div className="surface-2" style={{ padding: 28, borderRadius: 20, textAlign: 'center' }}>
               <Icon name="quest" size={26} style={{ color: 'var(--text-muted)', margin: '0 auto 12px' }} />
-              <p style={{ ...fd, fontSize: 14, fontWeight: 500 }}>Keine Quests</p>
+              <p style={{ ...fd, fontSize: 14, fontWeight: 500 }}>{t('quests.empty')}</p>
               <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 5 }}>
-                {tab === 'daily'
-                  ? 'Neue Quests gibt es um Mitternacht UTC.'
-                  : 'Neue Wochen-Quests gibt es Montag.'}
+                {tab === 'daily' ? t('quests.emptyDaily') : t('quests.emptyWeekly')}
               </p>
             </div>
           ) : (
