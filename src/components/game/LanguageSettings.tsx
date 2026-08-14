@@ -1,4 +1,4 @@
-// src/components/game/LanguageSettings.tsx 
+// src/components/game/LanguageSettings.tsx
 // Sprachumschalter fuer das Einstellungs-Sheet.
 // Die Wahl wird sofort lokal wirksam (kein Warten auf den Server) und
 // parallel im Profil gespeichert, damit sie auf anderen Geraeten gilt
@@ -10,6 +10,7 @@ import { LANG_LABEL, type Lang } from '@/lib/i18n/dict'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUserStore } from '@/stores/useUserStore'
 import { Icon }         from '@/components/ui/Icon'
+import { authedFetch } from '@/lib/authedFetch'
 
 const LANGS: Lang[] = ['de', 'en']
 
@@ -28,9 +29,9 @@ export function LanguageSettings() {
     patchProfile?.({ languagePreference: next } as any)
 
     try {
-      await fetch('/api/v1/users/me', {
+      await authedFetch('/api/v1/users/me', {
         method:  'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', },
         body:    JSON.stringify({ language_preference: next }),
       })
     } catch {
