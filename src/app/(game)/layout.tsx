@@ -1,5 +1,6 @@
-// src/app/(game)/layout.tsx  
+// src/app/(game)/layout.tsx 
 import { AuthProvider }     from '@/components/providers/AuthProvider'
+import { I18nGate }         from '@/components/providers/I18nGate'
 import { TonProvider }      from '@/components/providers/TonProvider'
 import { QueryProvider }    from '@/components/providers/QueryProvider'
 import { GameHeader }       from '@/components/layout/GameHeader'
@@ -21,6 +22,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     <AuthProvider>
       <QueryProvider>
         <TonProvider>
+          <I18nGate>
           <PlatformGate>
             <MaintenanceGate>
               <EnergyTicker />
@@ -45,6 +47,7 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               <SeasonKickoffModal />
             </MaintenanceGate>
           </PlatformGate>
+          </I18nGate>
         </TonProvider>
       </QueryProvider>
     </AuthProvider>
