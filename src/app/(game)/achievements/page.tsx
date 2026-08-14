@@ -56,7 +56,7 @@ export default function AchievementsPage() {
 
   // Fortschritts-Text (z.B. "64 / 100")
   const progressText = (a: Achievement) => {
-    if (a.unlocked) return 'Unlocked'
+    if (a.unlocked) return 'Freigeschaltet'
     if (!a.threshold || a.threshold <= 1) return 'In progress'
     return `${formatNumber(a.progress)} / ${formatNumber(a.threshold)}`
   }
@@ -75,9 +75,10 @@ export default function AchievementsPage() {
           <ChevronLeft size={20} />
         </button>
         <div>
-          <h1 className="font-display text-[20px] font-extrabold text-white">Achievements</h1>
-          <p className="text-[12px] text-white/35">
-            {unlockedCount} of {totalCount} unlocked
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
+            letterSpacing: '-0.02em', color: '#fff' }}>Achievements</h1>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+            {unlockedCount} von {totalCount} freigeschaltet
           </p>
         </div>
       </div>
@@ -85,7 +86,7 @@ export default function AchievementsPage() {
       {isLoading ? (
         <div className="grid grid-cols-3 gap-[9px] pt-2">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="h-[148px] rounded-[18px] bg-white/[0.035] animate-pulse" />
+            <div key={i} className="h-[148px] shimmer" style={{ borderRadius: 20 }} />
           ))}
         </div>
       ) : (
@@ -96,17 +97,27 @@ export default function AchievementsPage() {
               <button
                 key={a.code}
                 onClick={() => setSelected(a)}
-                className="relative flex flex-col items-center overflow-hidden rounded-[18px]
-                           bg-white/[0.035] px-[7px] pb-[11px] pt-3 text-center
-                           shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]
-                           transition-transform active:scale-[0.96]"
+                className="relative flex flex-col items-center overflow-hidden px-[7px] pb-[11px] pt-3
+                           text-center transition-transform active:scale-[0.96]"
+                style={{
+                  borderRadius: 20,
+                  background: a.unlocked
+                    ? 'linear-gradient(150deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.06) 42%,rgba(255,255,255,.035) 100%)'
+                    : 'linear-gradient(150deg,rgba(255,255,255,.08),rgba(255,255,255,.025))',
+                  boxShadow: a.unlocked
+                    ? 'inset 0 1px 0 rgba(255,255,255,.26), inset 0 0 0 .5px rgba(255,255,255,.09)'
+                    : 'inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 .5px rgba(255,255,255,.05)',
+                  opacity: a.unlocked ? 1 : 0.62,
+                }}
               >
                 {/* Häkchen bei freigeschaltet */}
                 {a.unlocked && (
                   <div className="absolute right-[7px] top-[7px] z-[2] flex h-[18px] w-[18px]
-                                  items-center justify-center rounded-full bg-emerald-400">
+                                  items-center justify-center rounded-full"
+                    style={{ background: 'linear-gradient(140deg,#7BA5FF,#1D4ED8)',
+                      boxShadow: '0 4px 12px rgba(37,99,255,.45)' }}>
                     <svg viewBox="0 0 24 24" className="h-[10px] w-[10px]"
-                         style={{ stroke: '#04231a', strokeWidth: 3.2, fill: 'none',
+                         style={{ stroke: '#fff', strokeWidth: 3, fill: 'none',
                                   strokeLinecap: 'round', strokeLinejoin: 'round' }}>
                       <path d="M5 12l4 4 10-10" />
                     </svg>
@@ -117,13 +128,14 @@ export default function AchievementsPage() {
                   <AchievementIcon code={a.code} unlocked={a.unlocked} size={54} />
                 </div>
 
-                <div className="flex min-h-[26px] items-center font-display text-[11px]
-                                font-bold leading-tight text-white">
+                <div className="flex min-h-[26px] items-center leading-tight"
+                  style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 500,
+                    color: 'var(--text-primary)' }}>
                   {a.title}
                 </div>
 
-                <div className={`mt-[3px] font-display text-[10px] font-bold
-                                 ${a.unlocked ? 'text-emerald-400' : 'text-white/30'}`}>
+                <div style={{ marginTop: 3, fontFamily: 'var(--font-display)', fontSize: 10,
+                  fontWeight: 500, color: a.unlocked ? 'var(--blue-2)' : 'var(--text-muted)' }}>
                   {progressText(a)}
                 </div>
 
@@ -134,7 +146,7 @@ export default function AchievementsPage() {
                     style={{
                       width: `${pct}%`,
                       background: a.unlocked
-                        ? 'linear-gradient(90deg,#059669,#34D399)'
+                        ? 'linear-gradient(90deg,#7BA5FF,#2563FF)'
                         : 'rgba(255,255,255,0.18)',
                     }}
                   />
@@ -162,7 +174,7 @@ export default function AchievementsPage() {
               onClick={() => setSelected(null)}
               className="absolute right-[14px] top-[14px] flex h-[30px] w-[30px] items-center
                          justify-center rounded-[10px] bg-white/[0.06] text-white/50"
-              aria-label="Close"
+              aria-label="Schließen"
             >
               ✕
             </button>
@@ -171,10 +183,11 @@ export default function AchievementsPage() {
               <AchievementIcon code={selected.code} unlocked={selected.unlocked} size={84} />
             </div>
 
-            <div className="font-display text-[19px] font-extrabold text-white">
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 600,
+              letterSpacing: '-0.02em', color: '#fff' }}>
               {selected.title}
             </div>
-            <p className="mt-2 text-[13px] leading-relaxed text-white/55">
+            <p className="mt-2" style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
               {selected.description}
             </p>
 
@@ -185,29 +198,29 @@ export default function AchievementsPage() {
                   className="h-full rounded-[5px]"
                   style={{
                     width: `${pctOf(selected)}%`,
-                    background: selected.unlocked
-                      ? 'linear-gradient(90deg,#059669,#34D399)'
-                      : 'linear-gradient(90deg,#7C3AED,#A78BFA)',
+                    background: 'linear-gradient(90deg,#7BA5FF,#2563FF)',
                   }}
                 />
               </div>
-              <div className="mt-2 flex justify-between font-display text-[12px] font-bold text-white/70">
+              <div className="mt-2 flex justify-between" style={{ fontFamily: 'var(--font-display)',
+                fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>
                 <span>{progressText(selected)}</span>
                 <span>{pctOf(selected)}%</span>
               </div>
             </div>
 
             {/* XP-Belohnung */}
-            <div className="mt-4 inline-flex items-center gap-[6px] rounded-[12px] px-4 py-2
-                            font-display text-[13px] font-bold text-[#FBBF24]
-                            bg-[rgba(251,191,36,0.10)]
-                            shadow-[inset_0_0_0_1px_rgba(251,191,36,0.25)]">
-              Reward: +{formatNumber(selected.xpReward)} XP
+            <div className="mt-4 inline-flex items-center gap-[6px] px-4 py-2"
+              style={{ borderRadius: 12, fontFamily: 'var(--font-display)', fontSize: 13,
+                fontWeight: 500, color: 'var(--gold)',
+                background: 'rgba(255,210,122,0.10)',
+                boxShadow: 'inset 0 0 0 .5px rgba(255,210,122,0.25)' }}>
+              Belohnung: +{formatNumber(selected.xpReward)} XP
             </div>
 
             {selected.unlocked && selected.unlockedAt && (
               <p className="mt-3 text-[11px] text-white/30">
-                Unlocked {new Date(selected.unlockedAt).toLocaleDateString('en-US')}
+                Freigeschaltet am {new Date(selected.unlockedAt).toLocaleDateString('de-DE')}
               </p>
             )}
           </div>
