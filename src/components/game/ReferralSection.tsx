@@ -6,6 +6,7 @@ import { useAuthStore }  from '@/stores/useAuthStore'
 import { useUserStore }  from '@/stores/useUserStore'
 import { SkeletonCard }  from '@/components/ui/Skeleton'
 import { Copy, CheckCircle, Users, Gift, Lock, Share2, X, Mail, Send } from 'lucide-react'
+import { authedFetch } from '@/lib/authedFetch'
 
 // ── Share Modal ───────────────────────────────────────────────
 interface ShareModalProps {
@@ -220,9 +221,8 @@ export function ReferralSection() {
     enabled:  !!token,
     staleTime: 60_000,
     queryFn:  async () => {
-      const res  = await fetch('/api/v1/referrals', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res  = await authedFetch('/api/v1/referrals', {
+              })
       const json = await res.json()
       return json.success ? json.data : null
     },
