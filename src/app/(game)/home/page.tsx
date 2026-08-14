@@ -15,7 +15,27 @@ import { useI18n }             from '@/lib/i18n'
 const fd: React.CSSProperties = { fontFamily: 'var(--font-display)' }
 
 /* ── Info-Banner: feste Inhalte, spaeter aus einer announcements-Tabelle ── */
-interface Banner { tag: string; tone: string; title: string; body: string; cta: string; href: string; logo?: boolean }
+interface Banner {
+  tag: string; tone: string; title: string; body: string; cta: string
+  href: string; logo?: boolean
+  /** true = Telegram-Link (Gruppe/Kanal), wird ueber openTelegramLink geoeffnet */
+  external?: boolean
+}
+
+/** Einladungslink zur VEXALGO-Community-Gruppe */
+const GROUP_LINK = 'https://t.me/+qYNbVhXczxNjMjFi'
+
+/**
+ * Telegram-Links MUESSEN ueber openTelegramLink() geoeffnet werden.
+ * Ein normaler <a href> wuerde im Mini-App-Fenster laden statt in
+ * Telegram selbst — die Gruppe waere dann nicht beitretbar.
+ * Ausserhalb von Telegram (Browser-Vorschau) faellt es auf window.open zurueck.
+ */
+function openTelegram(url: string) {
+  const tg = (typeof window !== 'undefined' ? (window as any)?.Telegram?.WebApp : null)
+  if (tg?.openTelegramLink) tg.openTelegramLink(url)
+  else window.open(url, '_blank', 'noopener,noreferrer')
+}
 
 export default function HomePage() {
   const profile  = useUserStore(s => s.profile)
@@ -55,6 +75,10 @@ export default function HomePage() {
       title: lang === 'de' ? 'VEXALGO 2.0\nist da' : 'VEXALGO 2.0\nis here',
       body: lang === 'de' ? 'Komplett neues Design' : 'A completely new design',
       cta: t('home.banner.whatsNew'), href: '/quests', logo: true },
+    { tag: t('home.banner.group'), tone: 'var(--blue-2)',
+      title: lang === 'de' ? 'VEXALGO Gruppe\nist da' : 'VEXALGO group\nis live',
+      body: lang === 'de' ? 'Austausch, Tipps und News' : 'Chat, tips and news',
+      cta: t('home.banner.joinGroup'), href: GROUP_LINK, external: true },
   ]
   if (vault?.state === 'open') {
     banners.push({ tag: t('home.banner.new'), tone: 'var(--emerald)', title: t('vault.title'),
@@ -252,9 +276,14 @@ export default function HomePage() {
         </button>
 
         {/* Info-Karussell */}
-        <Link href={banners[bIdx]?.href ?? '/quests'} className="surface-2"
+        <Link href={banners[bIdx]?.external ? '#' : (banners[bIdx]?.href ?? '/quests')}
+          className="surface-2"
           style={{ padding: 0, borderRadius: 21, position: 'relative', overflow: 'hidden',
             minWidth: 0, display: 'block', touchAction: 'pan-y' }}
+          onClick={e => {
+            const b = banners[bIdx]
+            if (b?.external) { e.preventDefault(); openTelegram(b.href) }
+          }}
           onTouchStart={e => { touchX.current = e.touches[0]?.clientX ?? null }}
           onTouchEnd={e => {
             const start = touchX.current
