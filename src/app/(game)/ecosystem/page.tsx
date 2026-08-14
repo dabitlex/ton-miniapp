@@ -43,12 +43,12 @@ function Gem({ id, c1, c2, size = 56 }: { id: string; c1: string; c2: string; si
   )
 }
 
-// "ACTIVE" corner flag for the equipped relic
+// Eckfahne fuer das aktive Relic
 function Flag({ accent }: { accent: string }) {
   return (
     <span className="absolute top-2.5 right-2.5 z-20 text-[8px] font-extrabold tracking-wider px-1.5 py-0.5 rounded-md"
       style={{ color: accent, background: `${accent}26`, fontFamily: 'var(--font-display)' }}>
-      ACTIVE
+      AKTIV
     </span>
   )
 }
@@ -62,7 +62,7 @@ function EnergyBoostBadge({ size = 'sm' }: { size?: 'sm' | 'md' }) {
     <span
       className={`relative z-10 inline-flex items-center gap-1 font-extrabold tracking-wide rounded-md whitespace-nowrap ${isSm ? 'text-[9px] px-1.5 py-0.5' : 'text-[11px] px-2 py-1'}`}
       style={{ color: 'var(--gold)', background: 'var(--gold-dim)', fontFamily: 'var(--font-display)' }}>
-      <Zap size={isSm ? 9 : 11} fill="currentColor" />2x Energy
+      <Zap size={isSm ? 9 : 11} fill="currentColor" />2× Energie
     </span>
   )
 }
@@ -222,15 +222,18 @@ export default function EcosystemPage() {
           <button
             onClick={() => router.back()}
             className="flex h-[38px] w-[38px] items-center justify-center rounded-[13px] press shrink-0"
-            style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 0 0 1px var(--edge-soft)', color: 'var(--text-secondary)' }}
-            aria-label="Back"
+            style={{ borderRadius: 13,
+              background: 'linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.05))',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,.25)', color: '#fff' }}
+            aria-label="Zurück"
           >
             <ChevronLeft size={20} />
           </button>
-          <h1 className="display-xl text-[24px] text-white leading-none">The Vault</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
+            letterSpacing: '-0.02em', color: '#fff' }}>Relics &amp; Boosts</h1>
         </div>
         <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-          Unlock status relics that boost your XP for the entire season
+          Relics erhöhen deine XP für die gesamte Season
         </p>
       </div>
 
@@ -240,31 +243,35 @@ export default function EcosystemPage() {
         {!wallet && (
           <button onClick={() => tonConnectUI.openModal()}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl press animate-rise"
-            style={{ background: 'rgba(91,141,239,0.10)', boxShadow: 'inset 0 0 0 1px rgba(91,141,239,0.25)' }}>
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl" style={{ background: 'rgba(91,141,239,0.16)' }}>
-              <Wallet size={16} style={{ color: '#5B8DEF' }} />
+            style={{ background: 'linear-gradient(150deg,rgba(91,141,255,.30),rgba(37,99,255,.16))',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 0 0 .5px rgba(143,180,255,.22)' }}>
+            <div className="flex items-center justify-center w-10 h-10" style={{ borderRadius: 13,
+              background: 'linear-gradient(150deg,rgba(255,255,255,.20),rgba(255,255,255,.05))',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,.30)' }}>
+              <Wallet size={17} style={{ color: '#fff' }} strokeWidth={1.6} />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-bold text-white">Connect Wallet</p>
-              <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>TON wallet required to claim relics</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500, color: '#fff' }}>
+                Wallet verbinden</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Für den Kauf von Relics nötig</p>
             </div>
-            <span className="text-sm font-bold" style={{ color: '#5B8DEF' }}>→</span>
+            <span style={{ fontSize: 14, color: 'var(--blue-3)' }}>›</span>
           </button>
         )}
 
         {/* ── Active boost ───────────────────────────────────── */}
         {active ? (
           <div className="surface relative overflow-hidden p-5 animate-rise"
-            style={{ background: 'linear-gradient(150deg, rgba(52,211,153,0.16), rgba(94,234,212,0.04) 60%, transparent), var(--surface-1)', boxShadow: 'inset 0 1px 0 rgba(52,211,153,0.25), 0 12px 34px rgba(16,185,129,0.14)' }}>
-            <div className="absolute -top-8 -right-8 w-32 h-32 pointer-events-none"
-              style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.22), transparent 70%)' }} />
+            style={{ background: 'linear-gradient(150deg,rgba(91,141,255,.30),rgba(37,99,255,.16) 55%,rgba(19,65,196,.12))',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,.32), inset 0 0 0 .5px rgba(143,180,255,.22), 0 18px 44px rgba(21,64,190,.30)' }}>
             <div className="flex items-center justify-between relative z-10">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="w-2 h-2 rounded-full pulse-glow" style={{ background: '#34D399' }} />
-                  <span className="eyebrow" style={{ color: '#34D399' }}>Active Boost</span>
+                  <span className="w-2 h-2 rounded-full pulse-glow" style={{ background: 'var(--emerald)' }} />
+                  <span className="eyebrow" style={{ color: 'var(--emerald)' }}>Aktiver Boost</span>
                 </div>
-                <p className="display-xl text-[34px]" style={{ color: '#5EEAD4' }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 500,
+                  letterSpacing: '-0.03em', color: '#fff' }}>
                   +{active.boostPercent}%<span className="text-[16px]" style={{ color: 'var(--text-muted)' }}> XP</span>
                 </p>
                 <div className="flex items-center gap-2 mt-1.5">
@@ -280,8 +287,9 @@ export default function EcosystemPage() {
         ) : !isLoading && (
           <div className="surface p-5 text-center animate-rise">
             <Rocket size={28} className="mx-auto mb-2" style={{ color: 'var(--text-faint)' }} />
-            <p className="display text-sm" style={{ color: 'var(--text-secondary)' }}>No relic equipped</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>Claim one below to boost your season</p>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
+              color: 'var(--text-secondary)' }}>Kein Relic aktiv</p>
+            <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 5 }}>Wähle unten eines für deinen Season-Boost</p>
           </div>
         )}
 
@@ -292,10 +300,10 @@ export default function EcosystemPage() {
             <span className="w-4 h-4 rounded-full border-2 border-amber-400/60 border-t-amber-400 animate-spin shrink-0" />
             <div>
               <p className="text-sm font-bold flex items-center gap-1.5" style={{ color: '#FBBF24' }}>
-                <Clock size={14} /> Relic confirming...
+                <Clock size={14} /> Relic wird bestätigt…
               </p>
               <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                +{pending.boostPercent}% XP & 2x Energy regen — waiting for TON blockchain (~30s)
+                +{pending.boostPercent}% XP und doppelte Energie — warte auf die TON-Blockchain (~30 Sek.)
               </p>
             </div>
           </div>
@@ -303,7 +311,7 @@ export default function EcosystemPage() {
 
         {/* ── Support tiers · relic grid ─────────────────────── */}
         <div>
-          <h3 className="eyebrow mb-3">Support Tiers · forge a relic</h3>
+          <h3 className="eyebrow mb-3">Stufen</h3>
 
           {isLoading ? (
             <div className="grid grid-cols-2 gap-2.5">
@@ -320,13 +328,15 @@ export default function EcosystemPage() {
                 const btnDisabled = isCurrent || isLowerTier || !!pendingTierKey || !!pending || !!purchaseInProgress
 
                 const btnLabel = isPendingThis
-                  ? (<><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Claiming…</>)
-                  : isCurrent   ? '✓ Active'
-                  : isLowerTier ? '🔒 Outranked'
+                  ? (<><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Läuft…</>)
+                  : isCurrent   ? 'Aktiv'
+                  : isLowerTier ? 'Niedriger'
                   : (<><Zap size={13} fill="currentColor" /> {tier.tonAmount} {CURRENCY_SHORT}</>)
 
                 const btnStyle: React.CSSProperties = (isCurrent || isLowerTier)
-                  ? { background: 'var(--surface-2)', color: 'var(--text-muted)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }
+                  ? { background: 'linear-gradient(150deg,rgba(255,255,255,.14),rgba(255,255,255,.05))',
+                      color: 'var(--text-muted)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 .5px rgba(255,255,255,.08)' }
                   : { background: `linear-gradient(135deg, ${r.c1}, ${r.c2})`, color: isLegend ? '#1a1505' : '#fff', boxShadow: `0 6px 18px ${r.glow}` }
 
                 const cardBase: React.CSSProperties = {
@@ -384,18 +394,23 @@ export default function EcosystemPage() {
                       style={{ top: '-26%', left: '50%', transform: 'translateX(-50%)', width: 110, height: 110, background: r.aura, filter: 'blur(32px)', opacity: isCurrent ? 0.6 : 0.42 }} />
                     {isCurrent && <Flag accent={r.accent} />}
                     <Gem id={`gem-${tier.key}`} c1={r.c1} c2={r.c2} size={56} />
-                    <p className="relative z-10 display text-[15px] text-white">
+                    <p className="relative z-10" style={{ fontFamily: 'var(--font-display)',
+                      fontSize: 15, fontWeight: 500, color: '#fff' }}>
                       {tier.tonAmount} <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>{CURRENCY_LABEL}</span>
                     </p>
-                    <p className="relative z-10 text-[10px] font-extrabold uppercase tracking-wider" style={{ color: r.accent, fontFamily: 'var(--font-display)' }}>
+                    <p className="relative z-10" style={{ fontSize: 9.5, fontWeight: 500,
+                      letterSpacing: '.14em', textTransform: 'uppercase',
+                      color: r.accent, fontFamily: 'var(--font-display)' }}>
                       {tier.label}
                     </p>
-                    <p className="relative z-10 display-xl text-[18px]" style={{ color: r.accent }}>
+                    <p className="relative z-10" style={{ fontFamily: 'var(--font-display)',
+                      fontSize: 19, fontWeight: 500, letterSpacing: '-0.02em', color: r.accent }}>
                       +{tier.boostPercent}%<span className="text-[10px]" style={{ color: 'var(--text-muted)' }}> XP</span>
                     </p>
                     <EnergyBoostBadge size="sm" />
                     <button disabled={btnDisabled} onClick={() => handleSupport(tier)}
-                      className="relative z-10 w-full mt-1 py-2.5 rounded-xl text-[12px] font-bold press disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+                      className="relative z-10 w-full mt-1 press disabled:opacity-60 inline-flex items-center justify-center"
+
                       style={btnStyle}>
                       {btnLabel}
                     </button>
