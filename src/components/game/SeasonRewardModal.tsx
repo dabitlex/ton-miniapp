@@ -12,7 +12,7 @@ interface PendingReward {
   xpReward:      number
 }
 
-const CONFETTI_COLORS = ['#8B5CF6', '#5B8DEF', '#5EEAD4', '#FBBF24', '#A78BFA', '#F472B6']
+const CONFETTI_COLORS = ['#7BA5FF', '#2563FF', '#9CC0FF', '#FFD27A', '#8FF0C0', '#FFFFFF']
 
 function rankIcon(rank: number): string {
   if (rank === 1) return '🥇'
@@ -156,7 +156,7 @@ export function SeasonRewardModal() {
         </h1>
         <p style={{
           fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700,
-          background: 'linear-gradient(120deg, #C4B5FD 0%, #93C5FD 55%, #99F6E4 110%)',
+          background: 'linear-gradient(120deg, #FFFFFF 0%, #BFD4FF 60%, #8FB4FF 110%)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: 22,
         }}>
@@ -179,7 +179,7 @@ export function SeasonRewardModal() {
             color: 'white', lineHeight: 1, display: 'flex',
             alignItems: 'baseline', justifyContent: 'center', gap: 6,
           }}>
-            <span style={{ color: '#5EEAD4' }}>+</span>
+            <span style={{ color: 'var(--blue-2)' }}>+</span>
             <span>{reward.xpReward.toLocaleString()}</span>
             <span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 600 }}>XP</span>
           </div>
@@ -190,7 +190,7 @@ export function SeasonRewardModal() {
           width: '100%', padding: 15, borderRadius: 16, border: 'none',
           fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700,
           color: 'white', cursor: 'pointer',
-          background: 'linear-gradient(135deg, #8B5CF6, #5B8DEF)',
+          background: 'linear-gradient(135deg, #5B8DFF, #1D4ED8)',
           boxShadow: '0 8px 24px rgba(139,92,246,0.4)', letterSpacing: '0.02em',
         }}>
           Awesome! 🚀
