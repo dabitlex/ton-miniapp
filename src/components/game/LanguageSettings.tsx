@@ -1,4 +1,4 @@
-// src/components/game/LanguageSettings.tsx
+// src/components/game/LanguageSettings.tsx 
 // Sprachumschalter fuer das Einstellungs-Sheet.
 // Die Wahl wird sofort lokal wirksam (kein Warten auf den Server) und
 // parallel im Profil gespeichert, damit sie auf anderen Geraeten gilt
