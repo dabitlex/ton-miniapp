@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { v4 as uuidv4 }  from 'uuid'
+import { authedFetch }   from '@/lib/authedFetch'
 import { useAuthStore }   from '@/stores/useAuthStore'
 import { useQuestStore }  from '@/stores/useQuestStore'
 import { useEnergyStore } from '@/stores/useEnergyStore'
@@ -32,14 +33,53 @@ export class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(url: string, token: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...options?.headers },
-  })
-  const json = await res.json()
-  if (!json.success) throw new ApiError(json.error ?? 'Request failed', json.code)
-  return json.data as T
+/**
+ * FIX Aug 2026: Ohne Zeitlimit konnte eine haengende Anfrage (schlechtes
+ * Netz, schlafender Serverless-Container) NIE abschliessen. onSettled lief
+ * dann nicht, der In-Flight-Guard blieb gesetzt und die Quest liess sich
+ * bis zum App-Neustart nicht mehr antippen — eines der gemeldeten Symptome.
+ */
+const REQUEST_TIMEOUT_MS = 20_000
+
+/**
+ * HAUPTURSACHE des "Quest laesst sich nicht abschliessen"-Problems:
+ *
+ * Diese Datei hatte ein EIGENES apiFetch, das den Token nur mitschickte.
+ * Laeuft der Token mitten in der Sitzung ab (Gueltigkeit 1 Stunde, im
+ * mobilen WebView wird der proaktive Refresh-Timer gedrosselt oder beim
+ * Backgrounding angehalten), antwortet der Server mit 401 — und dieses
+ * apiFetch hat den Fehler einfach durchgereicht.
+ *
+ * Folge: Die Quest blieb offen, die optimistisch abgezogene Energie stand
+ * falsch in der Anzeige, und JEDER weitere Versuch scheiterte identisch —
+ * dauerhaft, weil der Token nie erneuert wurde. Erst ein vollstaendiger
+ * App- oder Geraeteneustart (oder Stunden Wartezeit, bis das System das
+ * WebView beendet) erzwang eine frische Anmeldung. Genau das gemeldete Bild.
+ *
+ * authedFetch erneuert bei 401 den Token EINMAL und wiederholt die Anfrage.
+ * Der Rest der App nutzt es laengst — der Quest-Pfad war uebersehen worden.
+ */
+async function apiFetch<T>(url: string, _token: string, options?: RequestInit): Promise<T> {
+  const ctrl  = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    const res = await authedFetch(url, {
+      ...options,
+      signal:  ctrl.signal,
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+    })
+    const json = await res.json().catch(() => null)
+    if (!json) throw new ApiError('Server nicht erreichbar', 'NETWORK_ERROR')
+    if (!json.success) throw new ApiError(json.error ?? 'Request failed', json.code)
+    return json.data as T
+  } catch (e: any) {
+    if (e?.name === 'AbortError') {
+      throw new ApiError('Zeitüberschreitung — bitte erneut versuchen.', 'TIMEOUT')
+    }
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export function useQuests() {
@@ -194,10 +234,20 @@ export function useQuests() {
         error.code === 'QUEST_LOCKED'
       )
 
-      if (!isStatusMismatch) {
-        if (context?.questId) questStore.rollbackComplete(context.questId)
-        if (context?.prevEnergy !== undefined) energy.restore(context.prevEnergy)
+      // FIX Aug 2026: Die Energie wurde bei Status-Konflikten NICHT
+      // zurueckgesetzt. Serverseitig wird in diesen Faellen aber gar keine
+      // Energie abgezogen (der Abschluss scheitert vorher) — die Anzeige
+      // blieb also faelschlich reduziert, bis der Nutzer die App neu
+      // startete. Genau das gemeldete Symptom.
+      // Die Energie wird jetzt IMMER zurueckgesetzt; anschliessend holt
+      // refreshProfile() den autoritativen Serverwert nach.
+      if (context?.prevEnergy !== undefined) energy.restore(context.prevEnergy)
+      if (!isStatusMismatch && context?.questId) {
+        questStore.rollbackComplete(context.questId)
       }
+      // Serverstand nachziehen, damit Anzeige und Datenbank sicher
+      // uebereinstimmen — unabhaengig davon, welcher Fehler auftrat.
+      useUserStore.getState().refreshProfile()
 
       // Verifikationsfehler verständlich anzeigen
       if (isStatusMismatch) {
