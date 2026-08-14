@@ -1,13 +1,13 @@
-// src/components/game/ReferralMilestones.tsx
+// src/components/game/ReferralMeilensteins.tsx
 'use client'
 
-interface Milestone {
+interface Meilenstein {
   threshold: number
   xpReward:  number
   reached:   boolean
   granted:   boolean
 }
-interface NextMilestone {
+interface NextMeilenstein {
   threshold: number
   xpReward:  number
   remaining: number
@@ -16,12 +16,12 @@ interface NextMilestone {
 const MEDALS: Record<number, string> = { 5: '🥉', 10: '🥈', 25: '🥇', 50: '👑' }
 const TRACK_POS: Record<number, number> = { 5: 10, 10: 30, 25: 60, 50: 90 }
 
-export function ReferralMilestones({
-  validCount, milestones, nextMilestone,
+export function ReferralMeilensteins({
+  validCount, milestones, nextMeilenstein,
 }: {
   validCount:    number
-  milestones:    Milestone[]
-  nextMilestone: NextMilestone | null
+  milestones:    Meilenstein[]
+  nextMeilenstein: NextMeilenstein | null
 }) {
   if (!milestones || milestones.length === 0) return null
 
@@ -41,7 +41,7 @@ export function ReferralMilestones({
       <div className="flex items-center justify-between mb-1">
         <div>
           <p className="text-[15px] font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            Milestone Progress
+            Meilenstein Progress
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {validCount} valid referral{validCount !== 1 ? 's' : ''} so far
@@ -59,14 +59,14 @@ export function ReferralMilestones({
           <div className="h-full rounded-full transition-all"
             style={{
               width: `${fillPct}%`,
-              background: 'linear-gradient(90deg,#A78BFA,#60A5FA)',
+              background: 'linear-gradient(90deg,#7BA5FF,#2563FF)',
               boxShadow: '0 0 10px rgba(139,92,246,0.6)',
             }} />
         </div>
 
         {milestones.map((m) => {
           const isDone = m.reached
-          const isNext = nextMilestone?.threshold === m.threshold
+          const isNext = nextMeilenstein?.threshold === m.threshold
           return (
             <div key={m.threshold} className="absolute flex flex-col items-center"
               style={{ left: `${TRACK_POS[m.threshold]}%`, top: '50%', transform: 'translate(-50%,-50%)' }}>
@@ -83,7 +83,7 @@ export function ReferralMilestones({
               <span className="flex items-center justify-center text-[9px] font-extrabold rounded-full"
                 style={{
                   width: 18, height: 18, border: '2px solid var(--bg-void)',
-                  background: isDone ? 'linear-gradient(135deg,#34D399,#10B981)' : isNext ? 'linear-gradient(135deg,#A78BFA,#60A5FA)' : 'var(--surface-2)',
+                  background: isDone ? 'linear-gradient(135deg,#8FF0C0,#22C55E)' : isNext ? 'linear-gradient(135deg,#7BA5FF,#1D4ED8)' : 'var(--surface-2)',
                   color: isDone ? '#04210f' : isNext ? '#fff' : 'var(--text-faint)',
                   boxShadow: isDone ? '0 0 10px rgba(52,211,153,0.6)' : isNext ? '0 0 12px rgba(139,92,246,0.7)' : 'inset 0 0 0 1px var(--edge-soft)',
                 }}>
@@ -99,28 +99,28 @@ export function ReferralMilestones({
       </div>
 
       {/* Next milestone callout */}
-      {nextMilestone && (
+      {nextMeilenstein && (
         <div className="flex items-center gap-3 p-3 rounded-2xl mt-7"
           style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.14),rgba(91,141,239,0.05))', boxShadow: 'inset 0 0 0 1px rgba(167,139,250,0.25)' }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ background: 'rgba(139,92,246,0.15)' }}>
-            {MEDALS[nextMilestone.threshold] ?? '🎯'}
+            {MEDALS[nextMeilenstein.threshold] ?? '🎯'}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-bold" style={{ color: 'var(--text-primary)' }}>
-              {nextMilestone.remaining} more friend{nextMilestone.remaining !== 1 ? 's' : ''} to your next reward
+              {nextMeilenstein.remaining} more friend{nextMeilenstein.remaining !== 1 ? 's' : ''} to your next reward
             </p>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              Reach {nextMilestone.threshold} valid referrals
+              Reach {nextMeilenstein.threshold} valid referrals
             </p>
           </div>
           <span className="text-[14px] font-extrabold shrink-0" style={{ fontFamily: 'var(--font-display)', color: 'var(--violet-bright)' }}>
-            +{nextMilestone.xpReward.toLocaleString()}
+            +{nextMeilenstein.xpReward.toLocaleString()}
           </span>
         </div>
       )}
 
       {/* All reached + nothing left */}
-      {!nextMilestone && (
+      {!nextMeilenstein && (
         <div className="text-center mt-6 py-3 rounded-2xl" style={{ background: 'rgba(52,211,153,0.08)' }}>
           <p className="text-[12px] font-bold" style={{ color: 'var(--emerald)' }}>
             🎉 All milestones reached — legendary recruiter!
