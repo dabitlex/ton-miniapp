@@ -2,7 +2,7 @@
 // VEXALGO — "🏆 Achievement Unlocked" Popup (Queue-basiert)
 //
 // Liest die achievementQueue aus useUIStore und zeigt das vorderste
-// Achievement als zentrales Overlay. Wegklicken ("Nice!"/"Next") →
+// Achievement als zentrales Overlay. Wegklicken ("Einsammeln"/"Next") →
 // dismissAchievement() → das nächste rückt nach.
 //
 // Global eingehängt in src/app/(game)/layout.tsx (wie MysteryBoxModal).
@@ -55,7 +55,7 @@ export function AchievementPopup() {
           {/* Gradient-Eyebrow */}
           <div className="mb-[22px] font-display text-[10px] font-bold uppercase
                           tracking-[2.5px] text-transparent bg-clip-text
-                          bg-[linear-gradient(120deg,#C4B5FD_0%,#93C5FD_55%,#99F6E4_110%)]">
+                          bg-[linear-gradient(120deg,#FFFFFF_0%,#BFD4FF_60%,#8FB4FF_110%)]">
             Achievement Unlocked
           </div>
 
@@ -66,7 +66,7 @@ export function AchievementPopup() {
               className="ring-spin absolute inset-0 rounded-full"
               style={{
                 padding: '3px',
-                background: 'conic-gradient(from 140deg,#8B5CF6,#5B8DEF,#5EEAD4,#8B5CF6)',
+                background: 'conic-gradient(from 140deg,#7BA5FF,#2563FF,#9CC0FF,#7BA5FF)',
                 WebkitMask: 'linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0)',
                 WebkitMaskComposite: 'xor',
                 maskComposite: 'exclude',
@@ -90,7 +90,7 @@ export function AchievementPopup() {
                           bg-[rgba(251,191,36,0.10)]
                           shadow-[inset_0_0_0_1px_rgba(251,191,36,0.28),0_4px_16px_rgba(251,191,36,0.12)]">
             <span className="text-[15px]">⚡</span>
-            +{current.xp.toLocaleString('en-US')} XP
+            +{current.xp.toLocaleString('de-DE')} XP
           </div>
 
           {/* Button */}
@@ -98,10 +98,10 @@ export function AchievementPopup() {
             onClick={dismiss}
             className="w-full rounded-2xl py-[15px] font-display text-[14.5px] font-bold
                        tracking-[0.2px] text-white transition-transform active:scale-[0.96]
-                       bg-[linear-gradient(135deg,#8B5CF6_0%,#5B8DEF_55%,#5EEAD4_120%)]
+                       bg-[linear-gradient(135deg,#5B8DFF_0%,#2563FF_55%,#1D4ED8_120%)]
                        shadow-[0_8px_24px_rgba(139,92,246,0.32)]"
           >
-            {isLast ? 'Nice!' : 'Next'}
+            {isLast ? 'Einsammeln' : 'Next'}
           </button>
         </div>
       </div>
