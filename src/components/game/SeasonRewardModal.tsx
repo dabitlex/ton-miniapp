@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { authedFetch } from '@/lib/authedFetch'
 
 interface PendingReward {
   id:            string
@@ -33,9 +34,8 @@ export function SeasonRewardModal() {
     enabled:  !!token,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const res  = await fetch('/api/v1/season-rewards', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res  = await authedFetch('/api/v1/season-rewards', {
+              })
       const json = await res.json()
       return json.success ? json.data : null
     },
@@ -46,9 +46,9 @@ export function SeasonRewardModal() {
 
   const { mutate: acknowledge } = useMutation({
     mutationFn: async (rewardId: string) => {
-      await fetch('/api/v1/season-rewards', {
+      await authedFetch('/api/v1/season-rewards', {
         method:  'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ rewardId }),
       })
     },
