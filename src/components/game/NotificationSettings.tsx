@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { authedFetch } from '@/lib/authedFetch'
 
 export function NotificationSettings() {
   const token = useAuthStore(s => s.accessToken)
@@ -12,7 +13,7 @@ export function NotificationSettings() {
 
   useEffect(() => {
     if (!token) return
-    fetch('/api/v1/users/settings', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/v1/users/settings', { headers: { } })
       .then(r => r.json())
       .then(j => { if (j.success) setEnabled(j.data.notificationsEnabled) })
       .catch(() => {})
@@ -26,9 +27,9 @@ export function NotificationSettings() {
     try {
       // Haptic
       try { (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred('light') } catch {}
-      await fetch('/api/v1/users/settings', {
+      await authedFetch('/api/v1/users/settings', {
         method:  'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ notificationsEnabled: next }),
       })
     } catch {
