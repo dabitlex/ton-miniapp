@@ -1,4 +1,4 @@
-// src/app/api/v1/users/me/route.ts 
+// src/app/api/v1/users/me/route.ts
 import { withAuth, ok, err } from '@/app/api/v1/_lib/handler'
 import { createClient }     from '@supabase/supabase-js'
 
@@ -43,6 +43,18 @@ export const GET = withAuth(async (ctx) => {
 
   // Energie berechnen ohne DB-Schreibzugriff
   const now            = Date.now()
+  // Tages-XP aus den Logs — siehe Kommentar bei xpEarnedToday unten.
+  const tagesStart = new Date()
+  tagesStart.setUTCHours(0, 0, 0, 0)
+  const { data: heuteRows } = await supabase
+    .from('xp_logs')
+    .select('xp_granted')
+    .eq('user_id', ctx.userId)
+    .gte('created_at', tagesStart.toISOString())
+  const xpHeute = Array.isArray(heuteRows)
+    ? heuteRows.reduce((sum: number, r: any) => sum + (Number(r.xp_granted) > 0 ? Number(r.xp_granted) : 0), 0)
+    : ((user as any).xp_earned_today ?? 0)   // Rueckfall auf die Spalte
+
   const lastUpdated    = new Date((user as any).energy_last_updated).getTime()
   const secondsElapsed = Math.floor((now - lastUpdated) / 1000)
   const ticks          = Math.floor(secondsElapsed / 900)
@@ -120,7 +132,15 @@ export const GET = withAuth(async (ctx) => {
     streakCurrent:        u.streak_current,
     streakLongest:        u.streak_longest,
     streakLastActiveDate: u.streak_last_active_date,
-    xpEarnedToday:        u.xp_earned_today,
+    // ACHTUNG: NICHT u.xp_earned_today verwenden.
+    // Diese Spalte zaehlt nur, was ueber grant_xp laeuft. Funktionen, die
+    // XP direkt schreiben — Mystery Box (open_mystery_box), Streak-
+    // Meilensteine (check_streak_milestones), Vault-Gewinne — erhoehen sie
+    // nicht. Dadurch zeigte der Home-Screen weniger an als der XP-Verlauf
+    // (Beispiel: 4.739 gegen 5.239 — genau die 500 XP der Mystery Box).
+    // Die Spalte bleibt unveraendert, sie steuert weiterhin das Tageslimit;
+    // fuer die ANZEIGE ist die Summe aus xp_logs die ehrliche Zahl.
+    xpEarnedToday:        xpHeute,
     isNewUser:            false,
     onboardingCompleted:  u.onboarding_completed,
     referralCode:         u.referral_code,
