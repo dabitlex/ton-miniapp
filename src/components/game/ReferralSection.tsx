@@ -7,6 +7,7 @@ import { useUserStore }  from '@/stores/useUserStore'
 import { SkeletonCard }  from '@/components/ui/Skeleton'
 import { Copy, CheckCircle, Users, Gift, Lock, Share2, X, Mail, Send } from 'lucide-react'
 import { authedFetch } from '@/lib/authedFetch'
+import { useT } from '@/lib/i18n'
 
 // ── Share Modal ───────────────────────────────────────────────
 interface ShareModalProps {
@@ -209,6 +210,7 @@ function ShareModal({ isOpen, onClose, referralLink, shareText }: ShareModalProp
 
 // ── Main Component ────────────────────────────────────────────
 export function ReferralSection() {
+  const t = useT()
   const token   = useAuthStore(s => s.accessToken)
   const profile = useUserStore(s => s.profile)
   const [copied,      setCopied]      = useState(false)
@@ -305,7 +307,7 @@ export function ReferralSection() {
 
         {/* Einladungslink */}
         <div className="surface-2" style={{ padding: 16 }}>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Dein Einladungslink</p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('invite.yourLink')}</p>
           <div className="flex items-center" style={{ gap: 9, marginTop: 10 }}>
             <div style={{ flex: 1, minWidth: 0, padding: '11px 13px', borderRadius: 13,
               background: 'rgba(0,0,0,.28)', boxShadow: 'inset 0 0 0 .5px rgba(255,255,255,.09)' }}>
