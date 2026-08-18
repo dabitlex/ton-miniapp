@@ -26,10 +26,12 @@ import { GAME_CONSTANTS } from '@/lib/constants/game'
 import { Users, Search, Shield, LogOut, Swords, Zap, Star, ChevronRight, Pencil, Trophy, ArrowLeft, Plus } from 'lucide-react'
 import type { UserProfile } from '@/types/game'
 import { v4 as uuidv4 }  from 'uuid'
+import { useI18n }             from '@/lib/i18n'
 
 type ClanView = 'overview' | 'roster' | 'wars' | 'missions'
 
 export default function ClansPage() {
+  const { t, lang } = useI18n()
   const router = useRouter()
   const [clanView, setClanView]   = useState<ClanView>('overview')
   const [noClanCreate, setNoClanCreate] = useState(false)
@@ -216,9 +218,9 @@ export default function ClansPage() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="shrink-0 px-5 pt-4 pb-3 animate-rise">
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600,
-          letterSpacing: '-0.02em', color: '#fff' }}>Clan</h1>
+          letterSpacing: '-0.02em', color: '#fff' }}>{t('clan.title')}</h1>
         {!hasClan && <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-          Gemeinsam kämpfen, gemeinsam sammeln</p>}
+          {t('clan.subtitle')}</p>}
       </div>
 
       {loadingMembership ? (
@@ -234,7 +236,7 @@ export default function ClansPage() {
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
                 {(['overview', 'roster', 'wars'] as const).map((v) => {
                   const active = clanView === v
-                  const label  = v === 'overview' ? 'Übersicht' : v === 'roster' ? 'Mitglieder' : 'Kriege'
+                  const label  = v === 'overview' ? t('clan.overview') : v === 'roster' ? t('clan.roster') : t('clan.wars')
                   return (
                     <button key={v} onClick={() => setClanView(v)}
                       className="flex-1 flex items-center justify-center press relative"
@@ -292,13 +294,13 @@ export default function ClansPage() {
                           color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
                           background: 'linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.04))',
                           boxShadow: 'inset 0 1px 0 rgba(255,255,255,.20), inset 0 0 0 .5px rgba(255,255,255,.07)' }}>
-                          {myRole === 'leader' ? 'Leader' : myRole === 'officer' ? 'Officer' : 'Mitglied'}
+                          {myRole === 'leader' ? t('clan.leader') : myRole === 'officer' ? t('clan.officer') : t('clan.member')}
                         </span>
                         {myRank != null && (
                           <button onClick={() => router.push('/leaderboard?board=clans')}
                             className="press flex items-center gap-1 text-[11px] font-bold"
                             style={{ color: 'var(--blue-2)', fontFamily: 'var(--font-display)', fontWeight: 500 }}>
-                            <Trophy size={11} /> Rang #{myRank}
+                            <Trophy size={11} /> {t('home.rank', { rank: myRank })}
                           </button>
                         )}
                       </div>
@@ -309,9 +311,9 @@ export default function ClansPage() {
                   </div>
                   <div className="relative grid grid-cols-3 gap-2 mt-4">
                     {[
-                      { label: 'Season XP', value: formatNumber(myMembership.clan.seasonXp), tint: 'var(--blue-2)' },
-                      { label: 'Mitglieder', value: `${myMembership.clan.memberCount}/20`,    tint: 'var(--text-primary)' },
-                      { label: 'Siege',      value: `${myMembership.clan.wins}`,              tint: 'var(--text-primary)' },
+                      { label: t('clan.seasonXp'), value: formatNumber(myMembership.clan.seasonXp), tint: 'var(--blue-2)' },
+                      { label: t('clan.members'),  value: `${myMembership.clan.memberCount}/20`,    tint: 'var(--text-primary)' },
+                      { label: t('clan.wins'),     value: `${myMembership.clan.wins}`,              tint: 'var(--text-primary)' },
                     ].map(s => (
                       <div key={s.label} className="surface-quiet px-2 py-2.5 text-center">
                         <p className="tabular-nums" style={{ color: s.tint, fontFamily: 'var(--font-display)',
@@ -333,9 +335,9 @@ export default function ClansPage() {
                   </div>
                   <div className="flex-1 text-left">
                     <p style={{ fontFamily: 'var(--font-display)', fontSize: 14.5, fontWeight: 500, color: '#fff' }}>
-                      Clan-Missionen</p>
+                      {t('clan.missions')}</p>
                     <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
-                      3 täglich · 15 Energie · bringt Clan-XP</p>
+                      {t('clan.missionsSub', { energy: 15 })}</p>
                   </div>
                   <ChevronRight size={16} style={{ color: 'var(--text-faint)' }} />
                 </button>
@@ -346,8 +348,8 @@ export default function ClansPage() {
                 {isLeader  && <ClanEditSheet clanId={myMembership.clan.id} open={editOpen} onClose={() => setEditOpen(false)} />}
 
                 <Button variant="destructive" fullWidth loading={leaving}
-                  onClick={() => { if (window.confirm('Clan wirklich verlassen?')) leaveClan(myMembership.clan.id) }}>
-                  <LogOut size={14} /> Clan verlassen
+                  onClick={() => { if (window.confirm(t('clan.leaveConfirm'))) leaveClan(myMembership.clan.id) }}>
+                  <LogOut size={14} /> {t('clan.leave')}
                 </Button>
               </>
             )}
@@ -444,9 +446,11 @@ export default function ClansPage() {
                 </div>
                 <div className="flex-1">
                   <p style={{ fontFamily: 'var(--font-display)', fontSize: 14.5, fontWeight: 500, color: '#fff' }}>
-                    Eigenen Clan gründen</p>
+                    {t('clan.create')}</p>
                   <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                    {canCreate ? 'Führe dein eigenes Team' : `Ab Level ${GAME_CONSTANTS.CLAN_UNLOCK_LEVEL}`}
+                    {canCreate
+                      ? t('clan.leadOwnTeam')
+                      : t('clan.createUnlock', { level: GAME_CONSTANTS.CLAN_UNLOCK_LEVEL })}
                   </p>
                 </div>
                 {canCreate && <ChevronRight size={18} style={{ color: 'var(--text-faint)' }} />}
@@ -454,7 +458,7 @@ export default function ClansPage() {
 
               <div className="relative">
                 <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Clan suchen…"
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('clan.search')}
                   className="w-full rounded-2xl pl-10 pr-3 py-3 text-sm text-white placeholder-white/25 focus:outline-none"
                   style={{ background: 'var(--surface-1)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }} />
               </div>
