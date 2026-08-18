@@ -7,6 +7,7 @@ import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import { showAd, getBlockId } from '@/lib/adsgram'
 import { authedFetch } from '@/lib/authedFetch'
+import { tStatic } from '@/lib/i18n'
 
 interface AdStatus {
   watchedToday:   number
@@ -25,7 +26,7 @@ async function apiFetch<T>(url: string, _token: string, options?: RequestInit): 
     headers: { 'Content-Type': 'application/json', ...options?.headers },
   })
   const json = await res.json().catch(() => null)
-  if (!json) throw new Error('Server nicht erreichbar')
+  if (!json) throw new Error(tStatic('err.network'))
   if (!json.success) throw new Error(json.error ?? 'Request failed')
   return json.data as T
 }
