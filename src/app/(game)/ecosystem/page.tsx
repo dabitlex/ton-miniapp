@@ -10,6 +10,7 @@ import { formatNumber }      from '@/lib/utils'
 import { ECOSYSTEM_TIERS, CURRENCY_LABEL, CURRENCY_SHORT }   from '@/lib/constants/game'
 import type { EcosystemSupportTier, ActiveEcosystemBoost } from '@/types/game'
 import { Zap, Wallet, Rocket, Clock, ChevronLeft } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 // TON -> Nano conversion
 function toNano(amount: number): string {
@@ -68,6 +69,7 @@ function EnergyBoostBadge({ size = 'sm' }: { size?: 'sm' | 'md' }) {
 }
 
 export default function EcosystemPage() {
+  const t = useT()
   const token          = useAuthStore(s => s.accessToken)
   const router         = useRouter()
   const { toast }      = useUIStore()
@@ -108,7 +110,7 @@ export default function EcosystemPage() {
       return json.data
     },
     onSuccess: (data: any) => {
-      toast('success', '✅ Zahlung bestätigt! Dein Boost wird aktiviert.')
+      toast('success', t('eco.paymentConfirmed'))
       qc.invalidateQueries({ queryKey: ['ecosystem'] })
       setPendingTierKey(null)
       if (data?.newAchievements?.length) enqueueAchievements(data.newAchievements)
@@ -183,7 +185,7 @@ export default function EcosystemPage() {
       const hashJson = await hashRes.json()
 
       if (hashRes.status === 202) {
-        toast('success', '✅ Zahlung gesendet! Dein Boost wird in den nächsten Minuten automatisch aktiviert — bitte nicht erneut bezahlen.')
+        toast('success', t('eco.paymentSent'))
         qc.invalidateQueries({ queryKey: ['ecosystem'] })
         setPendingTierKey(null)
         return
@@ -225,7 +227,7 @@ export default function EcosystemPage() {
             style={{ borderRadius: 13,
               background: 'linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.05))',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,.25)', color: '#fff' }}
-            aria-label="Zurück"
+            aria-label={t('common.back')}
           >
             <ChevronLeft size={20} />
           </button>
@@ -253,7 +255,7 @@ export default function EcosystemPage() {
             <div className="flex-1 text-left">
               <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500, color: '#fff' }}>
                 Wallet verbinden</p>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Für den Kauf von Relics nötig</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t('eco.walletNeeded')}</p>
             </div>
             <span style={{ fontSize: 14, color: 'var(--blue-3)' }}>›</span>
           </button>
@@ -289,7 +291,7 @@ export default function EcosystemPage() {
             <Rocket size={28} className="mx-auto mb-2" style={{ color: 'var(--text-faint)' }} />
             <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
               color: 'var(--text-secondary)' }}>Kein Relic aktiv</p>
-            <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 5 }}>Wähle unten eines für deinen Season-Boost</p>
+            <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 5 }}>{t('eco.chooseRelic')}</p>
           </div>
         )}
 
@@ -328,7 +330,7 @@ export default function EcosystemPage() {
                 const btnDisabled = isCurrent || isLowerTier || !!pendingTierKey || !!pending || !!purchaseInProgress
 
                 const btnLabel = isPendingThis
-                  ? (<><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Läuft…</>)
+                  ? (<><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> {t('eco.running')}</>)
                   : isCurrent   ? 'Aktiv'
                   : isLowerTier ? 'Niedriger'
                   : (<><Zap size={13} fill="currentColor" /> {tier.tonAmount} {CURRENCY_SHORT}</>)
