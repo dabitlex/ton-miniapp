@@ -259,7 +259,7 @@ export function useQuests() {
         // still — kein Toast/Haptic, der Nutzer hat die Quest ja tatsächlich
         // abgeschlossen; der nächste Refetch zeigt den korrekten Stand.
       } else if (error.message.includes('QUEST_CONDITION_NOT_MET') ||
-          error.message.includes('nicht erfüllt') ||
+          error.message.includes(tStatic('quest.conditionNotMet')) ||
           error.message.includes('noch nicht')) {
         toast('warning', `⚠️ ${error.message}`)
       } else {
