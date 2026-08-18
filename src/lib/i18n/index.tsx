@@ -124,4 +124,26 @@ export function useNumberFormat() {
     new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(n), [lang])
 }
 
+/**
+ * Uebersetzung AUSSERHALB von React — fuer Fehlermeldungen in fetch-Helfern,
+ * Toasts aus Mutationen und aehnliches, wo kein Hook verfuegbar ist.
+ * Liest dieselbe Quelle wie der Provider (localStorage), damit beide
+ * garantiert dieselbe Sprache verwenden.
+ */
+export function tStatic(key: DictKey, vars?: Record<string, string | number>): string {
+  let lang: Lang = 'en'
+  try {
+    const stored = window.localStorage?.getItem(STORAGE_KEY)
+    if (stored === 'de' || stored === 'en') lang = stored
+    else {
+      const tg = (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user?.language_code
+      if (typeof tg === 'string' && tg.toLowerCase().startsWith('de')) lang = 'de'
+    }
+  } catch { /* SSR oder kein Storage */ }
+
+  const raw = DICT[lang]?.[key] ?? DICT.en?.[key] ?? key
+  if (!vars) return raw
+  return raw.replace(/\{(\w+)\}/g, (m, n) => vars[n] != null ? String(vars[n]) : m)
+}
+
 export type { Lang, DictKey }
