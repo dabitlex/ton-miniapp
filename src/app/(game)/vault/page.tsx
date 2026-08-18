@@ -1,4 +1,4 @@
-// src/app/(game)/vault/page.tsx — VEXALGO 2.0 · Weekly Vault
+// src/app/(game)/vault/page.tsx — VEXALGO 2.0 · Weekly Vault 
 // Wöchentliche Verlosung ohne Einsatz. Lose entstehen durch Aktivität
 // (DB-Trigger), der Jackpot wächst mit jedem ausgegebenen Los.
 'use client'
