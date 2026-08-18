@@ -12,6 +12,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUserStore } from '@/stores/useUserStore'
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { authedFetch } from '@/lib/authedFetch'
 import {
   Target, CalendarCheck, Gift, Shield, Swords, Flame, UserPlus, Medal,
   Play, Crown, Sparkles, RefreshCw, Loader2, ChevronRight, X, type LucideIcon,
@@ -201,21 +202,23 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
     .filter(e => e.createdAt.slice(0, 10) === todayKey)
     .reduce((sum, e) => sum + (e.xp > 0 ? e.xp : 0), 0)
 
-  const trend = (() => {
-    const days = 14
-    const now = new Date()
-    const buckets = new Map<string, number>()
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now)
-      d.setUTCDate(d.getUTCDate() - i)
-      buckets.set(d.toISOString().slice(0, 10), 0)
-    }
-    for (const e of entries) {
-      const k = e.createdAt.slice(0, 10)
-      if (buckets.has(k) && e.xp > 0) buckets.set(k, (buckets.get(k) ?? 0) + e.xp)
-    }
-    return Array.from(buckets.values())
-  })()
+  // Tageswerte vom Server — nicht aus den geladenen Eintraegen ableiten,
+  // die decken bei aktiven Nutzern nur wenige Tage ab.
+  const [trend, setTrend] = useState<number[]>([])
+  useEffect(() => {
+    if (!open || !token) return
+    let abgebrochen = false
+    authedFetch('/api/v1/users/xp-daily?days=14')
+      .then(r => r.json())
+      .then(j => {
+        if (abgebrochen) return
+        const days = j?.success ? j.data?.days : null
+        if (Array.isArray(days)) setTrend(days.map((d: { xp: number }) => Number(d.xp) || 0))
+      })
+      .catch(() => { /* Sparkline ist Beiwerk */ })
+    return () => { abgebrochen = true }
+  }, [open, token])
+
   const trendMax  = Math.max(...trend, 1)
   const hasTrend  = trend.some(v => v > 0)
 
