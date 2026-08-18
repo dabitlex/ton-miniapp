@@ -35,7 +35,7 @@ function SplashContent() {
         style={{ background: 'var(--bg-void)' }}>
         <div>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
-            color: '#fff', marginBottom: 6 }}>Bitte in Telegram öffnen</p>
+            color: '#fff', marginBottom: 6 }}>Please open in Telegram</p>
           <p className="text-xs max-w-xs break-words" style={{ color: 'rgba(255,255,255,0.35)' }}>
             {authError}
           </p>
