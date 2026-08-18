@@ -11,6 +11,7 @@ import { useQuestRewardStore } from '@/stores/useQuestRewardStore'
 import { useUserStore }   from '@/stores/useUserStore'
 import { useUIStore }     from '@/stores/useUIStore'
 import type { DailyQuest, WeeklyQuest } from '@/types/game'
+import { tStatic } from '@/lib/i18n'
 
 // In-Flight-Guard für Quest-Completions: bewusst AUSSERHALB von React-State,
 // weil React-State-Updates gebatcht/verzögert sein können (v.a. auf
@@ -69,12 +70,12 @@ async function apiFetch<T>(url: string, _token: string, options?: RequestInit): 
       headers: { 'Content-Type': 'application/json', ...options?.headers },
     })
     const json = await res.json().catch(() => null)
-    if (!json) throw new ApiError('Server nicht erreichbar', 'NETWORK_ERROR')
+    if (!json) throw new ApiError(tStatic('err.network'), 'NETWORK_ERROR')
     if (!json.success) throw new ApiError(json.error ?? 'Request failed', json.code)
     return json.data as T
   } catch (e: any) {
     if (e?.name === 'AbortError') {
-      throw new ApiError('Zeitüberschreitung — bitte erneut versuchen.', 'TIMEOUT')
+      throw new ApiError(tStatic('err.timeout'), 'TIMEOUT')
     }
     throw e
   } finally {
