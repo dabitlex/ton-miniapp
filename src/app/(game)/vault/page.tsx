@@ -102,7 +102,7 @@ export default function VaultPage() {
         <div style={{ padding: '0 20px' }}>
           <div className="surface-2" style={{ padding: 28, borderRadius: 22, textAlign: 'center' }}>
             <IconTile name="clock" size={52} style={{ margin: '0 auto 14px' }} />
-            <p style={{ ...fd, fontSize: 15, fontWeight: 500 }}>Nächste Runde startet Montag</p>
+            <p style={{ ...fd, fontSize: 15, fontWeight: 500 }}>{t('vault.nextMonday')}</p>
             <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6 }}>
               Die Ziehung der letzten Runde ist durch.
             </p>
