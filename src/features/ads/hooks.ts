@@ -48,7 +48,7 @@ export function useAds() {
 
   async function watchAd() {
     if (watching) return
-    if (!getBlockId()) { toast('error', 'Werbung ist noch nicht verfügbar.'); return }
+    if (!getBlockId()) { toast('error', tStatic('ads.notReady')); return }
     if (remainingToday <= 0) { toast('warning', '⚠️ Tageslimit erreicht — morgen wieder!'); return }
 
     setWatching(true)
@@ -56,7 +56,7 @@ export function useAds() {
     const result = await showAd()
     setWatching(false)
 
-    if (result === 'no_ad') { toast('warning', 'Gerade keine Werbung verfügbar. Bitte später erneut versuchen.'); return }
+    if (result === 'no_ad') { toast('warning', tStatic('ads.noneNow')); return }
     if (result === 'error') { toast('error', 'Werbung konnte nicht abgespielt werden.'); return }
 
     // Reward kommt server-seitig (Adsgram-Callback). Kurz warten, dann Werte nachziehen.
