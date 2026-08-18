@@ -17,6 +17,65 @@ export const dynamic = 'force-dynamic'
 // Rate limit: 10 completions per 60 seconds per user
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
+
+/**
+ * DIAGNOSE (Aug 2026) — 404 beim Quest-Abschluss.
+ *
+ * Nutzer melden 404 auf dieser Route. Aus der Datenbank liess sich die
+ * Ursache nicht rekonstruieren: Quest-Zeilen werden nie geloescht, es gibt
+ * keine doppelten Nutzer, Auth- und App-IDs stimmen ueberein, und die
+ * Quest-Typen passen zu ihren Tabellen.
+ *
+ * Was fehlt, ist die TATSAECHLICH gesendete questId. Diese Funktion haelt
+ * sie samt Kontext in system_events fest, damit der Fall nachvollziehbar
+ * wird. Bewusst "fire and forget": die Diagnose darf den Nutzer nie
+ * blockieren oder eine zusaetzliche Fehlerquelle sein.
+ *
+ * Nach der Klaerung kann dieser Block wieder entfernt werden.
+ */
+async function logQuestNotFound(
+  dbc: ReturnType<typeof getAdminClient>,
+  ctx: { userId: string },
+  info: {
+    questId: string
+    questType: string
+    table: string
+    dbError?: { code?: string; message?: string } | null
+  },
+) {
+  try {
+    // Wo existiert die ID tatsaechlich? Das beantwortet die Kernfrage:
+    // falsche Tabelle, fremder Nutzer, oder gar nicht vorhanden.
+    const db = dbc as any
+    const [d, w, sp] = await Promise.all([
+      db.from('daily_quest_assignments').select('user_id, quest_date, status').eq('id', info.questId).maybeSingle(),
+      db.from('weekly_quest_assignments').select('user_id, iso_week, status').eq('id', info.questId).maybeSingle(),
+      db.from('special_quest_assignments').select('user_id, status').eq('id', info.questId).maybeSingle(),
+    ])
+
+    await db.from('system_events').insert({
+      event_type: 'quest_complete_404',
+      success:    false,
+      payload: {
+        user_id:        ctx.userId,
+        quest_id:       info.questId,
+        quest_type:     info.questType,
+        gesucht_in:     info.table,
+        db_error:       info.dbError ? { code: info.dbError.code, message: info.dbError.message } : null,
+        gefunden_in: {
+          daily:   d.data ? { gehoert: d.data.user_id, datum: d.data.quest_date, status: d.data.status } : null,
+          weekly:  w.data ? { gehoert: w.data.user_id, woche: w.data.iso_week, status: w.data.status } : null,
+          special: sp.data ? { gehoert: sp.data.user_id, status: sp.data.status } : null,
+        },
+        fremder_nutzer:
+          (d.data && d.data.user_id !== ctx.userId) ||
+          (w.data && w.data.user_id !== ctx.userId) ||
+          (sp.data && sp.data.user_id !== ctx.userId) || false,
+      },
+    })
+  } catch { /* Diagnose darf niemals stoeren */ }
+}
+
 export const POST = withAuth(async (ctx) => {
   let body: CompleteQuestRequest
   try { body = await ctx.req.json() }
@@ -80,7 +139,12 @@ export const POST = withAuth(async (ctx) => {
       .eq('user_id', ctx.userId)
       .single()
 
-    if (questErr || !quest) return err('Quest not found', 'NOT_FOUND', 404)
+    if (questErr || !quest) {
+      await logQuestNotFound(db, ctx, {
+        questId, questType, table: 'special_quest_assignments', dbError: questErr,
+      })
+      return err('Quest not found', 'NOT_FOUND', 404)
+    }
 
     if (quest.status !== 'available') {
       return err(`Quest is ${quest.status}`, `QUEST_${quest.status.toUpperCase()}`)
@@ -136,7 +200,10 @@ export const POST = withAuth(async (ctx) => {
     .eq('user_id', ctx.userId)
     .single()
 
-  if (questErr || !quest) return err('Quest not found', 'NOT_FOUND', 404)
+  if (questErr || !quest) {
+    await logQuestNotFound(db, ctx, { questId, questType, table, dbError: questErr })
+    return err('Quest not found', 'NOT_FOUND', 404)
+  }
 
   if (quest.status !== 'available') {
     return err(`Quest is ${quest.status}`, `QUEST_${quest.status.toUpperCase()}`)
