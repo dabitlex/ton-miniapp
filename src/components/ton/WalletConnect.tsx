@@ -10,6 +10,7 @@ import { CheckCircle, Wallet, LogOut, Copy } from 'lucide-react'
 import { IconTile }       from '@/components/ui/Icon'
 import type { UserProfile } from '@/types/game'
 import { authedFetch } from '@/lib/authedFetch'
+import { useT } from '@/lib/i18n'
 
 // Raw (0:hex) → UQ... (non-bounceable, Tonkeeper-Standard)
 function rawToUQ(rawAddress: string): string {
@@ -48,6 +49,7 @@ function rawToUQ(rawAddress: string): string {
 }
 
 export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
+  const t = useT()
   const [tonConnectUI]    = useTonConnectUI()
   const wallet            = useTonWallet()
   const token             = useAuthStore(s => s.accessToken)
@@ -131,7 +133,7 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
 
           <span className="chip" style={{ height: 26, fontSize: 11, color: 'var(--emerald)' }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--emerald)' }} />
-            Verbunden
+            {t('common.connected')}
           </span>
 
           <p style={{
@@ -153,29 +155,29 @@ export function WalletConnect({ onConnected }: { onConnected?: () => void }) {
                 })
               }}
               className="btn-secondary press" style={{ flex: 1, height: 42 }}>
-              {copied ? 'Kopiert' : 'Kopieren'}
+              {copied ? t('common.copied') : t('common.copy')}
             </button>
             <button onClick={disconnect} className="btn-secondary press"
               style={{ flex: 1, height: 42, color: 'var(--rose)' }}>
-              Trennen
+              {t('common.disconnect')}
             </button>
           </div>
         </div>
 
         {/* Wozu die Wallet gebraucht wird */}
-        <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>Wozu die Wallet</p>
+        <p className="eyebrow" style={{ margin: '20px 2px 11px' }}>{t('wallet.purpose')}</p>
         <div className="surface-2" style={{ padding: '3px 16px', borderRadius: 22 }}>
           {([
-            ['gem',    'Relics kaufen',          'XP-Boost für die Season'],
-            ['users',  'Referrals freischalten', 'Bedingung für validierte Freunde'],
-            ['trophy', 'Token-Launch',           'Auszahlung deiner XP später'],
+            ['gem',    'wallet.relics',    'wallet.relicsSub'],
+            ['users',  'wallet.referrals', 'wallet.referralsSub'],
+            ['trophy', 'wallet.token',     'wallet.tokenSub'],
           ] as const).map(([icon, title, sub], i, arr) => (
             <div key={title}>
               <div className="flex items-center" style={{ gap: 13, padding: '13px 0' }}>
                 <IconTile name={icon} size={36} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 13.5, fontWeight: 500 }}>{title}</p>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</p>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 13.5, fontWeight: 500 }}>{t(title as any)}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t(sub as any)}</p>
                 </div>
               </div>
               {i < arr.length - 1 && <div className="hairline" />}
