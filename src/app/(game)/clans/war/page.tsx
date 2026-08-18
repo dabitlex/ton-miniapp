@@ -12,10 +12,12 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { formatNumber } from '@/lib/utils'
 import { ChevronLeft } from 'lucide-react'
 import type { WarFighter } from '@/lib/constants/war'
+import { useT } from '@/lib/i18n'
 
 const fd: React.CSSProperties = { fontFamily: 'var(--font-display)', fontWeight: 800 }
 
 export default function BattlefieldPage() {
+  const t = useT()
   const router = useRouter()
   const { war, isLoading } = useClanWar()
 
@@ -84,7 +86,7 @@ export default function BattlefieldPage() {
       </div>
 
       {/* Top-Kämpfer */}
-      <Ribbon>TOP-KÄMPFER</Ribbon>
+      <Ribbon>{t('war.topFightersLabel')}</Ribbon>
       <div className="war-plate" style={{ padding: '2px 13px' }}>
         {[0, 1, 2].map(i => (
           <FighterRow key={i} place={(i + 1) as 1 | 2 | 3}
