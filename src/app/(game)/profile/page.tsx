@@ -22,6 +22,7 @@ import { XpHistorySheet }  from '@/components/game/XpHistorySheet'
 
 import { Icon, IconTile, type IconName } from '@/components/ui/Icon'
 import { useI18n }     from '@/lib/i18n'
+import { authedFetch } from '@/lib/authedFetch'
 
 type SheetId = 'wallet' | 'referral' | 'settings' | 'activity' | null
 
@@ -76,34 +77,19 @@ export default function ProfilePage() {
     },
   })
 
-  // Sparkline: die letzten XP-Eintraege nach Tagen buendeln.
-  // Nutzt den bestehenden Endpunkt — kein neuer Server-Code noetig.
+  // Sparkline: Tageswerte kommen fertig aggregiert vom Server.
+  // Frueher wurden die letzten 100 Eintraege im Client gebuendelt — das
+  // deckte bei aktiven Nutzern nur ein bis zwei Tage ab, der Rest blieb
+  // leer und das Diagramm sah kaputt aus.
   const { data: trend } = useQuery<number[]>({
     queryKey: ['xp-trend'],
     enabled:  !!token,
     staleTime: 300_000,
     queryFn:  async () => {
-      const res  = await fetch('/api/v1/users/xp-history?limit=100', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res  = await authedFetch('/api/v1/users/xp-daily?days=14')
       const json = await res.json().catch(() => null)
-      const entries: { createdAt: string; xp: number }[] = json?.success ? (json.data?.entries ?? []) : []
-      if (!entries.length) return []
-
-      // 14 Tagesbuckets, aeltester zuerst
-      const days = 14
-      const today = new Date()
-      const key = (d: Date) => d.toISOString().slice(0, 10)
-      const buckets = new Map<string, number>()
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(today); d.setUTCDate(d.getUTCDate() - i)
-        buckets.set(key(d), 0)
-      }
-      for (const e of entries) {
-        const k = (e.createdAt ?? '').slice(0, 10)
-        if (buckets.has(k)) buckets.set(k, (buckets.get(k) ?? 0) + (Number(e.xp) || 0))
-      }
-      return Array.from(buckets.values())
+      const days = json?.success ? json.data?.days : null
+      return Array.isArray(days) ? days.map((d: { xp: number }) => Number(d.xp) || 0) : []
     },
   })
 
