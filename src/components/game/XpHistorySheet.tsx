@@ -85,7 +85,7 @@ interface DetailState {
 }
 
 export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { lang } = useI18n()
+  const { t, lang } = useI18n()
   const token  = useAuthStore(s => s.accessToken)
   const userId = useUserStore(s => s.profile?.id)
 
@@ -285,9 +285,9 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
       {!loading && visible.length === 0 && (
         <div className="text-center py-10">
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 500,
-            color: 'var(--text-secondary)' }}>Noch keine XP</p>
+            color: 'var(--text-secondary)' }}>{t('xp.empty')}</p>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 5 }}>
-            Schließe Quests ab, um XP zu sammeln.</p>
+            {t('xp.emptySub')}</p>
         </div>
       )}
 
