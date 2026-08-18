@@ -1,7 +1,7 @@
 // src/components/war/WarCard.tsx
 // Hero-Karte des Wars-Untertabs im Clan-Screen.
 // Zustände: live (Duell + Beam + eigener Cap + CTA), idle (Countdown bis
-// Montag + Regeln), plus Kriegs-Historie darunter. 
+// Montag + Regeln), plus {t('war.history')} darunter. 
 'use client'
 import { useRouter } from 'next/navigation'
 import { useClanWar, useWarHistory } from '@/features/war/hooks'
@@ -10,10 +10,12 @@ import { WarStyles, Rivets, Crest, VsBadge, BeamClash, WarTimer, GameButton, Med
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { formatNumber } from '@/lib/utils'
 import { Icon } from '@/components/ui/Icon'
+import { useI18n } from '@/lib/i18n'
 
 const fd: React.CSSProperties = { fontFamily: 'var(--font-display)', fontWeight: 800 }
 
 export function WarCard() {
+  const { t, lang } = useI18n()
   const router = useRouter()
   const { war, isLoading } = useClanWar()
   const { history } = useWarHistory()
@@ -34,7 +36,7 @@ export function WarCard() {
 
             <div className="flex items-center justify-between mb-3">
               <span style={{ ...fd, fontSize: 10, letterSpacing: '.22em', color: 'var(--violet-bright)' }}>
-                Clan War · Live
+                {t('war.title')} · {t('war.live')}
               </span>
               <WarTimer endsAt={war.endsAt} compact />
             </div>
@@ -65,7 +67,7 @@ export function WarCard() {
             </div>
             <p className="text-center mb-3" style={{ fontSize: 9, letterSpacing: '.16em',
               color: 'var(--text-muted)' }}>
-              XP pro Mitglied · {war.myClan.memberCount} vs {war.rival.memberCount}
+              {t('war.perMember')} · {war.myClan.memberCount} vs {war.rival.memberCount}
             </p>
 
             <BeamClash frontline={war.frontline} />
@@ -75,7 +77,7 @@ export function WarCard() {
             </div>
 
             <GameButton style={{ marginTop: 14 }} onClick={() => router.push('/clans/war')}>
-              Zum Schlachtfeld
+              {t('war.toBattlefield')}
             </GameButton>
           </div>
 
@@ -83,7 +85,7 @@ export function WarCard() {
           <div className="war-plate flex items-center gap-3" style={{ padding: '13px 16px' }}>
             <Icon name="target" size={17} style={{ color: 'var(--blue-2)' }} />
             <div className="flex-1">
-              <p style={{ ...fd, fontSize: 11 }}>Dein Beitrag heute</p>
+              <p style={{ ...fd, fontSize: 11 }}>{t('war.myContribution')}</p>
               <div style={{ height: 7, borderRadius: 99, background: 'rgba(0,0,0,.45)', marginTop: 7,
                 boxShadow: 'inset 0 1.5px 3px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.05)',
                 overflow: 'hidden' }}>
@@ -120,7 +122,7 @@ export function WarCard() {
             style={{ background: 'var(--surface-2)', boxShadow: 'inset 0 1px 0 var(--edge-light)' }}>
             <Icon name="swords" size={26} style={{ color: 'var(--violet-bright)' }} />
           </div>
-          <p style={{ ...fd, fontSize: 15 }}>Nächster Clan War</p>
+          <p style={{ ...fd, fontSize: 15 }}>{t('war.nextWar')}</p>
           <p className="text-[11px] mt-1 mb-3" style={{ color: 'var(--text-secondary)' }}>
             Matchmaking startet Montag — Gegner mit ähnlicher Stärke.
           </p>
@@ -136,7 +138,7 @@ export function WarCard() {
       {/* ── Historie ─────────────────────────────────────────── */}
       {history.length > 0 && (
         <>
-          <p className="eyebrow" style={{ margin: '14px 4px 4px' }}>⚑ Kriegs-Historie</p>
+          <p className="eyebrow" style={{ margin: '14px 4px 4px' }}>⚑ {t('war.history')}</p>
           <div className="war-plate" style={{ padding: '4px 14px' }}>
             {history.slice(0, 5).map((h, i) => (
               <div key={h.warId}>
@@ -148,7 +150,7 @@ export function WarCard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold line-clamp-1">vs. {h.rival.name}</p>
                     <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                      {formatNumber(h.myPerCapita)} : {formatNumber(h.rivalPerCapita)} XP/Mitglied
+                      {formatNumber(h.myPerCapita)} : {formatNumber(h.rivalPerCapita)} XP
                     </p>
                   </div>
                   <span className={`war-gem${h.outcome === 'win' ? ' gold' : ''}`}>
