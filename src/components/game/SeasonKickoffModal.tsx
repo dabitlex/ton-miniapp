@@ -13,25 +13,27 @@ import { createPortal } from 'react-dom'
 import { useUserStore } from '@/stores/useUserStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { GameButton, WarStyles } from '@/components/war/WarPrimitives'
+import { useT, type DictKey } from '@/lib/i18n'
+import { Icon, type IconName } from '@/components/ui/Icon'
 
 const fd: React.CSSProperties = { fontFamily: 'var(--font-display)', fontWeight: 800 }
 
 // Season-Metadaten fürs Intro (Fallback, falls DB nur "Season N" liefert)
-const SEASON_META: Record<number, { name: string; tagline: string }> = {
-  2: { name: 'Ascension', tagline: 'Der Aufstieg beginnt' },
+// Nur Schluessel — die Uebersetzung passiert in der Komponente, weil
+// Konstanten auf Modulebene keinen Zugriff auf den Sprach-Hook haben.
+const SEASON_META: Record<number, { name: string; taglineKey: DictKey }> = {
+  2: { name: 'Ascension', taglineKey: 'season.ascentBegins' },
 }
 
-interface FeatureRow { icon: string; title: string; isNew?: boolean; text: string }
+interface FeatureRow { icon: IconName; titleKey: DictKey; isNew?: boolean; textKey: DictKey }
 const FEATURES: FeatureRow[] = [
-  { icon: '⚔️', title: 'Clan Wars', isNew: true,
-    text: 'Wöchentliche Kriege — dein Clan gegen einen ebenbürtigen Rivalen.' },
-  { icon: '🛡', title: 'Liga-Ranglisten', isNew: true,
-    text: 'Kämpfe in deiner Liga — von Bronze bis Legendary, mit eigenem Rang.' },
-  { icon: '✨', title: 'Season-XP zurückgesetzt',
-    text: 'Alle starten bei 0 — deine Total-XP, Level & Relikte bleiben.' },
+  { icon: 'swords', titleKey: 'war.title',        isNew: true, textKey: 'season.warsBody' },
+  { icon: 'rank',   titleKey: 'ranks.title',      isNew: true, textKey: 'season.leaguesBody' },
+  { icon: 'gem',    titleKey: 'season.xpReset',                textKey: 'season.xpResetBody' },
 ]
 
 export function SeasonKickoffModal() {
+  const t = useT()
   const profile = useUserStore(s => s.profile)
   const { haptic } = useUIStore()
   const [open, setOpen] = useState(false)
@@ -51,7 +53,8 @@ export function SeasonKickoffModal() {
 
   if (!open || seasonNumber == null || typeof document === 'undefined') return null
 
-  const meta = SEASON_META[seasonNumber] ?? { name: `Season ${seasonNumber}`, tagline: 'Eine neue Ära beginnt' }
+  const meta = SEASON_META[seasonNumber]
+    ?? { name: `Season ${seasonNumber}`, taglineKey: 'season.newEra' as DictKey }
 
   const close = () => {
     haptic('medium')
@@ -71,7 +74,7 @@ export function SeasonKickoffModal() {
         {/* Aurora-Lichtkuppel */}
         <div style={{ position: 'relative', padding: '34px 24px 22px', textAlign: 'center',
           background: 'radial-gradient(130% 100% at 50% -20%,rgba(139,92,246,.35) 0%,rgba(91,141,239,.14) 45%,transparent 75%)' }}>
-          <p className="eyebrow" style={{ color: 'var(--violet-bright)' }}>{meta.tagline}</p>
+          <p className="eyebrow" style={{ color: 'var(--blue-2)' }}>{t(meta.taglineKey)}</p>
           <h2 style={{ ...fd, fontSize: 34, margin: '10px 0 4px', letterSpacing: '-0.03em',
             background: 'linear-gradient(120deg,#FFFFFF,#BFD4FF 60%,#8FB4FF)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -95,10 +98,10 @@ export function SeasonKickoffModal() {
             <div key={i} className="flex gap-3 items-center" style={{ padding: '13px 15px',
               marginBottom: i === FEATURES.length - 1 ? 16 : 9, borderRadius: 18,
               background: 'var(--surface-press)', boxShadow: 'inset 0 1px 0 0 var(--edge-soft)' }}>
-              <span style={{ fontSize: 18 }}>{f.icon}</span>
+              <Icon name={f.icon} size={18} />
               <div className="flex-1">
                 <p style={{ fontSize: 12.5, fontWeight: 700 }}>
-                  {f.title}
+                  {t(f.titleKey)}
                   {f.isNew && (
                     <span style={{ display: 'inline-block', fontFamily: 'var(--font-display)',
                       fontSize: 9, fontWeight: 800, letterSpacing: '.14em', color: '#0b0b12',
@@ -106,7 +109,7 @@ export function SeasonKickoffModal() {
                       padding: '3px 7px', verticalAlign: '1px', marginLeft: 8 }}>NEU</span>
                   )}
                 </p>
-                <p style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{f.text}</p>
+                <p style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{t(f.textKey)}</p>
               </div>
             </div>
           ))}
