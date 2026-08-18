@@ -1,7 +1,7 @@
 // src/components/game/QuestRewardPopup.tsx — VEXALGO 2.0
 // Die gesamte Ad-/Verdopplungs-Logik ist unveraendert; nur die Darstellung ist neu.
 // Reward-Popup nach Abschluss einer Daily/Weekly-Quest.
-// Zeigt die verdiente XP (bereits gutgeschrieben) + Option "Werbung für ×2".
+// Zeigt die verdiente XP ({t('reward.credited')}) + Option "Werbung für ×2".
 // Global gemountet in src/app/(game)/layout.tsx (wie MysteryBoxModal).
 //
 // Ablauf:
@@ -20,11 +20,13 @@ import { useUserStore }        from '@/stores/useUserStore'
 import { useUIStore }          from '@/stores/useUIStore'
 import { showDoubleAd, getDoubleBlockId } from '@/lib/adsgram'
 import { Icon, IconTile } from '@/components/ui/Icon'
+import { useT } from '@/lib/i18n'
 
 type Phase = 'offer' | 'loadingAd' | 'crediting' | 'doubled'
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
 export function QuestRewardPopup() {
+  const t = useT()
   const isOpen = useQuestRewardStore(s => s.isOpen)
   const data   = useQuestRewardStore(s => s.data)
   const close  = useQuestRewardStore(s => s.close)
@@ -161,7 +163,7 @@ export function QuestRewardPopup() {
 
         <p className="eyebrow" style={{ position: 'relative',
           color: doubled ? 'var(--emerald)' : 'var(--blue-2)' }}>
-          {doubled ? 'Verdoppelt!' : 'Quest abgeschlossen'}
+          {doubled ? t('reward.doubled') : t('reward.completed')}
         </p>
 
         <h2 style={{ ...fd, fontSize: 17, fontWeight: 600, marginTop: 7, position: 'relative' }}>
@@ -184,7 +186,7 @@ export function QuestRewardPopup() {
         </div>
 
         <p style={{ fontSize: 11, color: 'var(--text-muted)', position: 'relative' }}>
-          {doubled ? 'Bonus gutgeschrieben · zählt auf Season-XP' : 'bereits gutgeschrieben'}
+          {doubled ? t('reward.bonusCredited') : t('reward.credited')}
         </p>
 
         {busy ? (
@@ -193,7 +195,7 @@ export function QuestRewardPopup() {
               border: '2px solid rgba(255,255,255,.15)', borderTopColor: 'var(--blue-2)',
               animation: 'ring-spin .8s linear infinite' }} />
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              {phase === 'loadingAd' ? 'Werbung wird geladen…' : 'Bonus wird gutgeschrieben…'}
+              {phase === 'loadingAd' ? t('reward.loadingAd') : t('reward.crediting')}
             </p>
           </div>
         ) : (
@@ -202,7 +204,7 @@ export function QuestRewardPopup() {
             {!doubled && adAvailable && (
               <button className="btn-primary press" onClick={watchAd}>
                 <Icon name="tv" size={17} />
-                Werbung ansehen für ×2
+                {t('reward.watchForDouble')}
               </button>
             )}
             <button
@@ -214,7 +216,7 @@ export function QuestRewardPopup() {
                 boxShadow: '0 10px 26px rgba(34,197,94,.4), inset 0 1px 0 rgba(255,255,255,.45)',
               } : { height: 44 }}
             >
-              Belohnung annehmen
+              {t('reward.accept')}
             </button>
           </div>
         )}
