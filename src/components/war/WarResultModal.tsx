@@ -13,11 +13,13 @@ import { useUserStore } from '@/stores/useUserStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { WarStyles, Rivets, Crest, BeamClash, GameButton } from './WarPrimitives'
 import { formatNumber } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 const fd: React.CSSProperties = { fontFamily: 'var(--font-display)', fontWeight: 800 }
 const CONFETTI = ['#FBBF24', '#A78BFA', '#5EEAD4', '#FB7185', '#FDE68A']
 
 export function WarResultModal() {
+  const t = useT()
   const { war, acknowledgeWar, acking } = useClanWar()
   const { haptic } = useUIStore()
   const [visible, setVisible] = useState(false)
@@ -137,7 +139,7 @@ export function WarResultModal() {
           ...(win ? { background: 'linear-gradient(180deg,rgba(251,191,36,.13),rgba(255,255,255,.02))' } : {}) }}>
           <Rivets gold={win} />
           <p className="eyebrow" style={{ color: win ? '#FDE68A' : 'var(--violet-bright)' }}>
-            {win ? '💰 Kriegsbeute' : draw ? '🤝 Beide Seiten belohnt' : 'Trost der Tapferen'}
+            {win ? t('warres.spoils') : draw ? t('warres.bothRewarded') : t('warres.consolation')}
           </p>
           <p style={{ ...fd, fontSize: 36, margin: '4px 0 2px',
             ...(win
@@ -148,12 +150,12 @@ export function WarResultModal() {
           </p>
           <p style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>
             {war.rewardXp > 0
-              ? 'bereits gutgeschrieben · zählt auf Season-XP'
-              : 'Ohne Beitrag keine Beute — nächste Woche zählt jede XP!'}
+              ? t('warres.credited')
+              : t('warres.noContribution')}
           </p>
           <div className="flex gap-2 justify-center flex-wrap" style={{ marginTop: 12 }}>
-            {win && <span className="war-gem gold">Clan +1 Sieg</span>}
-            {!win && !draw && <span className="war-gem">Kein XP-Verlust</span>}
+            {win && <span className="war-gem gold">{`Clan +1 ${t('war.win')}`}</span>}
+            {!win && !draw && <span className="war-gem">{t('war.noXpLoss')}</span>}
             {war.myRankInClan != null && war.myContribution > 0 && (
               <span className="war-gem">
                 {war.myRankInClan === 1 ? '👑' : '⚔'} Dein Beitrag: #{war.myRankInClan} · {formatNumber(war.myContribution)} XP
@@ -164,7 +166,7 @@ export function WarResultModal() {
 
         <div style={{ marginTop: 16, paddingBottom: 24 }}>
           <GameButton variant={win ? 'gold' : 'violet'} onClick={close} disabled={acking}>
-            {win ? 'BEUTE EINSAMMELN' : draw ? '🤝 WEITER' : 'WEITER KÄMPFEN'}
+            {win ? 'BEUTE EINSAMMELN' : draw ? t('warres.continue') : t('warres.continue')}
           </GameButton>
         </div>
       </div>
