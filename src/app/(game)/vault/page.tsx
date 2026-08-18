@@ -86,7 +86,7 @@ export default function VaultPage() {
         <div style={{ padding: '0 20px' }}>
           <div className="surface-2" style={{ padding: 28, borderRadius: 22, textAlign: 'center' }}>
             <IconTile name="lock" size={52} style={{ margin: '0 auto 14px' }} />
-            <p style={{ ...fd, fontSize: 15, fontWeight: 500 }}>Der Vault ruht gerade</p>
+            <p style={{ ...fd, fontSize: 15, fontWeight: 500 }}>{t('vault.resting')}</p>
             <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.45 }}>
               Sobald die nächste Runde läuft, sammelst du hier wieder Lose.
             </p>
@@ -129,7 +129,7 @@ export default function VaultPage() {
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('vault.jackpotSub')}</p>
           <div className="flex items-center justify-center" style={{ gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-            <span className="chip" style={{ height: 28 }}>Ziehung in {drawIn}</span>
+            <span className="chip" style={{ height: 28 }}>{t('vault.drawIn', { time: drawIn })}</span>
             <span className="chip" style={{ height: 28 }}>{t('vault.winners', { count: 13 })}</span>
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function VaultPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center" style={{ gap: 10 }}>
               <Icon name="ticket" size={17} style={{ color: 'var(--blue-2)' }} />
-              <p style={{ ...fd, fontSize: 14.5, fontWeight: 500 }}>Deine Lose</p>
+              <p style={{ ...fd, fontSize: 14.5, fontWeight: 500 }}>{t('vault.myTickets')}</p>
             </div>
             <p style={{ ...fd, fontSize: 19, fontWeight: 500 }}>
               {vault.myTickets}<span style={{ fontSize: 12, color: 'var(--text-muted)' }}>/{vault.maxTickets}</span>
@@ -150,8 +150,8 @@ export default function VaultPage() {
           </div>
           <p style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 9, textAlign: 'center' }}>
             {vault.oddsOneIn
-              ? `Gewinnchance ≈ 1 zu ${vault.oddsOneIn} · ${formatNumber(vault.totalTickets)} Lose im Topf`
-              : `Noch kein Los · ${formatNumber(vault.totalTickets)} Lose im Topf`}
+              ? t('vault.odds', { odds: vault.oddsOneIn, total: formatNumber(vault.totalTickets) })
+              : t('vault.odds', { odds: '—', total: formatNumber(vault.totalTickets) })}
           </p>
         </div>
 
@@ -172,13 +172,13 @@ export default function VaultPage() {
                     </p>
                     {!done && s.target > 0 && (
                       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {s.current} von {s.target}
+                        {s.current} / {s.target}
                       </p>
                     )}
                   </div>
                   <span className="chip" style={{ height: 23, fontSize: 10, padding: '0 9px',
                     ...(done ? { color: 'var(--emerald)' } : {}) }}>
-                    {done ? `+${s.tickets} erhalten` : `+${s.tickets}`}
+                    {done ? t('vault.received', { count: s.tickets }) : `+${s.tickets}`}
                   </span>
                 </div>
                 {i < vault.sources.length - 1 && <div className="hairline" />}
@@ -199,7 +199,8 @@ export default function VaultPage() {
                 {formatNumber(p.xp)}
               </p>
               <p style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                {p.count}× {i === 0 ? 'Haupt' : i === 1 ? 'Zweit' : 'Dritt'}
+                {p.count}× {i === 0 ? (lang === 'de' ? 'Haupt' : '1st')
+                  : i === 1 ? (lang === 'de' ? 'Zweit' : '2nd') : (lang === 'de' ? 'Dritt' : '3rd')}
               </p>
             </div>
           ))}
