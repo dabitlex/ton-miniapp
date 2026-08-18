@@ -129,7 +129,7 @@ export function WarCard() {
           <div className="flex justify-center mb-4"><WarTimer endsAt={war.nextWarAt} /></div>
           <div className="flex gap-2 justify-center flex-wrap">
             <span className="war-gem gold">Sieg +{formatNumber(WAR_RULES.rewardWin)} XP</span>
-            <span className="war-gem">Kein XP-Verlust</span>
+            <span className="war-gem">{t('war.noXpLoss')}</span>
             <span className="war-gem">Cap {formatNumber(WAR_RULES.dailyCap)}/Tag</span>
           </div>
         </div>
