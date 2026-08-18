@@ -361,7 +361,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
           style={{ color: 'var(--blue-2)', fontFamily: 'var(--font-display)', fontWeight: 500,
             background: 'linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.03))',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.06)' }}>
-          {loadingMore ? <><Loader2 size={14} className="animate-spin" /> Lädt…</> : 'Mehr laden'}
+          {loadingMore ? <><Loader2 size={14} className="animate-spin" /> {t('common.loading')}</> : 'Mehr laden'}
         </button>
       )}
 
