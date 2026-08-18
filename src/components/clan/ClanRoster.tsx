@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { Crown, ChevronUp, ChevronDown, UserMinus, MoreHorizontal,
          Info, ChevronLeft, CalendarPlus, Clock, Activity } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 export interface RosterMember {
   userId:            string
@@ -79,6 +80,7 @@ export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isMana
   onManage:   (action: ManageAction, targetUserId: string) => void
   isManaging: boolean
 }) {
+  const t     = useT()
   const token = useAuthStore(s => s.accessToken)
   const [target, setTarget]   = useState<RosterMember | null>(null)
   const [mode, setMode]       = useState<'actions' | 'info'>('actions')
@@ -172,19 +174,19 @@ export function ClanRoster({ members, myUserId, myRole, clanId, onManage, isMana
         {target && mode === 'actions' && (
           <div className="space-y-2">
             {canViewInfo && (
-              <ActionBtn icon={<Info size={16} />} label="Infos ansehen" color="var(--text-primary)"
+              <ActionBtn icon={<Info size={16} />} label={t('roster.viewInfo')} color="var(--text-primary)"
                 onClick={() => loadInfo(target)} />
             )}
             {targetActions.includes('promote') && (
-              <ActionBtn icon={<ChevronUp size={16} />} label="Zum Officer befördern" color="var(--emerald)"
+              <ActionBtn icon={<ChevronUp size={16} />} label={t('roster.promote')} color="var(--emerald)"
                 disabled={isManaging} onClick={() => { onManage('promote', target.userId); closeSheet() }} />
             )}
             {targetActions.includes('demote') && (
-              <ActionBtn icon={<ChevronDown size={16} />} label="Zum Mitglied zurückstufen" color="var(--blue-3)"
+              <ActionBtn icon={<ChevronDown size={16} />} label={t('roster.demote')} color="var(--blue-3)"
                 disabled={isManaging} onClick={() => { onManage('demote', target.userId); closeSheet() }} />
             )}
             {targetActions.includes('kick') && (
-              <ActionBtn icon={<UserMinus size={16} />} label="Aus dem Clan entfernen" color="var(--rose)"
+              <ActionBtn icon={<UserMinus size={16} />} label={t('roster.remove')} color="var(--rose)"
                 disabled={isManaging} onClick={() => { onManage('kick', target.userId); closeSheet() }} />
             )}
           </div>
