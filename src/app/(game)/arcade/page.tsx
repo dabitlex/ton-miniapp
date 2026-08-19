@@ -30,6 +30,7 @@ export default function ArcadePage() {
   const { t, lang } = useI18n()
   const { status, startRun, finishRun } = useArcade()
   const toast  = useUIStore(s => s.toast)
+  const setNavVisible = useUIStore(s => s.setNavVisible)
   const haptic = useUIStore(s => s.haptic)
 
   const [phase, setPhase]   = useState<Phase>('intro')
@@ -65,6 +66,17 @@ export default function ArcadePage() {
   }, [])
 
   useEffect(() => clearField, [clearField])
+
+  // Vollbild waehrend der Runde: Kopfzeile und Navigation weg, damit
+  // niemand beim Tippen versehentlich den Screen wechselt.
+  // Der Countdown zaehlt schon dazu — sonst springt das Layout beim Start.
+  useEffect(() => {
+    const vollbild = phase === 'countdown' || phase === 'running'
+    setNavVisible(!vollbild)
+    // Beim Verlassen des Screens immer wieder einblenden, auch wenn die
+    // Runde durch Weg-Navigieren abgebrochen wurde.
+    return () => setNavVisible(true)
+  }, [phase, setNavVisible])
 
   /* ── Lauf beenden ──────────────────────────────────────────── */
   const endRun = useCallback(async (why: string) => {
@@ -436,11 +448,22 @@ export default function ArcadePage() {
                         textAlign: 'center', color: e.isMe ? '#fff' : e.rank === 1 ? 'var(--gold)' : 'var(--text-faint)' }}>
                         {e.rank}
                       </span>
-                      <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0,
+                      {/* Buchstabe liegt IMMER darunter; das Bild deckt ihn ab.
+                          Telegram-Bild-URLs laufen ab — faellt eines weg, wird
+                          es ausgeblendet und der Buchstabe erscheint wieder. */}
+                      <div style={{ position: 'relative', width: 30, height: 30, borderRadius: 10,
+                        flexShrink: 0, overflow: 'hidden',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         ...fd, fontSize: 11, fontWeight: 500,
                         background: 'linear-gradient(140deg,#9CC0FF,#2563FF)' }}>
-                        {(e.name[0] ?? '?').toUpperCase()}
+                        <span>{(e.name[0] ?? '?').toUpperCase()}</span>
+                        {e.avatar && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={e.avatar} alt="" width={30} height={30}
+                            style={{ position: 'absolute', inset: 0,
+                              width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                        )}
                       </div>
                       <span className="truncate" style={{ ...fd, flex: 1, textAlign: 'left',
                         fontSize: 13.5, fontWeight: 500 }}>
