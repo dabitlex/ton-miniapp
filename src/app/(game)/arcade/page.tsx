@@ -245,7 +245,8 @@ export default function ArcadePage() {
     )
   }
 
-  const runsLeft   = status?.runsLeft ?? 0
+  const runsLeft = status?.runsLeft ?? 0
+  const board    = status?.board ?? null
 
   return (
     <div className="relative z-10" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
@@ -411,6 +412,73 @@ export default function ArcadePage() {
               <span style={{ ...fd, fontSize: 17, fontWeight: 500 }}>{result?.combo ?? 0}×</span>
             </div>
           </div>
+
+          {/* Wochen-Bestenliste — nur Vergleich, keine Belohnung */}
+          {board && board.entries.length > 0 && (
+            <>
+              <p className="eyebrow" style={{ alignSelf: 'flex-start', margin: '0 0 9px 2px' }}>
+                {lang === 'de' ? 'Diese Woche' : 'This week'}
+                {board.players > 0 && ` · ${board.players} ${lang === 'de' ? 'Spieler' : 'players'}`}
+              </p>
+              <div className="surface-2" style={{ width: '100%', padding: '3px 14px' }}>
+                {board.entries.map((e, i) => (
+                  <div key={e.rank}>
+                    <div className="flex items-center"
+                      style={{
+                        gap: 11, padding: '11px 0',
+                        ...(e.isMe ? {
+                          background: 'linear-gradient(150deg,rgba(91,141,255,.30),rgba(37,99,255,.14))',
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 0 0 .5px rgba(143,180,255,.35)',
+                          borderRadius: 14, paddingLeft: 9, paddingRight: 11, margin: '2px 0',
+                        } : {}),
+                      }}>
+                      <span style={{ ...fd, width: 20, fontSize: 12.5, fontWeight: 500, flexShrink: 0,
+                        textAlign: 'center', color: e.isMe ? '#fff' : e.rank === 1 ? 'var(--gold)' : 'var(--text-faint)' }}>
+                        {e.rank}
+                      </span>
+                      <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        ...fd, fontSize: 11, fontWeight: 500,
+                        background: 'linear-gradient(140deg,#9CC0FF,#2563FF)' }}>
+                        {(e.name[0] ?? '?').toUpperCase()}
+                      </div>
+                      <span className="truncate" style={{ ...fd, flex: 1, textAlign: 'left',
+                        fontSize: 13.5, fontWeight: 500 }}>
+                        {e.name}
+                        {e.isMe && (
+                          <span style={{ fontSize: 10, color: 'var(--blue-3)', fontWeight: 400 }}>
+                            {lang === 'de' ? ' · du' : ' · you'}
+                          </span>
+                        )}
+                      </span>
+                      <span className="tabular-nums" style={{ ...fd, fontSize: 14, fontWeight: 500,
+                        color: e.rank === 1 ? 'var(--gold)' : 'var(--text-primary)' }}>
+                        {nf(e.score)}
+                      </span>
+                    </div>
+                    {i < board.entries.length - 1 && !e.isMe && !board.entries[i + 1]?.isMe && (
+                      <div className="hairline" />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Abstand nach oben — beschreibt, was war, statt eine Aufgabe zu stellen */}
+              {board.gapPoints != null && board.gapRank != null && board.gapPoints > 0 && (
+                <p style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 10, textAlign: 'center' }}>
+                  {lang === 'de'
+                    ? `Du warst ${nf(board.gapPoints)} Punkte von Platz ${board.gapRank} entfernt`
+                    : `You were ${nf(board.gapPoints)} points away from rank ${board.gapRank}`}
+                </p>
+              )}
+              {board.myRank === 1 && (
+                <p style={{ fontSize: 10.5, color: 'var(--gold)', marginTop: 10, textAlign: 'center' }}>
+                  {lang === 'de' ? 'Du führst diese Woche' : 'You lead this week'}
+                </p>
+              )}
+              <div style={{ height: 18 }} />
+            </>
+          )}
 
           {result?.capped && (
             <p style={{ fontSize: 11, color: 'var(--gold)', marginTop: -12, marginBottom: 18,
