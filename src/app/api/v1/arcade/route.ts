@@ -18,11 +18,18 @@ const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const GET = withAuth(async (ctx) => {
   const db = getAdminClient() as any
-  const { data, error } = await db.rpc('arcade_status', { p_user_id: ctx.userId })
 
-  if (error) return ok({ enabled: false })
+  // Zustand und Wochenliste parallel — spart eine Rundreise
+  const [statusRes, boardRes] = await Promise.all([
+    db.rpc('arcade_status', { p_user_id: ctx.userId }),
+    db.rpc('arcade_weekly_board', { p_user_id: ctx.userId, p_limit: 5 }),
+  ])
 
-  const s = Array.isArray(data) ? data[0] : data
+  if (statusRes.error) return ok({ enabled: false })
+
+  const s = Array.isArray(statusRes.data) ? statusRes.data[0] : statusRes.data
+  const rows: any[] = Array.isArray(boardRes.data) ? boardRes.data : []
+  const first = rows[0] ?? null
   return ok({
     enabled:     !!s?.enabled,
     runsLeft:    Number(s?.runs_left ?? 0),
@@ -32,6 +39,20 @@ export const GET = withAuth(async (ctx) => {
     xpToday:     Number(s?.xp_today ?? 0),
     xpCap:       Number(s?.xp_cap ?? 0),
     xpCapped:    !!s?.xp_capped,
+    board: {
+      entries: rows.map(r => ({
+        rank:  Number(r.rank),
+        name:  String(r.name ?? 'Player'),
+        score: Number(r.score ?? 0),
+        isMe:  !!r.is_me,
+      })),
+      // null, wenn der Spieler diese Woche noch nicht gespielt hat
+      myRank:    first?.my_rank    != null ? Number(first.my_rank) : null,
+      myScore:   first?.my_score   != null ? Number(first.my_score) : null,
+      gapPoints: first?.gap_points != null ? Number(first.gap_points) : null,
+      gapRank:   first?.gap_rank   != null ? Number(first.gap_rank) : null,
+      players:   first?.players    != null ? Number(first.players) : rows.length,
+    },
   })
 })
 
