@@ -1,6 +1,6 @@
 // src/components/ui/Icon.tsx
 // Linien-Icon-Set fuer das Redesign 2.0.
-// Ein einziger Satz, damit alle Screens dieselbe Strichstaerke und 
+// Ein einziger Satz, damit alle Screens dieselbe Strichstaerke und
 // Rundung teilen — ersetzt die bisher gemischten Emojis und lucide-Icons.
 'use client'
 
@@ -9,7 +9,7 @@ export type IconName =
   | 'flame' | 'bolt' | 'lock' | 'swords' | 'target' | 'check'
   | 'tv' | 'crown' | 'chat' | 'trophy' | 'clock' | 'wallet'
   | 'users' | 'gear' | 'chevronRight' | 'chevronLeft' | 'ticket'
-  | 'gem' | 'box' | 'search' | 'info' | 'send' | 'close' | 'plus'
+  | 'gem' | 'box' | 'search' | 'info' | 'send' | 'close' | 'plus' | 'gamepad'
 
 const P: Record<IconName, React.ReactNode> = {
   home:   <path d="M3 10.2 12 3.2l9 7v10.6H3z" />,
@@ -41,6 +41,8 @@ const P: Record<IconName, React.ReactNode> = {
   send:   <path d="M21.5 12 3.5 4.5l3 7.5-3 7.5z" />,
   close:  <path d="M6 6l12 12M18 6 6 18" />,
   plus:   <path d="M12 5v14M5 12h14" />,
+  // Gamepad — Steuerkreuz links, zwei Knoepfe rechts
+  gamepad: <><path d="M7.5 9.5v4M5.5 11.5h4" /><circle cx="15.8" cy="10.6" r=".9" fill="currentColor" stroke="none" /><circle cx="17.8" cy="12.8" r=".9" fill="currentColor" stroke="none" /><path d="M8.3 6.5h7.4a4.3 4.3 0 0 1 4.2 3.4l1 4.8a2.6 2.6 0 0 1-4.7 2l-1.3-2.2H9.1l-1.3 2.2a2.6 2.6 0 0 1-4.7-2l1-4.8a4.3 4.3 0 0 1 4.2-3.4z" /></>,
 }
 
 export function Icon({
