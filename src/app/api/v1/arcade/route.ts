@@ -1,4 +1,4 @@
-// src/app/api/v1/arcade/route.ts
+// src/app/api/v1/arcade/route.ts 
 //
 // GET   — Zustand: aktiv?, verbleibende Runden, Bestwerte
 // POST  — Lauf eröffnen  { action: 'start', withAd?: boolean }
