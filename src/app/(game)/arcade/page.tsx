@@ -36,7 +36,7 @@ export default function ArcadePage() {
   const [score, setScore]   = useState(0)
   const [left, setLeft]     = useState(DURATION)
   const [cd, setCd]         = useState(3)
-  const [result, setResult] = useState<{ xp: number; why: string; combo: number } | null>(null)
+  const [result, setResult] = useState<{ xp: number; why: string; combo: number; capped: boolean } | null>(null)
   const [combo, setCombo]   = useState(0)
 
   const fieldRef  = useRef<HTMLDivElement>(null)
@@ -77,13 +77,13 @@ export default function ArcadePage() {
     const bestCombo  = bestComboRef.current
 
     if (!runIdRef.current) {
-      setResult({ xp: 0, why, combo: bestCombo })
+      setResult({ xp: 0, why, combo: bestCombo, capped: false })
       return
     }
 
     const r = await finishRun({ runId: runIdRef.current, score: finalScore, bestCombo })
     runIdRef.current = null
-    setResult({ xp: r.xp, why, combo: bestCombo })
+    setResult({ xp: r.xp, why, combo: bestCombo, capped: !!r.capped })
   }, [clearField, finishRun])
 
   /* ── Treffer ───────────────────────────────────────────────── */
@@ -246,7 +246,6 @@ export default function ArcadePage() {
   }
 
   const runsLeft   = status?.runsLeft ?? 0
-  const adRunsLeft = status?.adRunsLeft ?? 0
 
   return (
     <div className="relative z-10" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
@@ -358,24 +357,25 @@ export default function ArcadePage() {
             <button className="btn-primary press" onClick={() => begin(false)}>
               {lang === 'de' ? 'Spiel starten' : 'Start game'}
             </button>
-          ) : adRunsLeft > 0 ? (
+          ) : (
             <button className="btn-primary press" onClick={() => begin(true)}>
               <Icon name="tv" size={17} />
               {lang === 'de' ? 'Runde per Werbung' : 'Round via ad'}
-            </button>
-          ) : (
-            <button className="btn-secondary press" onClick={() => router.push('/home')}>
-              {lang === 'de' ? 'Morgen wieder' : 'Come back tomorrow'}
             </button>
           )}
 
           <p style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 14 }}>
             {runsLeft > 0
-              ? (lang === 'de' ? `Noch ${runsLeft} Runden heute` : `${runsLeft} rounds left today`)
-              : adRunsLeft > 0
-                ? (lang === 'de' ? `${adRunsLeft} Extra-Runden per Werbung` : `${adRunsLeft} extra rounds via ad`)
-                : (lang === 'de' ? 'Keine Runden mehr heute' : 'No rounds left today')}
+              ? (lang === 'de' ? `Noch ${runsLeft} freie Runden heute` : `${runsLeft} free rounds left today`)
+              : (lang === 'de' ? 'Ab jetzt eine Werbung pro Runde' : 'One ad per round from now on')}
           </p>
+          {status?.xpCapped && (
+            <p style={{ fontSize: 10.5, color: 'var(--gold)', marginTop: 6, textAlign: 'center' }}>
+              {lang === 'de'
+                ? 'XP-Tageslimit erreicht — Punkte und Bestwert zählen weiter'
+                : 'Daily XP limit reached — points and best score still count'}
+            </p>
+          )}
           {(status?.bestScore ?? 0) > 0 && (
             <p style={{ fontSize: 10.5, color: 'var(--text-faint)', marginTop: 6 }}>
               {lang === 'de' ? 'Bestwert' : 'Best'} {nf(status!.bestScore)}
@@ -412,16 +412,25 @@ export default function ArcadePage() {
             </div>
           </div>
 
+          {result?.capped && (
+            <p style={{ fontSize: 11, color: 'var(--gold)', marginTop: -12, marginBottom: 18,
+              textAlign: 'center', lineHeight: 1.5 }}>
+              {lang === 'de'
+                ? 'XP-Tageslimit erreicht. Weiterspielen geht — für Punkte und Bestwert.'
+                : 'Daily XP limit reached. You can keep playing for points and your best score.'}
+            </p>
+          )}
+
           {runsLeft > 0 ? (
             <button className="btn-primary press" onClick={() => begin(false)}>
               {lang === 'de' ? 'Nochmal spielen' : 'Play again'}
             </button>
-          ) : adRunsLeft > 0 ? (
+          ) : (
             <button className="btn-primary press" onClick={() => begin(true)}>
               <Icon name="tv" size={17} />
-              {lang === 'de' ? 'Runde per Werbung' : 'Round via ad'}
+              {lang === 'de' ? 'Nochmal per Werbung' : 'Play again via ad'}
             </button>
-          ) : null}
+          )}
 
           <button className="btn-secondary press" style={{ marginTop: 10, height: 44 }}
             onClick={() => router.push('/home')}>
