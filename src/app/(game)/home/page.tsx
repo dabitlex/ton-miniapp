@@ -1,4 +1,4 @@
-// src/app/(game)/home/page.tsx — VEXALGO 2.0 
+// src/app/(game)/home/page.tsx — VEXALGO 2.0
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -215,7 +215,7 @@ export default function HomePage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}>
         {/* Erstes Symbol: XP Rush. Quests sind ohnehin ueber die
             Navigation erreichbar, der Platz war also frei. */}
-        <Link href="/arcade"><IconTile name="target" size={56} /></Link>
+        <Link href="/arcade"><IconTile name="gamepad" size={56} /></Link>
         {vault?.enabled
           ? <Link href="/vault"><IconTile name="lock" size={56} /></Link>
           : <Link href="/achievements"><IconTile name="trophy" size={56} /></Link>}
