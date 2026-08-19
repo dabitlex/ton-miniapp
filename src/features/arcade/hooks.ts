@@ -17,6 +17,22 @@ export interface ArcadeStatus {
   xpCap:      number
   /** true = Tagesdeckel erreicht, Runden zaehlen weiter ohne XP */
   xpCapped:   boolean
+  board:      ArcadeBoard
+}
+
+export interface ArcadeBoardEntry {
+  rank: number; name: string; score: number; isMe: boolean
+}
+
+export interface ArcadeBoard {
+  /** Top 5 der laufenden Woche, ein Eintrag je Spieler */
+  entries:   ArcadeBoardEntry[]
+  myRank:    number | null
+  myScore:   number | null
+  /** Punkte bis zum naechsthoeheren Platz */
+  gapPoints: number | null
+  gapRank:   number | null
+  players:   number
 }
 
 export function useArcade() {
@@ -63,6 +79,7 @@ export function useArcade() {
       return json.data as { accepted: boolean; xp: number; capped: boolean; reason: string | null }
     },
     onSuccess: (data) => {
+      // Zustand UND Wochenliste kommen aus demselben Endpunkt
       qc.invalidateQueries({ queryKey: ['arcade'] })
       if (data.xp > 0) {
         // Profil nachziehen, damit XP und Level sofort stimmen
