@@ -21,7 +21,7 @@ export interface ArcadeStatus {
 }
 
 export interface ArcadeBoardEntry {
-  rank: number; name: string; score: number; isMe: boolean
+  rank: number; name: string; avatar: string | null; score: number; isMe: boolean
 }
 
 export interface ArcadeBoard {
