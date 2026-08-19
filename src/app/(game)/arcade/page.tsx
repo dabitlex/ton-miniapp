@@ -1,4 +1,4 @@
-// src/app/(game)/arcade/page.tsx — XP Rush 
+// src/app/(game)/arcade/page.tsx — XP Rush
 //
 // Die Spiellogik entspricht der abgenommenen Vorschau. Neu gegenüber
 // dieser: Der Lauf wird serverseitig eröffnet und abgeschlossen, das
@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter }  from 'next/navigation'
 import { useArcade }  from '@/features/arcade/hooks'
-import { showAd }     from '@/lib/adsgram'
+import { showArcadeAd } from '@/lib/adsgram'
 import { useUIStore } from '@/stores/useUIStore'
 import { useI18n }    from '@/lib/i18n'
 import { Icon, IconTile } from '@/components/ui/Icon'
@@ -188,10 +188,11 @@ export default function ArcadePage() {
   const begin = useCallback(async (withAd: boolean) => {
     try {
       if (withAd) {
-        // Bewusst showAd() statt des Ads-Hooks: dessen Tageslimit gilt
-        // fuer die Quest-Belohnungen. Die Arcade hat ihr eigenes Limit,
-        // das serverseitig in start_arcade_run geprueft wird.
-        const res = await showAd()
+        // Eigener Werbeblock: der normale Block wuerde ueber seinen
+        // Server-Callback einen ad_views-Eintrag anlegen und damit auf
+        // die Quest "5 Ads ansehen" zaehlen. Das Limit der Arcade wird
+        // serverseitig in start_arcade_run geprueft.
+        const res = await showArcadeAd()
         if (res !== 'watched') {
           toast?.('warning', lang === 'de'
             ? 'Werbung nicht abgespielt — Runde nicht gestartet.'
