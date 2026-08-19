@@ -213,7 +213,9 @@ export default function HomePage() {
 
       {/* ── Schnellzugriff ────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}>
-        <Link href="/quests"><IconTile name="quest" size={56} /></Link>
+        {/* Erstes Symbol: XP Rush. Quests sind ohnehin ueber die
+            Navigation erreichbar, der Platz war also frei. */}
+        <Link href="/arcade"><IconTile name="target" size={56} /></Link>
         {vault?.enabled
           ? <Link href="/vault"><IconTile name="lock" size={56} /></Link>
           : <Link href="/achievements"><IconTile name="trophy" size={56} /></Link>}
