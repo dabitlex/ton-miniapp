@@ -1,4 +1,4 @@
-// src/app/api/v1/arcade/route.ts 
+// src/app/api/v1/arcade/route.ts
 //
 // GET   — Zustand: aktiv?, verbleibende Runden, Bestwerte
 // POST  — Lauf eröffnen  { action: 'start', withAd?: boolean }
@@ -30,6 +30,8 @@ export const GET = withAuth(async (ctx) => {
     bestScore:   Number(s?.best_score ?? 0),
     bestToday:   Number(s?.best_today ?? 0),
     xpToday:     Number(s?.xp_today ?? 0),
+    xpCap:       Number(s?.xp_cap ?? 0),
+    xpCapped:    !!s?.xp_capped,
   })
 })
 
@@ -85,6 +87,7 @@ export const POST = withAuth(async (ctx) => {
     return ok({
       accepted: !!r?.accepted,
       xp:       Number(r?.xp ?? 0),
+      capped:   !!r?.capped,
       reason:   r?.reason ?? null,
     })
   }
