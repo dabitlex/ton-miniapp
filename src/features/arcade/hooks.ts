@@ -9,10 +9,14 @@ import { authedFetch }  from '@/lib/authedFetch'
 export interface ArcadeStatus {
   enabled:    boolean
   runsLeft:   number
+  /** -1 = unbegrenzt (jede weitere Runde gegen eine Werbung) */
   adRunsLeft: number
   bestScore:  number
   bestToday:  number
   xpToday:    number
+  xpCap:      number
+  /** true = Tagesdeckel erreicht, Runden zaehlen weiter ohne XP */
+  xpCapped:   boolean
 }
 
 export function useArcade() {
@@ -55,8 +59,8 @@ export function useArcade() {
         body:    JSON.stringify({ action: 'finish', ...v }),
       })
       const json = await res.json().catch(() => null)
-      if (!json?.success) return { accepted: false, xp: 0, reason: null as string | null }
-      return json.data as { accepted: boolean; xp: number; reason: string | null }
+      if (!json?.success) return { accepted: false, xp: 0, capped: false, reason: null as string | null }
+      return json.data as { accepted: boolean; xp: number; capped: boolean; reason: string | null }
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['arcade'] })
