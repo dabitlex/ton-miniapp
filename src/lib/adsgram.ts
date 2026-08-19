@@ -38,6 +38,21 @@ export function getBlockId(): string | null {
 export function getDoubleBlockId(): string | null {
   return process.env.NEXT_PUBLIC_ADSGRAM_DOUBLE_BLOCK_ID || null
 }
+/**
+ * Eigener Block fuer die Arcade-Extrarunden.
+ *
+ * WICHTIG: Nicht getBlockId() verwenden. Dessen Server-Callback legt
+ * einen ad_views-Eintrag an und vergibt +50 XP — dadurch wuerde eine
+ * Arcade-Runde faelschlich auf die Quest "5 Ads ansehen" zaehlen.
+ * Die Belohnung fuer diese Werbung ist die Extrarunde selbst.
+ *
+ * Faellt die Variable weg, greift ein Rueckfall auf den normalen Block,
+ * damit das Spiel nicht unbenutzbar wird — dann zaehlt die Werbung
+ * allerdings wieder auf die Quest.
+ */
+export function getArcadeBlockId(): string | null {
+  return process.env.NEXT_PUBLIC_ADSGRAM_ARCADE_BLOCK_ID || getBlockId()
+}
 
 async function getController(blockId: string): Promise<AdController> {
   await loadSdk()
@@ -70,4 +85,10 @@ export async function showAd(): Promise<WatchResult> {
 // die danach von /api/v1/quests/double verbraucht wird.
 export async function showDoubleAd(): Promise<WatchResult> {
   return showFor(getDoubleBlockId())
+}
+
+// Arcade-Block: kein XP-Callback, keine ad_views — die Belohnung ist
+// die zusaetzliche Spielrunde.
+export async function showArcadeAd(): Promise<WatchResult> {
+  return showFor(getArcadeBlockId())
 }
