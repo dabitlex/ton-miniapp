@@ -75,6 +75,10 @@ export default function HomePage() {
       title: lang === 'de' ? 'VEXALGO 2.0\nist da' : 'VEXALGO 2.0\nis here',
       body: lang === 'de' ? 'Komplett neues Design' : 'A completely new design',
       cta: t('home.banner.whatsNew'), href: '/quests', logo: true },
+    { tag: t('home.banner.game'), tone: 'var(--blue-2)',
+      title: lang === 'de' ? 'XP Rush\nist da' : 'XP Rush\nis live',
+      body: lang === 'de' ? '3 Runden täglich gratis' : '3 free rounds a day',
+      cta: t('home.banner.playNow'), href: '/arcade' },
     { tag: t('home.banner.group'), tone: 'var(--blue-2)',
       title: lang === 'de' ? 'VEXALGO Gruppe\nist da' : 'VEXALGO group\nis live',
       body: lang === 'de' ? 'Austausch, Tipps und News' : 'Chat, tips and news',
@@ -205,7 +209,7 @@ export default function HomePage() {
           </p>
           {!energy.isFull && minsToNext != null && (
             <p style={{ fontSize: 9.5, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              {t('home.energyNext', { amount: energy.regenMultiplier, minutes: minsToNext ?? 0 })}
+              {t('home.energyNext', { amount: energy.regenMultiplier ?? 1, minutes: minsToNext ?? 0 })}
             </p>
           )}
         </div>
