@@ -85,8 +85,10 @@ export function I18nProvider({
     // das macht Luecken im Test sichtbar statt sie zu verstecken.
     const raw = DICT[lang]?.[key] ?? DICT.en?.[key] ?? key
     if (!vars) return raw
-    return raw.replace(/\{(\w+)\}/g, (m, name) =>
-      vars[name] != null ? String(vars[name]) : m)
+    // Fehlt ein Wert, wird der Platzhalter ENTFERNT statt angezeigt —
+    // "+{amount} · 3m" im Interface waere schlimmer als "+ · 3m".
+    return raw.replace(/\{(\w+)\}/g, (_m, name) =>
+      vars[name] != null ? String(vars[name]) : '')
   }, [lang])
 
   const value = useMemo<I18nValue>(() => ({ lang, t, setLang, isLoading }),
