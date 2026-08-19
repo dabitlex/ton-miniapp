@@ -41,8 +41,9 @@ export const GET = withAuth(async (ctx) => {
     xpCapped:    !!s?.xp_capped,
     board: {
       entries: rows.map(r => ({
-        rank:  Number(r.rank),
-        name:  String(r.name ?? 'Player'),
+        rank:   Number(r.rank),
+        name:   String(r.name ?? 'Player'),
+        avatar: r.avatar_url ? String(r.avatar_url) : null,
         score: Number(r.score ?? 0),
         isMe:  !!r.is_me,
       })),
