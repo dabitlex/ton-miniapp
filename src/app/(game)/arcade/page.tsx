@@ -322,6 +322,28 @@ export default function ArcadePage() {
         </div>
       )}
 
+      {/* Zurueck-Knopf: nur im Intro. Waehrend der Runde waere er eine
+          Fehlerquelle beim Tippen, im Ergebnis gibt es "Zurueck zur App".
+          Sitzt unterhalb von Telegrams "Schliessen", damit sich beide
+          nicht ueberlagern. */}
+      {phase === 'intro' && (
+        <button
+          onClick={() => router.push('/home')}
+          aria-label={t('common.back')}
+          className="press"
+          style={{
+            position: 'absolute', zIndex: 10, left: 20,
+            top: 'calc(var(--tg-safe-area-top, 0px) + var(--tg-content-top, 48px) + 6px)',
+            width: 38, height: 38, borderRadius: 13, border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+            background: 'linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.05))',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,.25), inset 0 0 0 .5px rgba(255,255,255,.08)',
+          }}
+        >
+          <Icon name="chevronLeft" size={17} strokeWidth={1.8} />
+        </button>
+      )}
+
       {/* Intro */}
       {phase === 'intro' && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 9, display: 'flex',
