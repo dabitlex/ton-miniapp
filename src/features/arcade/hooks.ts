@@ -1,5 +1,5 @@
-// src/features/arcade/hooks.ts 
-// Zustand und Ablauf für XP Rush. 
+// src/features/arcade/hooks.ts
+// Zustand und Ablauf für XP Rush.
 'use client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -35,16 +35,18 @@ export interface ArcadeBoard {
   players:   number
 }
 
-export function useArcade() {
+export type GameKey = 'xp_rush' | 'defender'
+
+export function useArcade(game: GameKey = 'xp_rush') {
   const token = useAuthStore(s => s.accessToken)
   const qc    = useQueryClient()
 
   const { data: status, isLoading } = useQuery<ArcadeStatus | null>({
-    queryKey:  ['arcade'],
+    queryKey:  ['arcade', game],
     enabled:   !!token,
     staleTime: 30_000,
     queryFn: async () => {
-      const res  = await authedFetch('/api/v1/arcade')
+      const res  = await authedFetch(`/api/v1/arcade?game=${game}`)
       const json = await res.json().catch(() => null)
       return json?.success ? (json.data as ArcadeStatus) : null
     },
@@ -56,13 +58,13 @@ export function useArcade() {
       const res  = await authedFetch('/api/v1/arcade', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ action: 'start', withAd }),
+        body:    JSON.stringify({ action: 'start', withAd, game }),
       })
       const json = await res.json().catch(() => null)
       if (!json?.success) throw new Error(json?.error ?? 'Start fehlgeschlagen')
       return json.data as { runId: string; runsLeft: number; adRunsLeft: number }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['arcade'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['arcade', game] }),
   })
 
   /** Schließt einen Lauf ab. Abgelehnte Läufe werfen NICHT — der Nutzer
@@ -80,7 +82,8 @@ export function useArcade() {
     },
     onSuccess: (data) => {
       // Zustand UND Wochenliste kommen aus demselben Endpunkt
-      qc.invalidateQueries({ queryKey: ['arcade'] })
+      qc.invalidateQueries({ queryKey: ['arcade', game] })
+      qc.invalidateQueries({ queryKey: ['arcade-games'] })
       if (data.xp > 0) {
         // Profil nachziehen, damit XP und Level sofort stimmen
         useUserStore.getState().refreshProfile()
