@@ -16,13 +16,17 @@ export const dynamic = 'force-dynamic'
 
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+const GAMES = new Set(['xp_rush', 'defender'])
+
 export const GET = withAuth(async (ctx) => {
-  const db = getAdminClient() as any
+  const db   = getAdminClient() as any
+  const url  = new URL(ctx.req.url)
+  const game = GAMES.has(url.searchParams.get('game') ?? '') ? url.searchParams.get('game')! : 'xp_rush'
 
   // Zustand und Wochenliste parallel — spart eine Rundreise
   const [statusRes, boardRes] = await Promise.all([
-    db.rpc('arcade_status', { p_user_id: ctx.userId }),
-    db.rpc('arcade_weekly_board', { p_user_id: ctx.userId, p_limit: 5 }),
+    db.rpc('arcade_status', { p_user_id: ctx.userId, p_game: game }),
+    db.rpc('arcade_weekly_board', { p_user_id: ctx.userId, p_limit: 5, p_game: game }),
   ])
 
   if (statusRes.error) return ok({ enabled: false })
@@ -58,7 +62,7 @@ export const GET = withAuth(async (ctx) => {
 })
 
 export const POST = withAuth(async (ctx) => {
-  let body: { action?: string; withAd?: boolean; runId?: string; score?: number; bestCombo?: number }
+  let body: { action?: string; withAd?: boolean; runId?: string; score?: number; bestCombo?: number; game?: string }
   try { body = await ctx.req.json() }
   catch { return err('Invalid body', 'BAD_REQUEST') }
 
@@ -69,6 +73,7 @@ export const POST = withAuth(async (ctx) => {
     const { data, error } = await db.rpc('start_arcade_run', {
       p_user_id: ctx.userId,
       p_with_ad: !!body.withAd,
+      p_game:    GAMES.has(body.game ?? '') ? body.game : 'xp_rush',
     })
     if (error) return err('Start fehlgeschlagen', 'ARCADE_START_FAILED', 500)
 
