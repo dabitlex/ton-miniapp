@@ -1,4 +1,4 @@
-// src/app/(game)/arcade/page.tsx — XP Rush 
+// src/app/(game)/arcade/page.tsx — XP Rush
 //
 // Die Spiellogik entspricht der abgenommenen Vorschau. Neu gegenüber
 // dieser: Der Lauf wird serverseitig eröffnet und abgeschlossen, das
@@ -67,16 +67,15 @@ export default function ArcadePage() {
 
   useEffect(() => clearField, [clearField])
 
-  // Vollbild waehrend der Runde: Kopfzeile und Navigation weg, damit
-  // niemand beim Tippen versehentlich den Screen wechselt.
-  // Der Countdown zaehlt schon dazu — sonst springt das Layout beim Start.
+  // Vollbild auf dem GANZEN Arcade-Screen — auch im Ergebnis, denn dort
+  // gibt es einen eigenen "Zurueck zur App"-Knopf. Sonst springt das
+  // Layout nach jeder Runde und die Navigation lenkt vom Ergebnis ab.
   useEffect(() => {
-    const vollbild = phase === 'countdown' || phase === 'running'
-    setNavVisible(!vollbild)
-    // Beim Verlassen des Screens immer wieder einblenden, auch wenn die
-    // Runde durch Weg-Navigieren abgebrochen wurde.
+    setNavVisible(false)
+    // Beim Verlassen immer wieder einblenden — auch wenn der Screen
+    // mitten in einer Runde verlassen wird.
     return () => setNavVisible(true)
-  }, [phase, setNavVisible])
+  }, [setNavVisible])
 
   /* ── Lauf beenden ──────────────────────────────────────────── */
   const endRun = useCallback(async (why: string) => {
@@ -283,7 +282,11 @@ export default function ArcadePage() {
       {/* HUD */}
       {phase === 'running' && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 5,
-          padding: '18px 20px', display: 'flex', justifyContent: 'space-between',
+          // Derselbe Abstand, den sonst die Kopfzeile reserviert — sonst
+          // liegen Punktestand und Uhr hinter Telegrams eigenen Knoepfen.
+          paddingTop: 'calc(var(--tg-safe-area-top, 0px) + var(--tg-content-top, 48px) + 8px)',
+          paddingLeft: 20, paddingRight: 20, paddingBottom: 18,
+          display: 'flex', justifyContent: 'space-between',
           alignItems: 'flex-start', pointerEvents: 'none' }}>
           <div>
             <p className="eyebrow">{lang === 'de' ? 'Punkte' : 'Score'}</p>
@@ -323,7 +326,10 @@ export default function ArcadePage() {
       {phase === 'intro' && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 9, display: 'flex',
           flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '0 34px', textAlign: 'center' }}>
+          paddingTop: 'calc(var(--tg-safe-area-top, 0px) + var(--tg-content-top, 48px))',
+          paddingLeft: 34, paddingRight: 34,
+          paddingBottom: 'calc(var(--tg-safe-bottom, 0px) + 16px)',
+          overflowY: 'auto', textAlign: 'center' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icon-mark-v2.png" alt="" width={110} height={88}
             style={{ width: 110, height: 'auto', marginBottom: 22,
@@ -401,7 +407,10 @@ export default function ArcadePage() {
       {phase === 'over' && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 9, display: 'flex',
           flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '0 34px', textAlign: 'center',
+          paddingTop: 'calc(var(--tg-safe-area-top, 0px) + var(--tg-content-top, 48px))',
+          paddingLeft: 34, paddingRight: 34,
+          paddingBottom: 'calc(var(--tg-safe-bottom, 0px) + 16px)',
+          overflowY: 'auto', textAlign: 'center',
           background: 'rgba(5,8,16,.86)', backdropFilter: 'blur(8px)' }}>
           <p className="eyebrow" style={{ color: result?.why?.includes('Zeit') || result?.why?.includes('Time')
             ? 'var(--blue-2)' : 'var(--rose)' }}>{result?.why}</p>
