@@ -1,4 +1,4 @@
-// src/features/arcade/hooks.ts
+// src/features/arcade/hooks.ts 
 // Zustand und Ablauf für XP Rush.
 'use client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
