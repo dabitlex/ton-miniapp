@@ -1,5 +1,5 @@
 // src/app/(game)/arcade/defender/page.tsx — Vex Defender
-//
+// 
 // Drei Stufen, Endgegner, Ton. Die Spiellogik entspricht der
 // abgenommenen Vorschau; Sitzung, Werbung und Bestenliste laufen ueber
 // dieselben Bausteine wie XP Rush.
