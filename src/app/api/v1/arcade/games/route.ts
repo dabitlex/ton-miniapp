@@ -1,4 +1,4 @@
-// src/app/api/v1/arcade/games/route.ts
+// src/app/api/v1/arcade/games/route.ts 
 // Übersicht aller Spiele für den Sammlungs-Screen.
 import { withAuth, ok } from '@/app/api/v1/_lib/handler'
 import { getAdminClient } from '@/lib/supabase/admin'
