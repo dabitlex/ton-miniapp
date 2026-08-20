@@ -8,7 +8,7 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Gamepad2 } from 'lucide-react'
+import { Gamepad2, Rocket } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUserStore } from '@/stores/useUserStore'
@@ -37,6 +37,7 @@ const SRC: Record<string, { label: Record<'de'|'en', string>; cat: Cat; color: s
   achievement:    { label: { de: 'Achievement', en: 'Achievement' },    cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Medal },
   ad_reward:      { label: { de: 'Ad Reward', en: 'Ad reward' },      cat: 'bonuses', color: '#7FE3E0', bg: 'rgba(94,234,212,.16)', Icon: Play },
   season_bonus:   { label: { de: 'Season-Bonus', en: 'Season bonus' },   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Crown },
+  defender_win:   { label: { de: 'Vex Defender', en: 'Vex Defender' }, cat: 'bonuses', color: '#FFB27A', bg: 'rgba(251,146,60,.16)', Icon: Rocket },
   arcade_win:     { label: { de: 'XP Rush', en: 'XP Rush' }, cat: 'bonuses', color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Gamepad2 },
   vault_win:      { label: { de: 'Weekly Vault', en: 'Weekly Vault' },   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
   pvp_win:        { label: { de: 'PvP-Sieg', en: 'PvP win' },       cat: 'bonuses', color: 'var(--rose)', bg: 'rgba(251,113,133,.16)', Icon: Swords },
