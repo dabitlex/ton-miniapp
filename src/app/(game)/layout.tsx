@@ -1,12 +1,10 @@
-// src/app/(game)/layout.tsx  
+// src/app/(game)/layout.tsx 
 import { AuthProvider }     from '@/components/providers/AuthProvider'
 import { I18nGate }         from '@/components/providers/I18nGate'
 import { TonProvider }      from '@/components/providers/TonProvider'
 import { QueryProvider }    from '@/components/providers/QueryProvider'
-import { GameHeader }       from '@/components/layout/GameHeader'
 import { AuroraBackground } from '@/components/layout/AuroraBackground'
-import { MobileNav }        from '@/components/layout/MobileNav'
-import { ChromeGate }       from '@/components/layout/ChromeGate'
+import { HeaderSlot, NavSlot } from '@/components/layout/ChromeSlots'
 import { EnergyTicker }     from '@/components/layout/EnergyTicker'
 import { MysteryBoxModal }  from '@/components/game/MysteryBoxModal'
 import { QuestRewardPopup } from '@/components/game/QuestRewardPopup'
@@ -30,16 +28,14 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
               {/* Animierter Aurora-Hintergrund hinter allem (fixed, z-0) */}
               <AuroraBackground />
               {/* Container transparent, damit der Hintergrund durchscheint */}
-              <ChromeGate>{(navVisible) => (
               <div className="flex flex-col h-dvh overflow-hidden relative z-10">
-                {navVisible && <GameHeader />}
+                <HeaderSlot />
                 <main className="flex-1 overflow-y-auto overscroll-contain relative z-10
                                  [scrollbar-width:none] [-webkit-overflow-scrolling:touch]">
                   {children}
                 </main>
-                {navVisible && <MobileNav />}
+                <NavSlot />
               </div>
-              )}</ChromeGate>
               <MysteryBoxModal />
               <QuestRewardPopup />
               <VaultWinModal />
