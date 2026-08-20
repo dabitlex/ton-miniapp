@@ -1,4 +1,4 @@
-// src/app/(game)/arcade/page.tsx — XP Rush 
+// src/app/(game)/arcade/page.tsx — XP Rush
 //
 // Die Spiellogik entspricht der abgenommenen Vorschau. Neu gegenüber
 // dieser: Der Lauf wird serverseitig eröffnet und abgeschlossen, das
