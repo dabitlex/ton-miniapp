@@ -1,4 +1,4 @@
-// src/app/(game)/arcade/page.tsx — Spielesammlung "Play for XP"
+// src/app/(game)/arcade/page.tsx — Spielesammlung "Play for XP" 
 //
 // Der Schnellzugriff auf Home fuehrt hierher. Von hier aus waehlt der
 // Nutzer sein Spiel. Zwei Cover nebeneinander, darunter nur der Name.
