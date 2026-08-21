@@ -86,6 +86,8 @@ export default function DefenderPage() {
   const runIdRef = useRef<string | null>(null)
   const endedRef = useRef(false)
   const rafRef  = useRef<number | null>(null)
+  // Anzeigewerte gebuendelt aktualisieren statt bei jedem Treffer
+  const uiRef   = useRef({ t: 0, score: -1, lives: -1, combo: -1, wave: -1 })
 
   // Spielzustand ausserhalb von React — 60 Bilder pro Sekunde vertragen
   // keine State-Updates.
@@ -163,12 +165,25 @@ export default function DefenderPage() {
     }
     bx.globalAlpha = 1
 
+    // Anzeige hoechstens ~8x pro Sekunde nachziehen
+    const u = uiRef.current
+    if (ts - u.t > 120) {
+      u.t = ts
+      if (u.score !== s.score) { u.score = s.score; setScore(s.score) }
+      if (u.lives !== s.lives) { u.lives = s.lives; setLives(s.lives) }
+      const f = s.combo >= 12 ? 3 : s.combo >= 6 ? 2 : 1
+      const cz = f > 1 ? s.combo : 0
+      if (u.combo !== cz) { u.combo = cz; setCombo(cz) }
+      const w = s.boss ? s.boss.hp / s.boss.max : (s.total ? s.enemies.length / s.total : 1)
+      if (Math.abs(u.wave - w) > 0.01) { u.wave = w; setWave(w) }
+    }
+
     if (s.hitStop > 0) { s.hitStop -= dt; drawAll(ctx); rafRef.current = requestAnimationFrame(loop); return }
 
     const L = LEVELS[s.level]!
     if (s.shake > 0) s.shake = Math.max(0, s.shake - dt * 42)
     s.boost = Math.max(0, s.boost - dt * 1.6)
-    if (s.combo > 0) { s.comboT -= dt; if (s.comboT <= 0) { s.combo = 0; setCombo(0) } }
+    if (s.combo > 0) { s.comboT -= dt; if (s.comboT <= 0) s.combo = 0 }
 
     // Feuern
     s.shootT -= dt
@@ -248,7 +263,12 @@ export default function DefenderPage() {
       const bo = s.bombs[i]; bo.y += 265 * dt
       if (bo.y > H + 24) { s.bombs.splice(i, 1); continue }
       if (Math.abs(bo.x - s.ship.x) < 15 && Math.abs(bo.y - s.ship.y) < 17) {
-        s.bombs.splice(i, 1); treffer(); if (endedRef.current) return
+        s.bombs.splice(i, 1); treffer()
+        if (endedRef.current) return
+        // treffer() setzt s.bombs auf eine leere Liste. Ohne break greift
+        // die Schleife danach auf einen nicht mehr vorhandenen Eintrag zu
+        // und bricht ab — genau das war das Einfrieren beim Treffer.
+        break
       }
     }
     for (let i = s.drops.length - 1; i >= 0; i--) {
@@ -277,14 +297,13 @@ export default function DefenderPage() {
             s.enemies.splice(j, 1)
             s.combo++; s.bestCombo = Math.max(s.bestCombo, s.combo); s.comboT = 2.2
             const f = s.combo >= 12 ? 3 : s.combo >= 6 ? 2 : 1
-            setCombo(f > 1 ? s.combo : 0)
             const pkt = (50 + (L.rows - e.row) * 10) * f
-            s.score += pkt; setScore(s.score)
+            s.score += pkt
             pop(e.x, e.y, '+' + pkt, f > 1 ? '#FFD27A' : '#BFD4FF')
             s.hitStop = .028; s.shake = Math.min(s.shake + 3, 9); s.boost = Math.min(s.boost + .5, 1.6)
             SFX('kaputt')
             if (Math.random() < .10) s.drops.push({ x: e.x, y: e.y, rot: 0 })
-            setWave(s.enemies.length / s.total)
+
           } else { burst(e.x, e.y, '#DDD6FE', 6, .6); SFX('treffer') }
           break
         }
@@ -292,12 +311,12 @@ export default function DefenderPage() {
       if (weg) continue
       if (b && Math.abs(bu.x - b.x) < b.w / 2 && Math.abs(bu.y - b.y) < b.h / 2) {
         s.bullets.splice(i, 1); b.hp--; b.flash = 1
-        burst(bu.x, bu.y, '#FFD27A', 6, .7); s.hitStop = .02; setWave(b.hp / b.max)
+        burst(bu.x, bu.y, '#FFD27A', 6, .7); s.hitStop = .02
         if (b.hp <= 0) {
           const bxp = b.x, byp = b.y
           for (let k = 0; k < 5; k++) setTimeout(() => burst(bxp, byp, '#FFD27A', 22, 1.4), k * 90)
           ring(bxp, byp, '#FFD27A', 180); s.shake = 20
-          s.score += 2000; setScore(s.score); s.boss = null
+          s.score += 2000; s.boss = null
           SFX('sieg')
           setTimeout(() => endRun(lang === 'de' ? 'Geschafft!' : 'Cleared!'), 900)
           endedRef.current = false
@@ -341,8 +360,8 @@ export default function DefenderPage() {
 
     /* ── Hilfsfunktionen im Schleifen-Scope ── */
     function treffer() {
-      s.lives--; setLives(s.lives); s.shake = 18; s.hitStop = .06
-      s.combo = 0; setCombo(0)
+      s.lives--; s.shake = 18; s.hitStop = .06
+      s.combo = 0
       burst(s.ship.x, s.ship.y, '#FF8FA6', 26, 1.3); ring(s.ship.x, s.ship.y, '#FF8FA6', 70)
       SFX('schaden'); haptic?.('heavy')
       if (s.lives <= 0) { endRun(lang === 'de' ? 'Schiff zerstört' : 'Ship destroyed'); return }
@@ -371,19 +390,19 @@ export default function DefenderPage() {
     ctx.save()
     if (s.shake > 0) ctx.translate((Math.random() - .5) * s.shake, (Math.random() - .5) * s.shake)
 
+    // Schweif als zwei einfache Rechtecke statt eines neuen Verlaufs
+    // pro Schuss und Bild — createLinearGradient ist teuer.
     for (const b of s.bullets) {
-      const g = ctx.createLinearGradient(0, b.y - 22, 0, b.y + 4)
-      g.addColorStop(0, 'rgba(143,180,255,0)'); g.addColorStop(1, 'rgba(223,235,255,1)')
-      ctx.fillStyle = g; ctx.fillRect(b.x - 1.6, b.y - 22, 3.2, 26)
-      ctx.shadowColor = 'rgba(143,180,255,.95)'; ctx.shadowBlur = 12
-      ctx.fillStyle = '#EAF1FF'; ctx.beginPath(); ctx.roundRect(b.x - 2, b.y - 6, 4, 9, 2); ctx.fill(); ctx.shadowBlur = 0
+      ctx.globalAlpha = .28; ctx.fillStyle = '#8FB4FF'
+      ctx.fillRect(b.x - 1.4, b.y - 22, 2.8, 18)
+      ctx.globalAlpha = 1; ctx.fillStyle = '#EAF1FF'
+      ctx.beginPath(); ctx.roundRect(b.x - 2, b.y - 6, 4, 10, 2); ctx.fill()
     }
     for (const b of s.bombs) {
-      const g = ctx.createLinearGradient(0, b.y - 4, 0, b.y + 18)
-      g.addColorStop(0, 'rgba(255,143,166,1)'); g.addColorStop(1, 'rgba(255,143,166,0)')
-      ctx.fillStyle = g; ctx.fillRect(b.x - 1.8, b.y - 4, 3.6, 22)
-      ctx.shadowColor = 'rgba(255,90,120,.9)'; ctx.shadowBlur = 12
-      ctx.fillStyle = '#FFD3DC'; ctx.beginPath(); ctx.roundRect(b.x - 2.4, b.y - 6, 4.8, 10, 3); ctx.fill(); ctx.shadowBlur = 0
+      ctx.globalAlpha = .30; ctx.fillStyle = '#FF8FA6'
+      ctx.fillRect(b.x - 1.6, b.y + 2, 3.2, 16)
+      ctx.globalAlpha = 1; ctx.fillStyle = '#FFD3DC'
+      ctx.beginPath(); ctx.roundRect(b.x - 2.4, b.y - 6, 4.8, 11, 3); ctx.fill()
     }
     for (const d of s.drops) {
       ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot)
@@ -487,13 +506,14 @@ export default function DefenderPage() {
       ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.283); ctx.stroke()
     }
     ctx.globalAlpha = 1
+    // Ohne Schatten: die Partikel leuchten durch ihre Helligkeit,
+    // shadowBlur pro Partikel war der groesste Einzelposten.
     for (const p of s.parts) {
       const a = 1 - p.age / p.life
       ctx.globalAlpha = Math.max(0, a); ctx.fillStyle = p.c
-      ctx.shadowColor = p.c; ctx.shadowBlur = 8 * a
       ctx.beginPath(); ctx.arc(p.x, p.y, 2.8 * a + .5, 0, 6.283); ctx.fill()
     }
-    ctx.shadowBlur = 0; ctx.globalAlpha = 1
+    ctx.globalAlpha = 1
     ctx.textAlign = 'center'; ctx.font = '600 14px Poppins, sans-serif'
     for (const p of s.pops) {
       const a = 1 - p.age / p.life
@@ -543,7 +563,9 @@ export default function DefenderPage() {
 
     const wrap = wrapRef.current, cv = cvRef.current, bg = bgRef.current
     if (!wrap || !cv || !bg) return
-    const DPR = Math.min(window.devicePixelRatio || 1, 2.5)
+    // 2 statt 2.5: auf einem 390er Bildschirm sind das 1.2 Millionen
+    // Bildpunkte weniger pro Bild — bei gleicher Schaerfe im Auge.
+    const DPR = Math.min(window.devicePixelRatio || 1, 2)
     const W = wrap.clientWidth, H = wrap.clientHeight
     for (const c of [cv, bg]) { c.width = W * DPR; c.height = H * DPR }
     cv.getContext('2d')!.setTransform(DPR, 0, 0, DPR, 0, 0)
@@ -583,11 +605,26 @@ export default function DefenderPage() {
 
   useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }, [])
 
-  const move = useCallback((clientX: number) => {
+  /* Steuerung: RELATIV statt absolut.
+     Vorher sprang das Schiff dorthin, wo getippt wurde — man musste also
+     mit dem Daumen genau dort greifen, wo man hin wollte, und verdeckte
+     dabei das Schiff. Jetzt merkt sich der Griff den Abstand zwischen
+     Finger und Schiff; das Schiff folgt der Bewegung. */
+  const griffRef = useRef<number | null>(null)
+
+  const greifen = useCallback((clientX: number) => {
     const wrap = wrapRef.current
     if (!wrap || phase !== 'running') return
     const r = wrap.getBoundingClientRect()
-    S.current.ship.x = Math.max(20, Math.min(S.current.W - 20, clientX - r.left))
+    griffRef.current = (clientX - r.left) - S.current.ship.x
+  }, [phase])
+
+  const ziehen = useCallback((clientX: number) => {
+    const wrap = wrapRef.current
+    if (!wrap || phase !== 'running' || griffRef.current === null) return
+    const r = wrap.getBoundingClientRect()
+    const s = S.current
+    s.ship.x = Math.max(20, Math.min(s.W - 20, (clientX - r.left) - griffRef.current))
   }, [phase])
 
   const nf = (n: number) => new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(n)
@@ -610,8 +647,16 @@ export default function DefenderPage() {
 
   return (
     <div ref={wrapRef} className="relative z-10" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
-      onPointerDown={e => { if (!(e.target as HTMLElement).closest('button')) move(e.clientX) }}
-      onPointerMove={e => { if (e.buttons || e.pointerType === 'touch') move(e.clientX) }}>
+      onPointerDown={e => {
+        if ((e.target as HTMLElement).closest('button')) return
+        // Zeiger einfangen: Bewegungen kommen auch an, wenn der Finger
+        // ueber ein anderes Element rutscht oder den Rand streift.
+        try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch { /* ignore */ }
+        greifen(e.clientX)
+      }}
+      onPointerMove={e => ziehen(e.clientX)}
+      onPointerUp={() => { griffRef.current = null }}
+      onPointerCancel={() => { griffRef.current = null }}>
 
       <canvas ref={bgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1 }} />
       <canvas ref={cvRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 2 }} />
@@ -644,7 +689,7 @@ export default function DefenderPage() {
             </div>
           </div>
           <div style={{ position: 'absolute', left: 20, right: 20, zIndex: 6,
-            top: `calc(${oben} + 58px)`, height: 3, borderRadius: 3,
+            top: `calc(${oben} + 80px)`, height: 3, borderRadius: 3,
             background: 'rgba(255,255,255,.09)', overflow: 'hidden', pointerEvents: 'none' }}>
             <div style={{ height: '100%', borderRadius: 3, width: `${Math.max(0, wave) * 100}%`,
               background: 'linear-gradient(90deg,#7BA5FF,#2563FF)',
