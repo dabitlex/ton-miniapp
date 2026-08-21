@@ -610,21 +610,32 @@ export default function DefenderPage() {
      mit dem Daumen genau dort greifen, wo man hin wollte, und verdeckte
      dabei das Schiff. Jetzt merkt sich der Griff den Abstand zwischen
      Finger und Schiff; das Schiff folgt der Bewegung. */
-  const griffRef = useRef<number | null>(null)
+  // Aktiver Finger/Pointer + Abstand zwischen Finger und Schiff.
+  // touchAction:none am Spielfeld verhindert, dass Android/Telegram die
+  // horizontale Bewegung als Seiten-/WebView-Geste behandelt.
+  const griffRef = useRef<{ pointerId: number; offsetX: number } | null>(null)
 
-  const greifen = useCallback((clientX: number) => {
+  const greifen = useCallback((clientX: number, pointerId: number) => {
     const wrap = wrapRef.current
     if (!wrap || phase !== 'running') return
     const r = wrap.getBoundingClientRect()
-    griffRef.current = (clientX - r.left) - S.current.ship.x
+    const x = clientX - r.left
+    griffRef.current = { pointerId, offsetX: x - S.current.ship.x }
   }, [phase])
 
-  const ziehen = useCallback((clientX: number) => {
+  const ziehen = useCallback((clientX: number, pointerId: number) => {
     const wrap = wrapRef.current
-    if (!wrap || phase !== 'running' || griffRef.current === null) return
+    const grip = griffRef.current
+    if (!wrap || !grip || phase !== 'running' || grip.pointerId !== pointerId) return
+
     const r = wrap.getBoundingClientRect()
     const s = S.current
-    s.ship.x = Math.max(20, Math.min(s.W - 20, (clientX - r.left) - griffRef.current))
+
+    // Pointer-Koordinate und Canvas/Game-Koordinate sind beide in CSS-Pixeln,
+    // weil s.W auf wrap.clientWidth gesetzt wird. Dadurch bleibt die Steuerung
+    // auch bei DPR 2 und unterschiedlichen Displaybreiten korrekt.
+    const x = clientX - r.left - grip.offsetX
+    s.ship.x = Math.max(20, Math.min(s.W - 20, x))
   }, [phase])
 
   const nf = (n: number) => new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US').format(n)
@@ -646,20 +657,34 @@ export default function DefenderPage() {
   }
 
   return (
-    <div ref={wrapRef} className="relative z-10" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
+    <div ref={wrapRef} className="relative z-10" style={{
+      position: 'absolute',
+      inset: 0,
+      overflow: 'hidden',
+      touchAction: 'none',
+      WebkitUserSelect: 'none',
+      userSelect: 'none',
+    }}
       onPointerDown={e => {
         if ((e.target as HTMLElement).closest('button')) return
-        // Zeiger einfangen: Bewegungen kommen auch an, wenn der Finger
-        // ueber ein anderes Element rutscht oder den Rand streift.
-        try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch { /* ignore */ }
-        greifen(e.clientX)
+        // Pointer Capture sorgt dafür, dass PointerMove auch dann weiter
+        // ankommt, wenn der Finger über Canvas/HUD oder bis zum Rand wandert.
+        try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
+        greifen(e.clientX, e.pointerId)
       }}
-      onPointerMove={e => ziehen(e.clientX)}
-      onPointerUp={() => { griffRef.current = null }}
-      onPointerCancel={() => { griffRef.current = null }}>
+      onPointerMove={e => ziehen(e.clientX, e.pointerId)}
+      onPointerUp={e => {
+        if (griffRef.current?.pointerId === e.pointerId) griffRef.current = null
+      }}
+      onPointerCancel={e => {
+        if (griffRef.current?.pointerId === e.pointerId) griffRef.current = null
+      }}
+      onLostPointerCapture={e => {
+        if (griffRef.current?.pointerId === e.pointerId) griffRef.current = null
+      }}>
 
-      <canvas ref={bgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1 }} />
-      <canvas ref={cvRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 2 }} />
+      <canvas ref={bgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 1, touchAction: 'none', pointerEvents: 'none' }} />
+      <canvas ref={cvRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 2, touchAction: 'none', pointerEvents: 'none' }} />
 
       {/* HUD */}
       {phase === 'running' && (
