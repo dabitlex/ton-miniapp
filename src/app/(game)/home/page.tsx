@@ -351,7 +351,7 @@ export default function HomePage() {
               <p style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{vault.myTickets} {t('vault.myTickets')}</p>
             </div>
             <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 'auto', paddingTop: 10, whiteSpace: 'nowrap' }}>
-              {t('vault.drawIn', { time: new Date(vault.drawAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { weekday: 'short' }) + ' 21:00' })}
+              {t('vault.drawIn', { time: new Date(vault.drawAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { weekday: 'short' }) + ' 21:00 UTC' })}
             </p>
           </Link>
         )}
