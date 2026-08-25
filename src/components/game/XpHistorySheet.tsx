@@ -24,12 +24,12 @@ interface XpEntry {
   xp: number; boostPercent: number; level: number | null; leveledUp: boolean
   doubled?: boolean
 }
-type Cat = 'all' | 'quests' | 'clan' | 'bonuses'
+type Cat = 'all' | 'quests' | 'mystery' | 'clan' | 'bonuses'
 
 const SRC: Record<string, { label: Record<'de'|'en', string>; cat: Cat; color: string; bg: string; Icon: LucideIcon }> = {
   quest_daily:    { label: { de: 'Daily Quest', en: 'Daily quest' },    cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: Target },
   quest_weekly:   { label: { de: 'Weekly Quest', en: 'Weekly quest' },   cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: CalendarCheck },
-  quest_special:  { label: { de: 'Mystery Box', en: 'Mystery box' },    cat: 'quests',  color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
+  quest_special:  { label: { de: 'Mystery Box', en: 'Mystery box' },    cat: 'mystery',  color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
   clan_mission:   { label: { de: 'Clan Mission', en: 'Clan mission' },   cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Shield },
   clan_war_win:   { label: { de: 'Clan War', en: 'Clan war' },       cat: 'clan',    color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Swords },
   streak_bonus:   { label: { de: 'Streak Bonus', en: 'Streak bonus' },   cat: 'bonuses', color: '#FFB27A', bg: 'rgba(251,146,60,.16)', Icon: Flame },
@@ -53,6 +53,7 @@ const DETAILABLE = new Set(['quest_daily', 'quest_weekly', 'achievement'])
 const CHIPS: { id: Cat; label: Record<'de'|'en', string> }[] = [
   { id: 'all', label: { de: 'Alle', en: 'All' } },
   { id: 'quests', label: { de: 'Quests', en: 'Quests' } },
+  { id: 'mystery', label: { de: 'Mystery Box', en: 'Mystery box' } },
   { id: 'clan', label: { de: 'Clan', en: 'Clan' } },
   { id: 'bonuses', label: { de: 'Boni', en: 'Bonuses' } },
 ]
