@@ -22,6 +22,7 @@ export const GET = withAuth(async (ctx) => {
   const sp        = new URL(ctx.req.url).searchParams
   const before    = sp.get('before')              // ISO-Cursor (created_at der letzten Zeile)
   const rawLimit  = Number(sp.get('limit') ?? 30)
+  const kategorie = sp.get('cat')                 // all | quests | mystery | clan | bonuses
   const limit     = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 30, 1), 50)
 
   const supabase = db()
@@ -32,6 +33,19 @@ export const GET = withAuth(async (ctx) => {
     .order('created_at', { ascending: false })
     .order('id',         { ascending: false })
     .limit(limit + 1)                              // +1 = "gibt es noch mehr?"
+  // Kategorien auf Quellen abbilden — dieselbe Einteilung wie im
+  // XP-Verlauf. Bleibt hier und dort synchron zu halten.
+  const KATEGORIEN: Record<string, string[]> = {
+    quests:  ['quest_daily', 'quest_weekly'],
+    mystery: ['quest_special'],
+    clan:    ['clan_mission', 'clan_war_win'],
+    bonuses: ['streak_bonus', 'referral_bonus', 'achievement', 'ad_reward',
+              'season_bonus', 'vault_win', 'pvp_win', 'admin_grant', 'correction',
+              'arcade_win', 'defender_win'],
+  }
+  const quellen = kategorie && kategorie !== 'all' ? KATEGORIEN[kategorie] : null
+  if (quellen) q = q.in('source_type', quellen)
+
   if (before) q = q.lt('created_at', before)
 
   const { data, error } = await q
