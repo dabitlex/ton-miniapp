@@ -351,7 +351,18 @@ export default function HomePage() {
               <p style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{vault.myTickets} {t('vault.myTickets')}</p>
             </div>
             <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 'auto', paddingTop: 10, whiteSpace: 'nowrap' }}>
-              {t('vault.drawIn', { time: new Date(vault.drawAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { weekday: 'short' }) + ' 21:00 UTC' })}
+              {t('vault.drawIn', { time: (() => {
+                // Ortszeit des Geraets statt fester Serverzeit. Die Ziehung
+                // liegt um 21:00 UTC — in Deutschland also 23:00. Vorher war
+                // die Uhrzeit fest verdrahtet, waehrend der Wochentag aus dem
+                // echten Datum kam; das passte nicht zusammen.
+                // toLocaleString rechnet um, dadurch stimmt auch der Wochentag,
+                // wenn die Ziehung fuer jemanden ueber Mitternacht rutscht.
+                const d   = new Date(vault.drawAt)
+                const ort = lang === 'de' ? 'de-DE' : 'en-US'
+                return d.toLocaleString(ort, { weekday: 'short' })
+                     + ' ' + d.toLocaleTimeString(ort, { hour: '2-digit', minute: '2-digit' })
+              })() })}
             </p>
           </Link>
         )}
