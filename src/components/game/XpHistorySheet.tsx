@@ -104,9 +104,12 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
   const [detail, setDetail]         = useState<DetailState>({ open: false, loading: false, entry: null, title: null, description: null })
   const seen = useRef<Set<string>>(new Set())
 
-  const fetchPage = useCallback(async (before: string | null) => {
+  const fetchPage = useCallback(async (before: string | null, cat: Cat = 'all') => {
     if (!token) return
     const qs = new URLSearchParams({ limit: '30' })
+    // Filter serverseitig: sonst durchsucht man nur die geladenen 30
+    // Eintraege und findet seltene Quellen wie die Mystery Box kaum.
+    if (cat !== 'all') qs.set('cat', cat)
     if (before) qs.set('before', before)
     const res  = await fetch(`/api/v1/users/xp-history?${qs}`, { headers: { Authorization: `Bearer ${token}` } })
     const json = await res.json()
@@ -123,8 +126,10 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
     if (!open || !token) return
     seen.current = new Set()
     setEntries([]); setCursor(null); setHasMore(false); setLoading(true)
-    fetchPage(null).finally(() => setLoading(false))
-  }, [open, token, fetchPage])
+    fetchPage(null, filter).finally(() => setLoading(false))
+    // filter bewusst in den Abhaengigkeiten: ein Wechsel laedt neu
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, token, fetchPage, filter])
 
   // LIVE: Realtime auf xp_logs INSERT (eigene user_id)
   useEffect(() => {
@@ -174,7 +179,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
   async function loadMore() {
     if (!cursor || loadingMore) return
     setLoadingMore(true)
-    await fetchPage(cursor)
+    await fetchPage(cursor, filter)
     setLoadingMore(false)
   }
 
@@ -190,7 +195,8 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
   const closeDetail = () => setDetail(d => ({ ...d, open: false }))
 
   // Filtern + nach Tagen gruppieren
-  const visible = filter === 'all' ? entries : entries.filter(e => meta(e.source).cat === filter)
+  // Der Server liefert bereits gefiltert; hier nur noch durchreichen.
+  const visible = entries
   const groups: { label: string; items: XpEntry[] }[] = []
   for (const e of visible) {
     const lbl = dayLabel(e.createdAt)
@@ -362,7 +368,7 @@ export function XpHistorySheet({ open, onClose }: { open: boolean; onClose: () =
         </div>
       ))}
 
-      {!loading && hasMore && filter === 'all' && (
+      {!loading && hasMore && (
         <button onClick={loadMore} disabled={loadingMore}
           className="press w-full mt-3 rounded-2xl py-3 text-[12px] font-bold flex items-center justify-center gap-2"
           style={{ color: 'var(--blue-2)', fontFamily: 'var(--font-display)', fontWeight: 500,
