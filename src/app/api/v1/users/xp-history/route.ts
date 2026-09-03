@@ -38,10 +38,12 @@ export const GET = withAuth(async (ctx) => {
   const KATEGORIEN: Record<string, string[]> = {
     quests:  ['quest_daily', 'quest_weekly'],
     mystery: ['quest_special'],
+    vault:   ['vault_win'],
     clan:    ['clan_mission', 'clan_war_win'],
+    arcade:  ['arcade_win', 'defender_win'],
+    // Rest: alles, was keine eigene Reihe traegt
     bonuses: ['streak_bonus', 'referral_bonus', 'achievement', 'ad_reward',
-              'season_bonus', 'vault_win', 'pvp_win', 'admin_grant', 'correction',
-              'arcade_win', 'defender_win'],
+              'season_bonus', 'pvp_win', 'admin_grant', 'correction'],
   }
   const quellen = kategorie && kategorie !== 'all' ? KATEGORIEN[kategorie] : null
   if (quellen) q = q.in('source_type', quellen)
