@@ -24,7 +24,7 @@ interface XpEntry {
   xp: number; boostPercent: number; level: number | null; leveledUp: boolean
   doubled?: boolean
 }
-type Cat = 'all' | 'quests' | 'mystery' | 'clan' | 'bonuses'
+type Cat = 'all' | 'quests' | 'mystery' | 'vault' | 'clan' | 'arcade' | 'bonuses'
 
 const SRC: Record<string, { label: Record<'de'|'en', string>; cat: Cat; color: string; bg: string; Icon: LucideIcon }> = {
   quest_daily:    { label: { de: 'Daily Quest', en: 'Daily quest' },    cat: 'quests',  color: '#C4B5FD', bg: 'rgba(139,92,246,.16)', Icon: Target },
@@ -37,9 +37,9 @@ const SRC: Record<string, { label: Record<'de'|'en', string>; cat: Cat; color: s
   achievement:    { label: { de: 'Achievement', en: 'Achievement' },    cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Medal },
   ad_reward:      { label: { de: 'Ad Reward', en: 'Ad reward' },      cat: 'bonuses', color: '#7FE3E0', bg: 'rgba(94,234,212,.16)', Icon: Play },
   season_bonus:   { label: { de: 'Season-Bonus', en: 'Season bonus' },   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Crown },
-  defender_win:   { label: { de: 'Vex Defender', en: 'Vex Defender' }, cat: 'bonuses', color: '#FFB27A', bg: 'rgba(251,146,60,.16)', Icon: Rocket },
-  arcade_win:     { label: { de: 'XP Rush', en: 'XP Rush' }, cat: 'bonuses', color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Gamepad2 },
-  vault_win:      { label: { de: 'Weekly Vault', en: 'Weekly Vault' },   cat: 'bonuses', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
+  defender_win:   { label: { de: 'Vex Defender', en: 'Vex Defender' }, cat: 'arcade', color: '#FFB27A', bg: 'rgba(251,146,60,.16)', Icon: Rocket },
+  arcade_win:     { label: { de: 'XP Rush', en: 'XP Rush' }, cat: 'arcade', color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Gamepad2 },
+  vault_win:      { label: { de: 'Weekly Vault', en: 'Weekly Vault' },   cat: 'vault', color: 'var(--gold)', bg: 'rgba(251,191,36,.16)', Icon: Gift },
   pvp_win:        { label: { de: 'PvP-Sieg', en: 'PvP win' },       cat: 'bonuses', color: 'var(--rose)', bg: 'rgba(251,113,133,.16)', Icon: Swords },
   admin_grant:    { label: { de: 'Bonus', en: 'Bonus' },          cat: 'bonuses', color: '#9CC0FF', bg: 'rgba(91,141,239,.16)', Icon: Sparkles },
   correction:     { label: { de: 'Korrektur', en: 'Correction' },      cat: 'bonuses', color: 'rgba(255,255,255,.6)', bg: 'rgba(255,255,255,.08)', Icon: RefreshCw },
@@ -54,7 +54,9 @@ const CHIPS: { id: Cat; label: Record<'de'|'en', string> }[] = [
   { id: 'all', label: { de: 'Alle', en: 'All' } },
   { id: 'quests', label: { de: 'Quests', en: 'Quests' } },
   { id: 'mystery', label: { de: 'Mystery Box', en: 'Mystery box' } },
+  { id: 'vault', label: { de: 'Vault', en: 'Vault' } },
   { id: 'clan', label: { de: 'Clan', en: 'Clan' } },
+  { id: 'arcade', label: { de: 'Arcade', en: 'Arcade' } },
   { id: 'bonuses', label: { de: 'Boni', en: 'Bonuses' } },
 ]
 
