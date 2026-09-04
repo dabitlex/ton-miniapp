@@ -254,11 +254,20 @@ export async function POST(req: NextRequest) {
 // Energie-/Quest-Zähler-Quests brauchen einen ersten Claim → Deadlock).
 // Jetzt bekommt jeder Nutzer exakt das offizielle, garantiert lösbare
 // Tages-Set (fixe Bootstrap-Slots + deterministische Tagesrotation).
-const DAILY_FIXED_EASY = ['daily_easy_login', 'daily_easy_energy5']
-const DAILY_FIXED_MED  = ['daily_med_quests']
-const DAILY_THIRD_EASY = ['daily_easy_quests2', 'daily_easy_energy']
-const DAILY_SECOND_MED = ['daily_med_quests4', 'daily_med_energy25']
-const DAILY_HARD       = ['daily_hard_champion', 'daily_hard_quests5', 'daily_hard_energy35']
+// Aktivitaets-Quests statt Abhaken.
+//
+// Vorher pruefte KEINE der Daily-Quests eine Handlung: vier zaehlten
+// Energieverbrauch (der schon durch die Quests selbst entstand), vier
+// zaehlten andere Quests — sie zaehlten sich also gegenseitig.
+//
+// Jede Quest hier haengt an einer echten Datenspur: arcade_runs,
+// vault_tickets, clan_missions, clan_chat_messages.
+// Energie kostet keine davon — die Handlung ist der Preis.
+const DAILY_FIXED_EASY = ['daily_easy_arcade1', 'daily_easy_clanchat']
+const DAILY_FIXED_MED  = ['daily_med_arcade3']
+const DAILY_THIRD_EASY = ['daily_med_tickets5', 'daily_med_clan2']
+const DAILY_SECOND_MED = ['daily_med_rush3', 'daily_med_defender3', 'daily_med_bothgames']
+const DAILY_HARD       = ['daily_hard_arcade5', 'daily_hard_score2000']
 
 const pickDaily = <T,>(arr: T[], n: number): T =>
   arr[((n % arr.length) + arr.length) % arr.length]!
