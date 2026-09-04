@@ -32,8 +32,15 @@ function iconFor(code: string, watchMode: boolean): IconName {
   if (code.includes('champion'))  return 'crown'
   if (code.includes('login'))     return 'check'
   if (code.includes('referral'))  return 'users'
+  // Aktivitaets-Quests: vor der Clan-Zeile, damit 'clanchat' den
+  // Sprechblasen-Kasten bekommt statt des Clan-Wappens.
+  if (code.includes('chat'))      return 'chat'
+  if (code.includes('ticket'))    return 'ticket'
+  if (code.includes('arcade') || code.includes('rush') ||
+      code.includes('defender') || code.includes('score') ||
+      code.includes('both'))      return 'gamepad'
   if (code.includes('clan'))      return 'clan'
-  if (code.includes('xp'))        return 'trophy'
+  if (code.includes('xp') || code.includes('bigweek')) return 'trophy'
   return 'target'
 }
 
