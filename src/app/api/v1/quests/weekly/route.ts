@@ -84,9 +84,16 @@ export const GET = withAuth(async (ctx) => {
 // (weekly_hard_clan, the old weekly_hard_referral) were NEVER assigned
 // to anyone, ever. The explicit pools below guarantee every pool member
 // gets picked roughly 1-in-N weeks.
-const EASY_CODES   = ['weekly_easy_login', 'weekly_easy_energy']
-const MEDIUM_POOL  = ['weekly_med_xp', 'weekly_med_quests', 'weekly_med_level']
-const HARD_POOL    = ['weekly_hard_streak', 'weekly_hard_clan', 'weekly_hard_referral3']
+// weekly_easy_login bleibt: "5 aktive Tage" verlangt echtes Zurueckkommen.
+// weekly_easy_energy faellt weg — Energie wird abgeschafft.
+// weekly_med_xp (1.000/Woche) und weekly_med_quests fielen ebenfalls raus:
+// der Schnitt liegt bei 7.000 XP pro TAG, und Quests zu zaehlen war zirkulaer.
+const EASY_CODES   = ['weekly_easy_login', 'weekly_easy_arcade5']
+const MEDIUM_POOL  = ['weekly_med_arcade20', 'weekly_med_def10k', 'weekly_med_rush3k',
+                      'weekly_med_tickets30', 'weekly_med_both5']
+const HARD_POOL    = ['weekly_hard_streak', 'weekly_hard_arcade40',
+                      'weekly_hard_bigweek', 'weekly_hard_clan10x',
+                      'weekly_hard_referral3']
 
 async function assignWeeklyQuests(userId: string, isoYear: number, isoWeek: number) {
   const db = getAdminClient()
