@@ -136,7 +136,14 @@ export function QuestCard({
             {energyCost > 0 && <EnergyCost value={energyCost} />}
           </div>
         ) : isCountable ? (
-          <div className="flex items-center" style={{ gap: 8, marginTop: 8 }}>
+          <>
+            {/* Beschreibung AUCH bei zaehlbaren Quests. Vorher stand sie nur
+                im letzten Zweig — seit alle Quests zaehlbar sind, sah der
+                Nutzer nur noch den Titel und wusste nicht, was zu tun ist. */}
+            <p className="truncate" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+              {quest.template.description}
+            </p>
+          <div className="flex items-center" style={{ gap: 8, marginTop: 7 }}>
             <div className="progress-bar" style={{ flex: 1, height: 5 }}>
               <div className="progress-fill" style={{
                 width: `${pct}%`,
@@ -148,6 +155,7 @@ export function QuestCard({
             </p>
             {energyCost > 0 && <EnergyCost value={energyCost} />}
           </div>
+          </>
         ) : (
           <div className="flex items-center" style={{ gap: 8, marginTop: 4 }}>
             <p className="truncate" style={{ fontSize: 11, color: 'var(--text-muted)', flex: 1 }}>
