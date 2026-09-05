@@ -125,7 +125,6 @@ export const GET = withAuth(async (ctx) => {
     totalTickets: round.tickets_total,
     seedHash: round.seed_hash,
     myTickets: tickets.length,
-    maxTickets: VAULT_RULES.maxTickets,
     // Gewinnchance grob: eigene Lose gegen alle Lose (nur Anzeige)
     oddsOneIn: tickets.length > 0
       ? Math.max(1, Math.round(round.tickets_total / tickets.length))
