@@ -112,7 +112,11 @@ export default function VaultPage() {
     )
   }
 
-  const ticketPct = Math.min(100, (vault.myTickets / vault.maxTickets) * 100)
+  // Es gibt keine Obergrenze mehr. Die Leiste zeigt jetzt den ANTEIL am
+  // Gesamttopf — das ist die Zahl, die fuer die Gewinnchance zaehlt.
+  const ticketPct = vault.totalTickets > 0
+    ? Math.min(100, (vault.myTickets / vault.totalTickets) * 100)
+    : 0
 
   return (
     <div className="overflow-y-auto relative z-10" style={{ paddingBottom: 24 }}>
@@ -142,7 +146,10 @@ export default function VaultPage() {
               <p style={{ ...fd, fontSize: 14.5, fontWeight: 500 }}>{t('vault.myTickets')}</p>
             </div>
             <p style={{ ...fd, fontSize: 19, fontWeight: 500 }}>
-              {vault.myTickets}<span style={{ fontSize: 12, color: 'var(--text-muted)' }}>/{vault.maxTickets}</span>
+              {vault.myTickets}
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 5 }}>
+                /{formatNumber(vault.totalTickets)}
+              </span>
             </p>
           </div>
           <div className="progress-bar" style={{ marginTop: 12 }}>
