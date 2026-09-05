@@ -4,7 +4,6 @@
 // Der Server bleibt autoritativ; diese Werte sind reine Anzeige-Konstanten.
 
 export const VAULT_RULES = {
-  maxTickets:   20,      // Lose pro Nutzer und Runde
   jackpotBase:  25000,   // Grundstock je Runde
   xpPerTicket:  200,     // Jackpot-Zuwachs je ausgegebenem Los
   drawWeekday:  0,       // Sonntag
@@ -39,7 +38,6 @@ export interface VaultOpen {
   totalTickets: number
   seedHash: string
   myTickets: number
-  maxTickets: number
   oddsOneIn: number | null
   sources: VaultSource[]
   prizes: VaultPrize[]
