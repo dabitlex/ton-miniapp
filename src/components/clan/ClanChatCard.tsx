@@ -45,6 +45,8 @@ export function ClanChatCard() {
     // Beim Öffnen markiert die Chat-GET-Route serverseitig als gelesen;
     // wir invalidieren die Summary, damit der Badge nach Rückkehr verschwindet.
     qc.invalidateQueries({ queryKey: ['clan', 'chat', 'summary'] })
+    // Die Quest "Speak Up" zaehlt Chat-Nachrichten
+    qc.invalidateQueries({ queryKey: ['quests'] })
     router.push('/clans/chat')
   }
 
