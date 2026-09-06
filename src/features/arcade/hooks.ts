@@ -84,6 +84,11 @@ export function useArcade(game: GameKey = 'xp_rush') {
       // Zustand UND Wochenliste kommen aus demselben Endpunkt
       qc.invalidateQueries({ queryKey: ['arcade', game] })
       qc.invalidateQueries({ queryKey: ['arcade-games'] })
+      // Quests haengen jetzt an gespielten Runden (arcade_runs) und an
+      // Vault-Losen, die pro Runde vergeben werden. Ohne diese Zeile
+      // wartet der Nutzer bis zu 60 Sekunden, bis der Knopf blau wird.
+      qc.invalidateQueries({ queryKey: ['quests'] })
+      qc.invalidateQueries({ queryKey: ['vault'] })
       if (data.xp > 0) {
         // Profil nachziehen, damit XP und Level sofort stimmen
         useUserStore.getState().refreshProfile()
