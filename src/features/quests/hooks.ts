@@ -96,9 +96,14 @@ export function useQuests() {
   const { isLoading: isLoadingDaily, refetch: refetchDaily } = useQuery({
     queryKey:  ['quests', 'daily'],
     enabled:   !!token,
-    staleTime: 5 * 60_000,
-    // Automatisch alle 60 Sekunden refreshen
-    refetchInterval: 60_000,
+    // Fortschritt entsteht jetzt AUSSERHALB des Quest-Screens (Arcade,
+    // Clan-Chat, Vault). staleTime 5 Minuten hiess: beim Zurueckkehren
+    // wurden alte Daten gezeigt. Jetzt beim Betreten immer frisch.
+    staleTime: 15_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    // Auffangnetz, falls eine Handlung das Nachladen nicht ausloest
+    refetchInterval: 30_000,
     queryFn:   async () => {
       // KEIN setLoadingDaily(true) hier: Hintergrund-Refreshes (nach jedem
       // Claim und alle 60s) sollen die Liste lautlos in-place aktualisieren,
@@ -114,9 +119,10 @@ export function useQuests() {
   const { isLoading: isLoadingWeekly } = useQuery({
     queryKey:  ['quests', 'weekly'],
     enabled:   !!token,
-    staleTime: 15 * 60_000,
-    // Weekly alle 5 Minuten refreshen
-    refetchInterval: 5 * 60_000,
+    staleTime: 30_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
     queryFn:   async () => {
       const data = await apiFetch<WeeklyQuest[]>('/api/v1/quests/weekly', token!)
       questStore.setWeekly(data)
