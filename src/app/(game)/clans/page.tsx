@@ -204,6 +204,10 @@ export default function ClansPage() {
       if (data.energyAfter !== undefined) useEnergyStore.setState(s => ({ ...s, current: data.energyAfter }))
       qc.invalidateQueries({ queryKey: ['clan-missions'] })
       qc.invalidateQueries({ queryKey: ['my-membership'] })
+      // "Clan Duty" zaehlt Clan-Missionen, und jede Mission gibt
+      // ausserdem ein Vault-Los — beides sofort nachladen.
+      qc.invalidateQueries({ queryKey: ['quests'] })
+      qc.invalidateQueries({ queryKey: ['vault'] })
     },
     onError: (e: Error) => { toast('error', e.message); haptic('error') },
   })
